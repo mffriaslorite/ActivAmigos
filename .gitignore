@@ -1,0 +1,48 @@
+# --- FRONTEND (Angular) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/cache/
+frontend/.env
+frontend/.vscode/
+frontend/.eslintrc.js
+frontend/.eslintcache
+frontend/.prettierrc
+frontend/.prettierignore
+
+# --- BACKEND (Python / Flask) ---
+backend/__pycache__/
+backend/config/__pycache__/
+backend/models/__pycache__/
+backend/routes/__pycache__/
+backend/*.pyc
+backend/venv/
+backend/.env
+backend/.vscode/
+backend/.ruff_cache/
+backend/.mypy_cache/
+backend/.pytest_cache/
+backend/.coverage
+backend/.pylintrc
+backend/.prettierrc
+backend/.prettierignore
+backend/.editorconfig
+
+# --- DOCKER ---
+*.log
+docker-compose.override.yml
+.env
+
+# --- OS & Misc ---
+.DS_Store
+Thumbs.db
+*.sqlite3
+*.db
+*.swp
+*.swo
+
+# --- TEST OUTPUT / COVERAGE ---
+coverage/
+htmlcov/
+.nyc_output/
+*.lcov
+*.tgz
