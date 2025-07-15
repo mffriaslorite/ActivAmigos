@@ -22,29 +22,30 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   
-  // Future feature routes (protected)
-  {
-    path: 'groups',
-    loadChildren: () => import('./features/groups/groups.routes').then(m => m.groupRoutes),
-    canActivate: [AuthGuard]
-  },
-  
-  {
-    path: 'activities',
-    loadChildren: () => import('./features/activities/activities.routes').then(m => m.activityRoutes),
-    canActivate: [AuthGuard]
-  },
-  
+  // Profile route (protected)
   {
     path: 'profile',
-    loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
+    loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
     canActivate: [AuthGuard]
   },
   
-  // Help routes (public)
+  // Placeholder routes for future sprints
+  {
+    path: 'groups',
+    redirectTo: '/dashboard',
+    pathMatch: 'full'
+  },
+  
+  {
+    path: 'activities', 
+    redirectTo: '/dashboard',
+    pathMatch: 'full'
+  },
+  
   {
     path: 'help',
-    loadChildren: () => import('./features/help/help.routes').then(m => m.helpRoutes)
+    redirectTo: '/dashboard',
+    pathMatch: 'full'
   },
   
   // Catch-all route
