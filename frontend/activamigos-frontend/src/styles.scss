@@ -1,2 +1,127 @@
-/* You can add global styles to this file, and also import other style files */
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base accessibility styles */
+@layer base {
+  /* Improve focus visibility */
+  *:focus-visible {
+    @apply outline-none ring-3 ring-primary-600 ring-offset-2;
+  }
+
+  /* Improve text readability */
+  body {
+    @apply text-base leading-relaxed;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  /* Ensure sufficient color contrast */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-gray-900 font-semibold;
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    * {
+      @apply high-contrast;
+    }
+  }
+
+  /* Large text support */
+  @media (prefers-font-size: large) {
+    body {
+      @apply large-base;
+    }
+    
+    h1 { @apply large-xl; }
+    h2 { @apply large-lg; }
+    h3 { @apply large-base; }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Component styles for accessibility */
+@layer components {
+  /* Accessible button styles */
+  .btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600 focus:bg-primary-600 
+           text-white font-medium py-3 px-6 rounded-lg 
+           touch-target focus-visible-ring 
+           transition-colors duration-200;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 focus:bg-gray-300 
+           text-gray-900 font-medium py-3 px-6 rounded-lg 
+           touch-target focus-visible-ring 
+           transition-colors duration-200;
+  }
+
+  .btn-danger {
+    @apply bg-error-500 hover:bg-error-600 focus:bg-error-600 
+           text-white font-medium py-3 px-6 rounded-lg 
+           touch-target focus-visible-ring 
+           transition-colors duration-200;
+  }
+
+  /* Accessible form inputs */
+  .form-input {
+    @apply block w-full px-4 py-3 text-base border border-gray-300 
+           rounded-lg focus:ring-3 focus:ring-primary-500 focus:border-primary-500 
+           placeholder-gray-500 transition-colors duration-200;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-2;
+  }
+
+  .form-error {
+    @apply text-error-600 text-sm mt-1;
+  }
+
+  /* Accessible card styles */
+  .card {
+    @apply bg-white rounded-lg shadow-md border border-gray-200 p-6;
+  }
+
+  /* Skip link for keyboard navigation */
+  .skip-link {
+    @apply absolute -top-40 left-6 bg-primary-600 text-white py-2 px-4 rounded-lg 
+           focus:top-6 z-50 transition-all duration-200;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply inline-block w-6 h-6 border-2 border-gray-300 border-t-primary-500 
+           rounded-full animate-spin;
+  }
+
+  /* Alert components */
+  .alert {
+    @apply p-4 rounded-lg border-l-4 mb-4;
+  }
+
+  .alert-success {
+    @apply alert bg-success-50 border-success-500 text-success-700;
+  }
+
+  .alert-warning {
+    @apply alert bg-warning-50 border-warning-500 text-warning-700;
+  }
+
+  .alert-error {
+    @apply alert bg-error-50 border-error-500 text-error-700;
+  }
+
+  .alert-info {
+    @apply alert bg-primary-50 border-primary-500 text-primary-700;
+  }
+}
