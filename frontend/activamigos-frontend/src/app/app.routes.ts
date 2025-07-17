@@ -2,11 +2,11 @@ import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
-  // Redirect root to dashboard or login
+  // Landing page - first page users see
   {
     path: '',
-    redirectTo: '/dashboard',
-    pathMatch: 'full'
+    loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent),
+    title: 'ActivAmigos - Conecta, Actívate y Haz Amigos'
   },
   
   // Authentication routes (lazy loaded)
@@ -19,14 +19,16 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard],
+    title: 'Dashboard - ActivAmigos'
   },
   
   // Profile route (protected)
   {
     path: 'profile',
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard],
+    title: 'Perfil - ActivAmigos'
   },
   
   // Placeholder routes for future sprints

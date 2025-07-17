@@ -77,19 +77,19 @@ import { AuthService, User } from '../../core/services/auth.service';
               </h3>
               <div class="text-sm text-green-700">
                 <div class="grid grid-cols-2 gap-2 text-left">
-                  <div *ngIf="currentUser.accessibility_preferences.high_contrast">
+                  <div *ngIf="currentUser?.accessibility_preferences?.high_contrast">
                     ✓ High contrast mode
                   </div>
-                  <div *ngIf="currentUser.accessibility_preferences.large_text">
+                  <div *ngIf="currentUser?.accessibility_preferences?.large_text">
                     ✓ Large text
                   </div>
-                  <div *ngIf="currentUser.accessibility_preferences.screen_reader">
+                  <div *ngIf="currentUser?.accessibility_preferences?.screen_reader">
                     ✓ Screen reader support
                   </div>
-                  <div *ngIf="currentUser.accessibility_preferences.reduced_motion">
+                  <div *ngIf="currentUser?.accessibility_preferences?.reduced_motion">
                     ✓ Reduced motion
                   </div>
-                  <div *ngIf="currentUser.accessibility_preferences.keyboard_navigation">
+                  <div *ngIf="currentUser?.accessibility_preferences?.keyboard_navigation">
                     ✓ Keyboard navigation
                   </div>
                 </div>
