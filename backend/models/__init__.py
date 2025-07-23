@@ -1,2 +1,2 @@
 # Importa modelos aquí para registrarlos
-from .user import User
+from .user.user import User

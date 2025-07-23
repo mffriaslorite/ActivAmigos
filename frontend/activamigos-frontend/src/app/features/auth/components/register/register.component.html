@@ -1,0 +1,96 @@
+<div class="min-h-screen flex flex-col px-6 py-10 bg-white">
+  <!-- Header -->
+  <div class="mb-8">
+    <button class="text-2xl mb-6" (click)="goBack()">←</button>
+    <h1 class="text-2xl font-bold mb-6">Registrarse</h1>
+  </div>
+
+  <!-- Form -->
+  <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-6">
+    <!-- Nombre completo -->
+    <div>
+      <label class="block mb-2 text-gray-700 text-sm font-medium">Nombre completo</label>
+      <input
+        type="text"
+        class="input-field"
+        placeholder="Ingresa tu nombre completo"
+        formControlName="fullName"
+      />
+    </div>
+
+    <!-- Nombre de usuario -->
+    <div>
+      <label class="block mb-2 text-gray-700 text-sm font-medium">Nombre de usuario</label>
+      <input
+        type="text"
+        class="input-field"
+        placeholder="Ingresa tu nombre de usuario"
+        formControlName="username"
+      />
+    </div>
+
+    <!-- Correo electrónico -->
+    <div>
+      <label class="block mb-2 text-gray-700 text-sm font-medium">Correo electrónico</label>
+      <input
+        type="email"
+        class="input-field"
+        placeholder="Ingresa tu correo electrónico"
+        formControlName="email"
+      />
+    </div>
+
+    <!-- Contraseña -->
+    <div>
+      <label class="block mb-2 text-gray-700 text-sm font-medium">Contraseña</label>
+      <div class="relative">
+        <input
+          [type]="showPassword ? 'text' : 'password'"
+          class="input-field pr-12"
+          placeholder="Ingresa tu contraseña"
+          formControlName="password"
+        />
+        <button
+          type="button"
+          class="absolute inset-y-0 right-3 flex items-center text-gray-500"
+          (click)="togglePasswordVisibility()"
+        >
+          {{ showPassword ? '🙈' : '👁️' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Confirmar contraseña -->
+    <div>
+      <label class="block mb-2 text-gray-700 text-sm font-medium">Confirmar contraseña</label>
+      <input
+        [type]="showPassword ? 'text' : 'password'"
+        class="input-field"
+        placeholder="Confirma tu contraseña"
+        formControlName="confirmPassword"
+      />
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="errorMessage" class="text-red-500 text-sm">
+      {{ errorMessage }}
+    </div>
+
+    <!-- Botón -->
+    <button
+      type="submit"
+      [disabled]="isLoading"
+      class="w-full py-4 rounded-full bg-blue-400 text-white font-semibold text-lg hover:bg-blue-500 transition"
+    >
+      {{ isLoading ? 'Registrando...' : 'Registrarse' }}
+    </button>
+  </form>
+
+  <!-- Link -->
+  <div class="text-center mt-6">
+    <p class="text-sm">
+      ¿Ya tienes una cuenta?
+      <a routerLink="/auth/login" class="text-blue-600 font-semibold">Inicia sesión</a>
+    </p>
+  </div>
+</div>

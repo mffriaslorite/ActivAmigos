@@ -1,0 +1,20 @@
+.input-field {
+  width: 100%;
+  padding: 14px 16px;
+  background-color: #F5F7FA;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  color: #111827;
+  outline: none;
+}
+
+.input-field::placeholder {
+  color: #9CA3AF;
+  font-size: 15px;
+}
+
+.input-field:focus {
+  outline: 2px solid #60A5FA; /* Azul claro al focus */
+  background-color: #FFFFFF;
+}

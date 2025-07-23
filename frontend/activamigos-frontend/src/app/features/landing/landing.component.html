@@ -1,0 +1,46 @@
+<div class="min-h-screen flex flex-col lg:flex-row items-center justify-center px-6 py-12 bg-white">
+  <!-- Left Content -->
+  <div class="flex flex-col items-center lg:items-start text-center lg:text-left w-full lg:w-1/2 max-w-md mb-10 lg:mb-0">
+    <h1 class="text-4xl font-bold mb-4">ActivAmigos</h1>
+    <p class="text-gray-600 mb-8">
+      Conecta con todos tus amigos y conoce a nuevos amigos mediante actividades juntos
+    </p>
+
+    <!-- Buttons -->
+    <div class="flex flex-col gap-4 w-full">
+      <button
+        (click)="navigateToLogin()"
+        class="w-full py-5 rounded-xl bg-blue-500 text-white font-semibold text-lg shadow-sm hover:bg-blue-600 transition"
+      >
+        Iniciar Sesión
+      </button>
+      <button
+        (click)="navigateToRegister()"
+        class="w-full py-5 rounded-xl bg-gray-100 text-gray-800 font-semibold text-lg border border-gray-300 hover:bg-gray-200 transition"
+      >
+        Registrarse
+      </button>
+    </div>
+  </div>
+
+  <!-- Right Hero Illustration -->
+  <div class="w-full lg:w-1/2 flex justify-center slide-up">
+    <div class="relative">
+      <div class="bg-blue-200 rounded-2xl p-8 h-72 flex items-center justify-center shadow-md">
+        <div class="text-center">
+          <div class="text-6xl mb-4">🤝</div>
+          <p class="text-blue-800 font-medium text-lg">
+            Encuentra tu comunidad activa
+          </p>
+        </div>
+      </div>
+      <!-- Floating elements -->
+      <div class="absolute -top-4 -right-4 bg-blue-500 text-white p-3 rounded-full shadow-lg">
+        🏃‍♀️
+      </div>
+      <div class="absolute -bottom-4 -left-4 bg-green-500 text-white p-3 rounded-full shadow-lg">
+        🧘‍♂️
+      </div>
+    </div>
+  </div>
+</div>

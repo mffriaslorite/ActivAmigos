@@ -1,0 +1,12 @@
+.menu-item {
+  border: 2px solid;
+  border-radius: 12px;
+  padding: 16px;
+  background-color: white;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f9fafb;
+    cursor: pointer;
+  }
+}

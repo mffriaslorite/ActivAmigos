@@ -1,32 +1,50 @@
 from flask import Flask
+from flask_smorest import Api
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_session import Session
 from config.config import Config
-from routes import register_routes
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-db = SQLAlchemy()
+from models.user.user import db
+from services.auth_service import blp as auth_blp
+from services.user_service import blp as user_blp
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    CORS(app)
+    # Configuración CORS
+    CORS(app, 
+         supports_credentials=True, 
+         origins=['http://localhost:4200'],
+         allow_headers=['Content-Type', 'Authorization'],
+         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    )
+
+    # Inicializar Session (la configuración ya está en Config)
+    Session(app)
+
+    # DB y migraciones
     db.init_app(app)
+    migrate = Migrate(app, db)
 
     with app.app_context():
-        from models import user  # importa modelos aquí
-        db.create_all()
+        from models import user
 
-    register_routes(app)
+    # API con Swagger
+    app.config["API_TITLE"] = "ActivAmigos API"
+    app.config["API_VERSION"] = "v1"
+    app.config["OPENAPI_VERSION"] = "3.0.3"
+    app.config["OPENAPI_URL_PREFIX"] = "/"
+    app.config["OPENAPI_SWAGGER_UI_PATH"] = "/swagger-ui"
+    app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
+
+    api = Api(app)
+    api.register_blueprint(auth_blp)
+    api.register_blueprint(user_blp)
 
     return app
-
 
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=5000)

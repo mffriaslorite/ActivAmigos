@@ -9,7 +9,6 @@
     "test": "ng test",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write ."
-    
   },
   "prettier": {
     "overrides": [
@@ -23,14 +22,15 @@
   },
   "private": true,
   "dependencies": {
+    "@angular/cdk": "^20.1.0",
     "@angular/common": "^20.1.0",
     "@angular/compiler": "^20.1.0",
     "@angular/core": "^20.1.0",
     "@angular/forms": "^20.1.0",
+    "@angular/material": "^20.1.0",
     "@angular/platform-browser": "^20.1.0",
     "@angular/router": "^20.1.0",
     "@tailwindcss/postcss": "^4.1.11",
-    "postcss": "^8.5.6",
     "rxjs": "~7.8.0",
     "tailwindcss": "^4.1.11",
     "tslib": "^2.3.0",
@@ -42,6 +42,7 @@
     "@angular/compiler-cli": "^20.1.0",
     "@types/jasmine": "~5.1.0",
     "angular-eslint": "20.1.1",
+    "autoprefixer": "^10.4.21",
     "eslint": "^9.29.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.5.1",
@@ -51,6 +52,7 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "typescript": "~5.8.2",
     "typescript-eslint": "8.34.1"

@@ -1,0 +1,70 @@
+<div class="min-h-screen bg-white flex flex-col">
+  <!-- Header -->
+  <header class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+    <h1 class="text-xl font-bold">ActivAmigos</h1>
+    <button class="text-2xl" (click)="navigateTo('/settings')">⚙️</button>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 px-6 py-6">
+    <h2 class="text-xl font-semibold mb-6">
+      Bienvenido, {{ currentUser?.first_name || currentUser?.username }}
+    </h2>
+
+    <!-- Menu Options -->
+    <div class="space-y-4">
+      <!-- Grupos -->
+      <div class="menu-item border-blue-400" (click)="navigateTo('/groups')">
+        <div class="flex items-center space-x-4">
+          <span class="text-xl">👥</span>
+          <div>
+            <p class="font-semibold">Grupos</p>
+            <p class="text-sm text-gray-500">Encuentra amigos y participa en grupos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actividades -->
+      <div class="menu-item border-green-400" (click)="navigateTo('/activities')">
+        <div class="flex items-center space-x-4">
+          <span class="text-xl">📅</span>
+          <div>
+            <p class="font-semibold">Actividades</p>
+            <p class="text-sm text-gray-500">Explora actividades</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logros -->
+      <div class="menu-item border-yellow-400" (click)="navigateTo('/achievements')">
+        <div class="flex items-center space-x-4">
+          <span class="text-xl">🏆</span>
+          <div>
+            <p class="font-semibold">Logros</p>
+            <p class="text-sm text-gray-500">Celebra tus logros</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ayuda -->
+      <div class="menu-item border-gray-300" (click)="navigateTo('/help')">
+        <div class="flex items-center space-x-4">
+          <span class="text-xl">❓</span>
+          <div>
+            <p class="font-semibold">Ayuda</p>
+            <p class="text-sm text-gray-500">Obtén ayuda y soporte</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="flex justify-around border-t border-gray-200 py-3">
+    <button class="text-gray-700 text-2xl">🏠</button>
+    <button class="text-gray-700 text-2xl">📅</button>
+    <button class="text-gray-700 text-2xl">👥</button>
+    <button class="text-gray-700 text-2xl">👤</button>
+    <button class="text-gray-700 text-2xl">❓</button>
+  </nav>
+</div>
