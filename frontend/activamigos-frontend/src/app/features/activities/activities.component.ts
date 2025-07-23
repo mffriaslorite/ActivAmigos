@@ -1,0 +1,165 @@
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { BottomNavComponent } from '../../shared/components/bottom-nav.component';
+
+@Component({
+  selector: 'app-activities',
+  standalone: true,
+  imports: [CommonModule, BottomNavComponent],
+  template: `
+    <div class="min-h-screen bg-gray-50 flex flex-col">
+      <!-- Header -->
+      <header class="bg-white flex items-center justify-between px-6 py-4 border-b border-gray-200 shadow-sm">
+        <div class="flex items-center space-x-4">
+          <button 
+            class="text-2xl p-2 hover:bg-gray-100 rounded-full transition-colors"
+            (click)="goBack()"
+          >
+            ←
+          </button>
+          <h1 class="text-xl font-bold text-gray-900">Actividades</h1>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="flex-1 px-6 py-6 pb-24">
+        <!-- Date Selector -->
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Fecha</h2>
+          <div class="flex space-x-3 overflow-x-auto pb-2">
+            <button class="date-chip bg-blue-500 text-white">Hoy</button>
+            <button class="date-chip bg-gray-200 text-gray-700">Mañana</button>
+            <button class="date-chip bg-gray-200 text-gray-700">Este fin de semana</button>
+            <button class="date-chip bg-gray-200 text-gray-700">Próxima semana</button>
+          </div>
+        </div>
+
+        <!-- Activities List -->
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Actividades Disponibles</h2>
+          <div class="space-y-4">
+            <!-- Activity Card -->
+            <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+              <div class="flex items-start space-x-4">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                  <span class="text-2xl">🏃‍♂️</span>
+                </div>
+                <div class="flex-1">
+                  <h3 class="font-semibold text-gray-900">Corrida Matutina</h3>
+                  <p class="text-sm text-gray-500 mb-2">Trote suave por el parque</p>
+                  <div class="flex items-center space-x-4 text-xs text-gray-500 mb-2">
+                    <span>🕐 7:00 AM</span>
+                    <span>📍 Parque Los Olivos</span>
+                    <span>👥 5 participantes</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Deporte</span>
+                    <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Gratuito</span>
+                  </div>
+                </div>
+                <button class="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors">
+                  Participar
+                </button>
+              </div>
+            </div>
+
+            <!-- Another Activity Card -->
+            <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+              <div class="flex items-start space-x-4">
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                  <span class="text-2xl">🧘‍♀️</span>
+                </div>
+                <div class="flex-1">
+                  <h3 class="font-semibold text-gray-900">Yoga Relajante</h3>
+                  <p class="text-sm text-gray-500 mb-2">Sesión de yoga para principiantes</p>
+                  <div class="flex items-center space-x-4 text-xs text-gray-500 mb-2">
+                    <span>🕕 6:00 PM</span>
+                    <span>📍 Centro de Bienestar</span>
+                    <span>👥 8 participantes</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">Bienestar</span>
+                    <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">$15</span>
+                  </div>
+                </div>
+                <button class="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors">
+                  Participar
+                </button>
+              </div>
+            </div>
+
+            <!-- Third Activity Card -->
+            <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+              <div class="flex items-start space-x-4">
+                <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                  <span class="text-2xl">🍳</span>
+                </div>
+                <div class="flex-1">
+                  <h3 class="font-semibold text-gray-900">Taller de Cocina</h3>
+                  <p class="text-sm text-gray-500 mb-2">Aprende a cocinar platos saludables</p>
+                  <div class="flex items-center space-x-4 text-xs text-gray-500 mb-2">
+                    <span>🕐 3:00 PM</span>
+                    <span>📍 Cocina Comunitaria</span>
+                    <span>👥 6 participantes</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <span class="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">Cocina</span>
+                    <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">$20</span>
+                  </div>
+                </div>
+                <button class="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors">
+                  Participar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State Message -->
+        <div class="text-center py-8">
+          <div class="text-6xl mb-4">📅</div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Funcionalidad en desarrollo</h3>
+          <p class="text-gray-500">Las actividades estarán disponibles en próximas versiones</p>
+        </div>
+      </main>
+
+      <!-- Floating Action Button -->
+      <button 
+        class="fixed bottom-20 right-6 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center text-2xl z-10"
+        (click)="createActivity()"
+        [attr.aria-label]="'Crear nueva actividad'"
+      >
+        +
+      </button>
+
+      <!-- Bottom Navigation -->
+      <app-bottom-nav></app-bottom-nav>
+    </div>
+  `,
+  styles: [`
+    .date-chip {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .date-chip:hover {
+      transform: translateY(-1px);
+    }
+  `]
+})
+export class ActivitiesComponent {
+  constructor(private router: Router) {}
+
+  goBack() {
+    this.router.navigate(['/dashboard']);
+  }
+
+  createActivity() {
+    alert('Crear Nueva Actividad - Funcionalidad próximamente');
+  }
+}

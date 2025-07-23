@@ -1,3 +1,23 @@
+.menu-card {
+  border-radius: 16px;
+  padding: 20px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  border: 1px solid #f1f5f9;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Legacy support
 .menu-item {
   border: 2px solid;
   border-radius: 12px;

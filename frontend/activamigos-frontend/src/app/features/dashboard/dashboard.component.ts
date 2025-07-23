@@ -5,11 +5,13 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { User } from '../../core/models/user.model';
+import { BottomNavComponent } from '../../shared/components/bottom-nav.component';
+import { DesktopLayoutComponent } from '../../shared/components/desktop-layout.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BottomNavComponent, DesktopLayoutComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -44,6 +46,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   navigateTo(path: string) {
     this.router.navigate([path]);
+  }
+
+  showCreateOptions() {
+    // For now, show a simple alert with options
+    // In future sprints, this could open a modal or action sheet
+    const action = confirm('¿Qué te gustaría crear?\n\nOK = Nuevo Grupo\nCancelar = Nueva Actividad');
+    if (action) {
+      alert('Crear Nuevo Grupo - Funcionalidad próximamente');
+    } else {
+      alert('Crear Nueva Actividad - Funcionalidad próximamente');
+    }
   }
 
   logout() {
