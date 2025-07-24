@@ -1,0 +1,83 @@
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Group } from '../../../../core/models/group.model';
+
+@Component({
+  selector: 'app-group-card',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './group-card.component.html',
+  styleUrls: ['./group-card.component.scss']
+})
+export class GroupCardComponent {
+  @Input() group!: Group;
+  @Input() isLoading = false;
+  @Output() joinGroup = new EventEmitter<number>();
+  @Output() leaveGroup = new EventEmitter<number>();
+
+  onJoinLeave() {
+    if (this.isLoading) return;
+    
+    if (this.group.is_member) {
+      this.leaveGroup.emit(this.group.id);
+    } else {
+      this.joinGroup.emit(this.group.id);
+    }
+  }
+
+  getGroupIcon(): string {
+    // Simple mapping of group names to icons
+    const name = this.group.name.toLowerCase();
+    if (name.includes('fútbol') || name.includes('football') || name.includes('soccer')) {
+      return '⚽';
+    } else if (name.includes('arte') || name.includes('art') || name.includes('pintura')) {
+      return '🎨';
+    } else if (name.includes('música') || name.includes('music')) {
+      return '🎵';
+    } else if (name.includes('cocina') || name.includes('cooking') || name.includes('chef')) {
+      return '👩‍🍳';
+    } else if (name.includes('juegos') || name.includes('games') || name.includes('gaming')) {
+      return '🎮';
+    } else if (name.includes('lectura') || name.includes('reading') || name.includes('libros')) {
+      return '📚';
+    } else if (name.includes('ejercicio') || name.includes('gym') || name.includes('fitness')) {
+      return '💪';
+    } else if (name.includes('naturaleza') || name.includes('nature') || name.includes('hiking')) {
+      return '🌳';
+    } else {
+      return '👥';
+    }
+  }
+
+  getIconBackground(): string {
+    const name = this.group.name.toLowerCase();
+    if (name.includes('fútbol') || name.includes('football') || name.includes('soccer')) {
+      return 'bg-green-100';
+    } else if (name.includes('arte') || name.includes('art') || name.includes('pintura')) {
+      return 'bg-purple-100';
+    } else if (name.includes('música') || name.includes('music')) {
+      return 'bg-pink-100';
+    } else if (name.includes('cocina') || name.includes('cooking') || name.includes('chef')) {
+      return 'bg-orange-100';
+    } else if (name.includes('juegos') || name.includes('games') || name.includes('gaming')) {
+      return 'bg-indigo-100';
+    } else if (name.includes('lectura') || name.includes('reading') || name.includes('libros')) {
+      return 'bg-yellow-100';
+    } else if (name.includes('ejercicio') || name.includes('gym') || name.includes('fitness')) {
+      return 'bg-red-100';
+    } else if (name.includes('naturaleza') || name.includes('nature') || name.includes('hiking')) {
+      return 'bg-green-100';
+    } else {
+      return 'bg-blue-100';
+    }
+  }
+
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', { 
+      day: 'numeric', 
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+}

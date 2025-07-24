@@ -1,0 +1,132 @@
+<!-- Modal Backdrop -->
+<div 
+  *ngIf="isVisible" 
+  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+  (click)="onBackdropClick($event)"
+  role="dialog" 
+  aria-modal="true" 
+  aria-labelledby="modal-title"
+>
+  <!-- Modal Content -->
+  <div class="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between p-6 border-b border-gray-200">
+      <h2 id="modal-title" class="text-xl font-semibold text-gray-900">
+        Crear Nuevo Grupo
+      </h2>
+      <button 
+        (click)="onClose()"
+        [disabled]="isLoading"
+        class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        aria-label="Cerrar modal"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <form [formGroup]="createGroupForm" (ngSubmit)="onSubmit()" class="p-6">
+      <!-- Group Name Field -->
+      <div class="mb-6">
+        <label for="group-name" class="block text-sm font-medium text-gray-700 mb-2">
+          Nombre del Grupo *
+        </label>
+        <input
+          id="group-name"
+          type="text"
+          formControlName="name"
+          placeholder="Ej. Fútbol los Viernes"
+          [class]="'w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ' + 
+                   (isFieldInvalid('name') 
+                     ? 'border-red-300 focus:ring-red-500 bg-red-50' 
+                     : 'border-gray-300 focus:ring-blue-500 bg-white')"
+          [disabled]="isLoading"
+          autocomplete="off"
+          maxlength="100"
+        >
+        <div class="flex justify-between items-start mt-1">
+          <div *ngIf="isFieldInvalid('name')" class="text-red-600 text-sm">
+            {{ getFieldError('name') }}
+          </div>
+          <div class="text-xs text-gray-500 ml-auto">
+            {{ getCharacterCount('name') }}/100
+          </div>
+        </div>
+      </div>
+
+      <!-- Group Description Field -->
+      <div class="mb-6">
+        <label for="group-description" class="block text-sm font-medium text-gray-700 mb-2">
+          Descripción (Opcional)
+        </label>
+        <textarea
+          id="group-description"
+          formControlName="description"
+          placeholder="Describe brevemente de qué trata tu grupo..."
+          rows="3"
+          [class]="'w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 resize-none ' + 
+                   (isFieldInvalid('description') 
+                     ? 'border-red-300 focus:ring-red-500 bg-red-50' 
+                     : 'border-gray-300 focus:ring-blue-500 bg-white')"
+          [disabled]="isLoading"
+          maxlength="500"
+        ></textarea>
+        <div class="flex justify-between items-start mt-1">
+          <div *ngIf="isFieldInvalid('description')" class="text-red-600 text-sm">
+            {{ getFieldError('description') }}
+          </div>
+          <div class="text-xs text-gray-500 ml-auto">
+            {{ getCharacterCount('description') }}/500
+          </div>
+        </div>
+      </div>
+
+      <!-- Group Rules Field -->
+      <div class="mb-6">
+        <label for="group-rules" class="block text-sm font-medium text-gray-700 mb-2">
+          Reglas del Grupo (Opcional)
+        </label>
+        <textarea
+          id="group-rules"
+          formControlName="rules"
+          placeholder="Establece las reglas o normas de convivencia del grupo..."
+          rows="4"
+          class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none bg-white"
+          [disabled]="isLoading"
+        ></textarea>
+        <div class="text-xs text-gray-500 text-right mt-1">
+          {{ getCharacterCount('rules') }} caracteres
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex space-x-3">
+        <button
+          type="button"
+          (click)="onClose()"
+          [disabled]="isLoading"
+          class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Cancelar
+        </button>
+        
+        <button
+          type="submit"
+          [disabled]="createGroupForm.invalid || isLoading"
+          class="flex-1 px-4 py-3 bg-blue-500 text-white font-medium rounded-xl hover:bg-blue-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+        >
+          <span *ngIf="!isLoading">Crear Grupo</span>
+          <span *ngIf="isLoading" class="flex items-center">
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Creando...
+          </span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
