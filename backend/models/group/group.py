@@ -1,13 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from models.user.user import db
-
-# Association table for many-to-many relationship between users and groups
-group_members = db.Table('group_members',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('group_id', db.Integer, db.ForeignKey('groups.id'), primary_key=True),
-    db.Column('joined_at', db.DateTime, default=datetime.utcnow)
-)
+from models.associations.group_associations import group_members
 
 class Group(db.Model):
     __tablename__ = 'groups'
