@@ -26,24 +26,33 @@ export const routes: Routes = [
   // Profile route (protected)
   {
     path: 'profile',
-    loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
+    loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
     canActivate: [AuthGuard],
     title: 'Perfil - ActivAmigos'
   },
   
-  // Placeholder routes for future sprints
+  // Groups route (protected)
   {
     path: 'groups',
-    redirectTo: '/dashboard',
-    pathMatch: 'full'
+    loadComponent: () => import('./features/groups/groups.component').then(m => m.GroupsComponent),
+    canActivate: [AuthGuard],
+    title: 'Grupos - ActivAmigos'
+  },
+
+  // Activities route (protected)
+  {
+    path: 'activities',
+    loadComponent: () => import('./features/activities/activities.component').then(m => m.ActivitiesComponent),
+    canActivate: [AuthGuard],
+    title: 'Actividades - ActivAmigos'
   },
   
   {
-    path: 'activities', 
+    path: 'achievements',
     redirectTo: '/dashboard',
     pathMatch: 'full'
   },
-  
+
   {
     path: 'help',
     redirectTo: '/dashboard',

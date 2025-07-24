@@ -1,0 +1,27 @@
+.nav-item {
+    min-width: 60px;
+    color: #6b7280;
+    transition: color 0.2s ease-in-out;
+}
+.nav-item:hover {
+    color: #3b82f6;
+    background-color: #eff6ff;
+}
+.nav-item.active {
+    color: #3b82f6;
+    background-color: #eff6ff;
+}
+.nav-item.active span:first-child {
+    transform: scale(1.1);
+}
+/* Safe area for devices with home indicators */
+.safe-area-bottom {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+/* Desktop responsive behavior */
+@media (min-width: 1024px) {
+    /* Hide mobile navigation on desktop */
+    nav {
+        display: none;
+    }
+}
