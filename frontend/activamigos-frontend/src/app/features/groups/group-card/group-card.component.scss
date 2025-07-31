@@ -1,0 +1,24 @@
+/* Line clamp utility for description text */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Hover effect enhancements */
+:host {
+  display: block;
+}
+
+/* Loading state styling */
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Focus and accessibility improvements */
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(21, 156, 228, 0.4);
+}

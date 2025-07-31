@@ -1,11 +1,29 @@
-.category-chip {
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 500;
-    white-space: nowrap;
-    transition: all 0.2s ease-in-out;
+/* Groups page specific styles */
+:host {
+  display: block;
 }
-.category-chip:hover {
-    transform: translateY(-1px);
+
+/* Smooth transitions for all elements */
+* {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Focus states for better accessibility */
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px #90caf9;
+}
+
+/* Loading states */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 10;
 }

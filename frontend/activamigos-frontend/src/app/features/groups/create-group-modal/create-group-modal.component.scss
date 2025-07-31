@@ -1,0 +1,42 @@
+/* Modal specific styles */
+:host {
+  display: block;
+}
+
+/* Prevent body scroll when modal is open */
+:host.modal-open {
+  overflow: hidden;
+}
+
+/* Form field enhancements */
+textarea {
+  font-family: inherit;
+}
+
+/* Focus and accessibility improvements */
+input:focus,
+textarea:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Loading state */
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Character counter styling */
+.character-counter {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Error state styling */
+.error-field {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.error-field:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
