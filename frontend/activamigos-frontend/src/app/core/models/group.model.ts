@@ -9,6 +9,20 @@ export interface Group {
   is_member: boolean;
 }
 
+export interface GroupMember {
+  id: number;
+  username: string;
+  first_name?: string;
+  last_name?: string;
+  profile_image?: string;
+  is_admin: boolean;
+  joined_at: string;
+}
+
+export interface GroupDetails extends Group {
+  members: GroupMember[];
+}
+
 export interface GroupCreate {
   name: string;
   description?: string;

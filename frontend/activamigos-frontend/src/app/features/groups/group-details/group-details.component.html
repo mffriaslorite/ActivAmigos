@@ -1,0 +1,199 @@
+<div class="min-h-screen bg-gray-50 flex flex-col">
+  <!-- Header -->
+  <header class="bg-white flex items-center justify-between px-6 py-4 border-b border-gray-200 shadow-sm">
+    <div class="flex items-center space-x-4">
+      <button 
+        class="text-2xl p-2 hover:bg-gray-100 rounded-full transition-colors"
+        (click)="goBack()"
+        aria-label="Volver a grupos"
+      >
+        ←
+      </button>
+      <h1 class="text-xl font-bold text-gray-900">
+        {{ groupDetails ? groupDetails.name : 'Grupo de Lectura' }}
+      </h1>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 px-6 py-6 pb-24 overflow-y-auto">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="text-center py-12">
+      <div class="animate-spin inline-block w-8 h-8 border-[3px] border-current border-t-transparent text-blue-600 rounded-full" role="status" aria-label="Cargando">
+        <span class="sr-only">Cargando...</span>
+      </div>
+      <p class="mt-4 text-gray-600">Cargando detalles del grupo...</p>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="errorMessage && !isLoading" class="mb-6">
+      <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+        <div class="flex items-center">
+          <span class="text-red-500 mr-2">⚠️</span>
+          <p class="text-red-700 text-sm">{{ errorMessage }}</p>
+          <button 
+            (click)="loadGroupDetails(groupDetails?.id || 0)" 
+            class="ml-auto text-red-600 text-sm underline hover:text-red-800"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group Details Content -->
+    <div *ngIf="groupDetails && !isLoading" class="space-y-6">
+      <!-- Group Header -->
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div class="flex items-start space-x-4">
+          <!-- Group Icon -->
+          <div [class]="'w-16 h-16 rounded-xl flex items-center justify-center ' + getIconBackground()">
+            <span class="text-3xl" role="img" [attr.aria-label]="'Icono del grupo ' + groupDetails.name">
+              {{ getGroupIcon() }}
+            </span>
+          </div>
+          
+          <!-- Group Info -->
+          <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">
+              {{ groupDetails.name }}
+            </h2>
+            
+            <div class="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+              <span class="flex items-center">
+                <span class="mr-1" role="img" aria-label="Miembros">👥</span>
+                {{ groupDetails.member_count }} {{ groupDetails.member_count === 1 ? 'miembro' : 'miembros' }}
+              </span>
+            </div>
+            
+            <p *ngIf="groupDetails.description" class="text-gray-700 leading-relaxed">
+              {{ groupDetails.description }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Members Section -->
+      <section class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <span class="mr-2" role="img" aria-label="Miembros">👥</span>
+          Miembros
+        </h3>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div 
+            *ngFor="let member of groupDetails.members" 
+            class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <!-- Member Avatar -->
+            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
+              {{ getMemberInitials(member) }}
+            </div>
+            
+            <!-- Member Info -->
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-900 truncate">
+                {{ getMemberDisplayName(member) }}
+                <span *ngIf="member.is_admin" class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  Organizador
+                </span>
+              </p>
+              <p class="text-sm text-gray-500">{{ member.username }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Rules Section -->
+      <section *ngIf="groupDetails.rules" class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <span class="mr-2" role="img" aria-label="Reglas">📋</span>
+          Reglas del Grupo
+        </h3>
+        
+        <div class="space-y-3">
+          <div 
+            *ngFor="let rule of parseRules(); let i = index" 
+            class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
+          >
+            <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0 mt-0.5">
+              {{ i + 1 }}
+            </div>
+            <p class="text-gray-700 leading-relaxed">{{ rule }}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Chat Preview Section -->
+      <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-4 border-b border-gray-200 bg-gray-50">
+          <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+            <span class="mr-2" role="img" aria-label="Chat">💬</span>
+            Chat
+          </h3>
+        </div>
+        
+        <!-- Chat Messages -->
+        <div class="h-64 overflow-y-auto p-4 space-y-3">
+          <div 
+            *ngFor="let message of chatMessages" 
+            [class]="'flex ' + (message.isCurrentUser ? 'justify-end' : 'justify-start')"
+          >
+            <div [class]="'max-w-xs lg:max-w-md px-4 py-2 rounded-lg ' + 
+                          (message.isCurrentUser 
+                            ? 'bg-blue-500 text-white' 
+                            : 'bg-gray-200 text-gray-900')">
+              <div *ngIf="!message.isCurrentUser" class="font-medium text-sm mb-1">
+                {{ message.sender }}
+              </div>
+              <p class="text-sm">{{ message.message }}</p>
+              <div [class]="'text-xs mt-1 ' + (message.isCurrentUser ? 'text-blue-100' : 'text-gray-500')">
+                {{ formatChatTime(message.timestamp) }}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Message Input -->
+        <div class="p-4 border-t border-gray-200 bg-gray-50">
+          <div class="flex items-center space-x-3">
+            <button 
+              (click)="onImageUpload()"
+              class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors"
+              aria-label="Subir imagen"
+              disabled
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+            </button>
+            
+            <input 
+              type="text" 
+              placeholder="Escribe un mensaje..."
+              [value]="newMessage"
+              (input)="onMessageInput($event)"
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled
+            >
+            
+            <button 
+              (click)="onSendMessage()"
+              class="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              aria-label="Enviar mensaje"
+              disabled
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+              </svg>
+            </button>
+          </div>
+          
+          <p class="text-xs text-gray-500 mt-2 text-center">
+            Chat en desarrollo - próximamente disponible
+          </p>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
