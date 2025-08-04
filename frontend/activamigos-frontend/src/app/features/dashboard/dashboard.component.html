@@ -102,19 +102,27 @@
         <div class="hidden lg:block mt-8">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Resumen Rápido</h3>
           <div class="grid grid-cols-3 gap-6">
-            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+            <!-- Grupos Activos -->
+            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm cursor-pointer hover:bg-blue-50 transition"
+                (click)="navigateTo('/groups')">
               <div class="text-center">
-                <div class="text-3xl font-bold text-blue-600 mb-2">5</div>
+                <div class="text-3xl font-bold text-blue-600 mb-2">{{ userGroups.length }}</div>
                 <div class="text-sm text-gray-500">Grupos Activos</div>
               </div>
             </div>
-            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+
+            <!-- Actividades -->
+            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm cursor-pointer hover:bg-green-50 transition"
+                (click)="navigateTo('/activities')">
               <div class="text-center">
-                <div class="text-3xl font-bold text-green-600 mb-2">12</div>
-                <div class="text-sm text-gray-500">Actividades Esta Semana</div>
+                <div class="text-3xl font-bold text-green-600 mb-2">5</div>
+                <div class="text-sm text-gray-500">Actividades Próximas</div>
               </div>
             </div>
-            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+
+            <!-- Logros -->
+            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm cursor-pointer hover:bg-yellow-50 transition"
+                (click)="navigateTo('/achievements')">
               <div class="text-center">
                 <div class="text-3xl font-bold text-yellow-600 mb-2">3</div>
                 <div class="text-sm text-gray-500">Nuevos Logros</div>
@@ -122,6 +130,36 @@
             </div>
           </div>
         </div>
+
+        <!-- Lista de Grupos -->
+        <div class="hidden lg:block mt-12">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Tus Grupos</h3>
+          <ul class="space-y-3">
+            <li *ngFor="let group of userGroups.slice(0, 4)" class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-200 hover:bg-gray-50 transition cursor-pointer"
+                (click)="goToGroups(group.id)">
+              <div>
+                <p class="font-semibold text-gray-800">{{ group.name }}</p>
+                <p class="text-sm text-gray-500">{{ group.member_count }} miembros</p>
+              </div>
+              <span class="text-gray-400">→</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Lista de Actividades -->
+        <!-- <div class="hidden lg:block mt-12">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Actividades Próximas</h3>
+          <ul class="space-y-3">
+            <li *ngFor="let activity of upcomingActivities.slice(0, 4)" class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-200 hover:bg-gray-50 transition cursor-pointer"
+                (click)="goToActivities()">
+              <div>
+                <p class="font-semibold text-gray-800">{{ activity.title }}</p>
+                <p class="text-sm text-gray-500">📅 {{ activity.date | date:'dd MMM' }}</p>
+              </div>
+              <span class="text-gray-400">→</span>
+            </li>
+          </ul>
+        </div> -->
       </main>
 
       <!-- Bottom Navigation (Mobile Only) -->

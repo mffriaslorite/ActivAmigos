@@ -256,4 +256,8 @@ export class GroupsService {
       members: mockMembers.slice(0, Math.min(group.member_count, mockMembers.length))
     };
   }
+
+  getUserGroups(): Observable<Group[]> {
+    return this.http.get<Group[]>(`${this.API_BASE_URL}/groups`, { withCredentials: true });
+  }
 }

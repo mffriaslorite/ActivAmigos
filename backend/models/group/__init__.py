@@ -1,5 +1,5 @@
 from .group import Group
-from .group_schema import GroupCreateSchema, GroupUpdateSchema, GroupResponseSchema, GroupListSchema, JoinLeaveResponseSchema
+from .group_schema import GroupCreateSchema, GroupUpdateSchema, GroupResponseSchema, GroupListSchema, JoinLeaveResponseSchema, GroupMemberSchema, GroupDetailsResponseSchema
 from ..associations.group_associations import group_members
 
 __all__ = [
@@ -9,5 +9,7 @@ __all__ = [
     'GroupUpdateSchema', 
     'GroupResponseSchema',
     'GroupListSchema', 
-    'JoinLeaveResponseSchema'
+    'JoinLeaveResponseSchema',
+    'GroupMemberSchema',
+    'GroupDetailsResponseSchema'
 ]

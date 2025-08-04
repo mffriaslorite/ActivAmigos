@@ -3,12 +3,15 @@ from flask import session
 from sqlalchemy.exc import IntegrityError
 from models.user.user import User, db
 from models.group.group import Group
+from models.associations.group_associations import group_members
 from models.group.group_schema import (
     GroupCreateSchema, 
     GroupUpdateSchema, 
     GroupResponseSchema, 
     GroupListSchema,
-    JoinLeaveResponseSchema
+    JoinLeaveResponseSchema,
+    GroupMemberSchema,
+    GroupDetailsResponseSchema
 )
 
 blp = Blueprint("Groups", "groups", url_prefix="/api/groups", description="Groups management routes")
@@ -230,3 +233,44 @@ def leave_group(group_id):
     except IntegrityError:
         db.session.rollback()
         abort(400, message="Error leaving group")
+
+@blp.route("/<int:group_id>/details", methods=["GET"])
+@blp.response(200, GroupDetailsResponseSchema)
+def get_group_details(group_id):
+    """
+    Get full group details including members
+    """
+    current_user = get_current_user()
+    group = Group.query.get_or_404(group_id)
+
+    # Cargar miembros con información extendida
+    members = []
+    for user in group.members:
+        link = db.session.execute(
+            group_members.select().where(
+                (group_members.c.user_id == user.id) & 
+                (group_members.c.group_id == group.id)
+            )
+        ).first()
+
+        members.append({
+            'id': user.id,
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'profile_image': user.profile_image,
+            'is_admin': user.id == group.created_by,
+            'joined_at': link.joined_at if link else None
+        })
+
+    return {
+        'id': group.id,
+        'name': group.name,
+        'description': group.description,
+        'rules': group.rules,
+        'created_by': group.created_by,
+        'created_at': group.created_at,
+        'member_count': group.member_count,
+        'is_member': group.is_member(current_user.id),
+        'members': members
+    }

@@ -5,6 +5,8 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { User } from '../../core/models/user.model';
+import { Group } from '../../core/models/group.model';
+import { GroupsService } from '../../core/services/groups.service';
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav.component';
 import { DesktopLayoutComponent } from '../../shared/components/desktop-layout/desktop-layout.component';
 
@@ -19,10 +21,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
   isLoading = false;
   private destroy$ = new Subject<void>();
+  userGroups: Group[] = [];
+  // upcomingActivities: Activity[] = [];
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private groupsService: GroupsService
   ) {}
 
   ngOnInit() {
@@ -37,6 +42,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .subscribe(loading => {
         this.isLoading = loading;
       });
+
+    this.groupsService.getUserGroups()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(groups => this.userGroups = groups);
+
+    // this.activitiesService.getUpcomingActivities()
+    //   .pipe(takeUntil(this.destroy$))
+    //   .subscribe(activities => this.upcomingActivities = activities);
+
   }
 
   ngOnDestroy() {
@@ -63,5 +77,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.authService.logout()
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.router.navigate(['/auth/login']));
+  }
+
+  goToGroups(id: number | null = null) {
+    if (id) {
+      this.router.navigate(['/groups', id]);
+    } else {
+      this.router.navigate(['/groups']);
+    }
+  }
+
+  goToActivities() {
+    this.router.navigate(['/activities']);
   }
 }

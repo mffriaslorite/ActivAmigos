@@ -33,3 +33,23 @@ class JoinLeaveResponseSchema(Schema):
     message = fields.Str()
     is_member = fields.Bool()
     member_count = fields.Int()
+
+class GroupMemberSchema(Schema):
+    id = fields.Int()
+    username = fields.Str()
+    first_name = fields.Str(allow_none=True)
+    last_name = fields.Str(allow_none=True)
+    profile_image = fields.Str(allow_none=True)
+    is_admin = fields.Bool()
+    joined_at = fields.DateTime()
+
+class GroupDetailsResponseSchema(Schema):
+    id = fields.Int()
+    name = fields.Str()
+    description = fields.Str(allow_none=True)
+    rules = fields.Str(allow_none=True)
+    created_by = fields.Int()
+    created_at = fields.DateTime()
+    member_count = fields.Int()
+    is_member = fields.Bool()
+    members = fields.List(fields.Nested(GroupMemberSchema))

@@ -195,13 +195,19 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
 
   parseRules(): string[] {
     if (!this.groupDetails?.rules) return [];
-    
-    // Split rules by common delimiters
-    return this.groupDetails.rules
-      .split(/[.\n•-]/)
-      .map(rule => rule.trim())
-      .filter(rule => rule.length > 0);
-  }
+
+    const raw = this.groupDetails.rules;
+
+    const matches = raw.match(/(?:^\s*|\n|\r)(?:\d+[.)]|•|-)?\s*(.+?)(?=(?:\n\d+[.)]|$))/gs);
+
+    return matches
+        ?.map(rule => {
+        return rule.replace(/^\s*(\d+[.)]|•|-)\s*/, '').trim();
+        })
+        .filter(rule => rule.length > 0) ?? [];
+}
+
+
 
   formatChatTime(timestamp: Date): string {
     const now = new Date();
