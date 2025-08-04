@@ -38,6 +38,13 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
     title: 'Grupos - ActivAmigos'
   },
+  // Group details route (protected)
+  {
+    path: 'groups/:id',
+    loadComponent: () => import('./features/groups/group-details/group-details.component').then(m => m.GroupDetailsComponent),
+    canActivate: [AuthGuard],
+    title: 'Detalles del Grupo - ActivAmigos'
+  },
 
   // Activities route (protected)
   {

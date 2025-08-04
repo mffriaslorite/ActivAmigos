@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Group } from '../../../core/models/group.model';
 
 @Component({
@@ -15,6 +16,8 @@ export class GroupCardComponent {
   @Output() joinGroup = new EventEmitter<number>();
   @Output() leaveGroup = new EventEmitter<number>();
 
+  constructor(private router: Router) {}
+
   onJoinLeave() {
     if (this.isLoading) return;
     
@@ -23,6 +26,10 @@ export class GroupCardComponent {
     } else {
       this.joinGroup.emit(this.group.id);
     }
+  }
+
+  onCardClick() {
+    this.router.navigate(['/groups', this.group.id]);
   }
 
   getGroupIcon(): string {
