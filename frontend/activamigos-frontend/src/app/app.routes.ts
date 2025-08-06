@@ -31,6 +31,14 @@ export const routes: Routes = [
     title: 'Perfil - ActivAmigos'
   },
   
+  // Settings routes (protected)
+  {
+    path: 'settings/accessibility',
+    loadComponent: () => import('./features/settings/accessibility/accessibility.component').then(m => m.AccessibilityComponent),
+    canActivate: [AuthGuard],
+    title: 'Configuración de Accesibilidad - ActivAmigos'
+  },
+  
   // Groups route (protected)
   {
     path: 'groups',
