@@ -1,0 +1,15 @@
+// Create Activity Modal Component Styles
+
+.modal-backdrop {
+  backdrop-filter: blur(2px);
+}
+
+// Custom styles for form validation
+.field-error {
+  @apply border-red-500 focus:ring-red-500;
+}
+
+// Loading animation
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

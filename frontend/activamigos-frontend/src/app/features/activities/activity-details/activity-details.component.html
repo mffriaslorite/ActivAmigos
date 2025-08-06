@@ -1,0 +1,207 @@
+<div class="min-h-screen bg-gray-50 flex flex-col">
+  <!-- Header -->
+  <header class="bg-white flex items-center justify-between px-6 py-4 border-b border-gray-200 shadow-sm">
+    <div class="flex items-center space-x-4">
+      <button 
+        class="text-2xl p-2 hover:bg-gray-100 rounded-full transition-colors"
+        (click)="goBack()"
+        aria-label="Volver a actividades"
+      >
+        ←
+      </button>
+      <h1 class="text-xl font-bold text-gray-900">
+        {{ activityDetails ? activityDetails.title : 'Actividad' }}
+      </h1>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 px-6 py-6 pb-24 overflow-y-auto">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="text-center py-12">
+      <div class="animate-spin inline-block w-8 h-8 border-[3px] border-current border-t-transparent text-blue-600 rounded-full" role="status" aria-label="Cargando">
+        <span class="sr-only">Cargando...</span>
+      </div>
+      <p class="mt-4 text-gray-600">Cargando detalles de la actividad...</p>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="errorMessage && !isLoading" class="mb-6">
+      <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+        <div class="flex items-center">
+          <span class="text-red-500 mr-2">⚠️</span>
+          <p class="text-red-700 text-sm">{{ errorMessage }}</p>
+          <button 
+            (click)="loadActivityDetails(activityDetails?.id || 0)" 
+            class="ml-auto text-red-600 text-sm underline hover:text-red-800"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Details Content -->
+    <div *ngIf="activityDetails && !isLoading" class="space-y-6">
+      <!-- Activity Header -->
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div class="flex items-start space-x-4">
+          <!-- Activity Icon -->
+          <div [class]="'w-16 h-16 rounded-xl flex items-center justify-center ' + getIconBackground()">
+            <span class="text-3xl" role="img" [attr.aria-label]="'Icono de la actividad ' + activityDetails.title">
+              {{ getActivityIcon() }}
+            </span>
+          </div>
+          
+          <!-- Activity Info -->
+          <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">
+              {{ activityDetails.title }}
+            </h2>
+            
+            <div class="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+              <span class="flex items-center">
+                <span class="mr-1" role="img" aria-label="Participantes">👥</span>
+                {{ activityDetails.participant_count }} {{ activityDetails.participant_count === 1 ? 'participante' : 'participantes' }}
+              </span>
+              <span class="flex items-center" *ngIf="activityDetails.location">
+                <span class="mr-1" role="img" aria-label="Ubicación">📍</span>
+                {{ activityDetails.location }}
+              </span>
+            </div>
+
+            <div class="flex items-center space-x-2 text-sm text-gray-600 mb-3">
+              <span class="mr-1" role="img" aria-label="Fecha">🕐</span>
+              <span class="font-medium">{{ formatDate(activityDetails.date) }}</span>
+            </div>
+            
+            <p *ngIf="activityDetails.description" class="text-gray-700 leading-relaxed">
+              {{ activityDetails.description }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Join/Leave Button -->
+        <div class="mt-6 pt-4 border-t border-gray-200">
+          <button 
+            [class]="activityDetails.is_participant 
+              ? 'w-full py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors'
+              : 'w-full py-3 px-4 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors'"
+            (click)="joinActivity()"
+          >
+            {{ activityDetails.is_participant ? 'Salir de la Actividad' : 'Participar en la Actividad' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Participants Section -->
+      <section class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <span class="mr-2" role="img" aria-label="Participantes">👥</span>
+          Participantes
+        </h3>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div 
+            *ngFor="let participant of activityDetails.participants" 
+            class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <!-- Participant Avatar -->
+            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
+              {{ getParticipantInitials(participant) }}
+            </div>
+            
+            <!-- Participant Info -->
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-900 truncate">
+                {{ getParticipantDisplayName(participant) }}
+                <span *ngIf="participant.is_organizer" class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  Organizador
+                </span>
+              </p>
+              <p class="text-xs text-gray-500 truncate">
+                Se unió {{ formatChatTime(new Date(participant.joined_at)) }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Rules Section -->
+      <section *ngIf="activityDetails.rules" class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <span class="mr-2" role="img" aria-label="Reglas">📋</span>
+          Reglas de la Actividad
+        </h3>
+        
+        <div class="space-y-2">
+          <div *ngFor="let rule of parseRules(); let i = index" class="flex items-start space-x-3">
+            <span class="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">
+              {{ i + 1 }}
+            </span>
+            <p class="text-gray-700 leading-relaxed">{{ rule }}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Chat Preview Section -->
+      <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 pb-0">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <span class="mr-2" role="img" aria-label="Chat">💬</span>
+            Chat de la Actividad
+            <span class="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+              Vista previa
+            </span>
+          </h3>
+        </div>
+        
+        <!-- Chat Messages Preview -->
+        <div class="px-6 pb-4 space-y-3 max-h-64 overflow-y-auto">
+          <div 
+            *ngFor="let message of chatMessages" 
+            [class]="'flex ' + (message.isCurrentUser ? 'justify-end' : 'justify-start')"
+          >
+            <div [class]="'max-w-xs lg:max-w-md px-4 py-2 rounded-lg ' + 
+              (message.isCurrentUser ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900')">
+              <p class="text-sm">{{ message.message }}</p>
+              <p [class]="'text-xs mt-1 ' + (message.isCurrentUser ? 'text-blue-100' : 'text-gray-500')">
+                {{ message.sender }} • {{ formatChatTime(message.timestamp) }}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Chat Input (Disabled) -->
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+          <div class="flex space-x-3">
+            <button 
+              class="p-2 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              (click)="onImageUpload()"
+              disabled
+              title="Subir imagen (próximamente)"
+            >
+              📎
+            </button>
+            <input 
+              type="text" 
+              placeholder="El chat estará disponible próximamente..."
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              [value]="newMessage"
+              (input)="onMessageInput($event)"
+              disabled
+            >
+            <button 
+              class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              (click)="onSendMessage()"
+              disabled
+              title="Enviar mensaje (próximamente)"
+            >
+              Enviar
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
