@@ -26,36 +26,13 @@
         
         <!-- Activities Grid -->
         <div class="space-y-4" *ngIf="(activities$ | async) as activities">
-          <div 
+          <app-activity-card
             *ngFor="let activity of activities; trackBy: trackByActivityId"
-            class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-            (click)="navigateToActivity(activity.id)"
-          >
-            <div class="flex items-start space-x-4">
-              <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <span class="text-2xl">{{ getActivityEmoji(activity.title) }}</span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <h3 class="font-semibold text-gray-900 truncate">{{ activity.title }}</h3>
-                <p class="text-sm text-gray-500 mb-2 line-clamp-2" *ngIf="activity.description">
-                  {{ activity.description }}
-                </p>
-                <div class="flex items-center space-x-4 text-xs text-gray-500 mb-2 flex-wrap">
-                  <span>🕐 {{ formatDate(activity.date) }}</span>
-                  <span *ngIf="activity.location">📍 {{ activity.location }}</span>
-                  <span>👥 {{ activity.participant_count }} participantes</span>
-                </div>
-              </div>
-              <button 
-                [class]="activity.is_participant 
-                  ? 'px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors'
-                  : 'px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors'"
-                (click)="joinActivity(activity, $event)"
-              >
-                {{ activity.is_participant ? 'Salir' : 'Participar' }}
-              </button>
-            </div>
-          </div>
+            [activity]="activity"
+            [isLoading]="false"
+            (joinActivity)="onJoinActivity($event)"
+            (leaveActivity)="onLeaveActivity($event)"
+          ></app-activity-card>
         </div>
 
         <!-- Empty State -->
