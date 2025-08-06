@@ -53,7 +53,14 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
     title: 'Actividades - ActivAmigos'
   },
-  
+  // Activity details route (protected)
+  {
+    path: 'activities/:id',
+    loadComponent: () => import('./features/activities/activity-details/activity-details.component').then(m => m.ActivityDetailsComponent),
+    canActivate: [AuthGuard],
+    title: 'Detalles de la Actividad - ActivAmigos'
+  },
+
   {
     path: 'achievements',
     redirectTo: '/dashboard',

@@ -5,6 +5,10 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { User } from '../../core/models/user.model';
+import { Group } from '../../core/models/group.model';
+import { Activity } from '../../core/models/activity.model';
+import { GroupsService } from '../../core/services/groups.service';
+import { ActivitiesService } from '../../core/services/activities.service';
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav.component';
 
 @Component({
@@ -17,10 +21,14 @@ import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-na
 export class ProfileComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
   private destroy$ = new Subject<void>();
+  userGroups: Group[] = [];
+  upcomingActivities: Activity[] = [];
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private groupsService: GroupsService,
+    private activitiesService: ActivitiesService
   ) {}
 
   ngOnInit() {
@@ -29,6 +37,14 @@ export class ProfileComponent implements OnInit, OnDestroy {
       .subscribe(user => {
         this.currentUser = user;
       });
+
+    this.groupsService.getUserGroups()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(groups => this.userGroups = groups);
+
+    this.activitiesService.getUpcomingActivities()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(activities => this.upcomingActivities = activities);
   }
 
   ngOnDestroy() {

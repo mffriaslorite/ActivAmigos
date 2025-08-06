@@ -115,7 +115,7 @@
             <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm cursor-pointer hover:bg-green-50 transition"
                 (click)="navigateTo('/activities')">
               <div class="text-center">
-                <div class="text-3xl font-bold text-green-600 mb-2">5</div>
+                <div class="text-3xl font-bold text-green-600 mb-2">{{ upcomingActivities.length }}</div>
                 <div class="text-sm text-gray-500">Actividades Próximas</div>
               </div>
             </div>
@@ -147,19 +147,34 @@
         </div>
 
         <!-- Lista de Actividades -->
-        <!-- <div class="hidden lg:block mt-12">
+        <div class="hidden lg:block mt-12">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Actividades Próximas</h3>
-          <ul class="space-y-3">
-            <li *ngFor="let activity of upcomingActivities.slice(0, 4)" class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-200 hover:bg-gray-50 transition cursor-pointer"
-                (click)="goToActivities()">
-              <div>
-                <p class="font-semibold text-gray-800">{{ activity.title }}</p>
-                <p class="text-sm text-gray-500">📅 {{ activity.date | date:'dd MMM' }}</p>
+          <ul class="space-y-3" *ngIf="upcomingActivities.length > 0">
+            <li *ngFor="let activity of upcomingActivities.slice(0, 4)" 
+                class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-200 hover:bg-gray-50 transition cursor-pointer"
+                (click)="goToActivities(activity.id)">
+              <div class="flex items-center space-x-3">
+                <span class="text-2xl">{{ getActivityEmoji(activity.title) }}</span>
+                <div>
+                  <p class="font-semibold text-gray-800">{{ activity.title }}</p>
+                  <p class="text-sm text-gray-500">📅 {{ formatActivityDate(activity.date) }}</p>
+                  <p class="text-sm text-gray-500" *ngIf="activity.location">📍 {{ activity.location }}</p>
+                </div>
               </div>
               <span class="text-gray-400">→</span>
             </li>
           </ul>
-        </div> -->
+          <div *ngIf="upcomingActivities.length === 0" class="text-center py-8">
+            <div class="text-4xl mb-2">📅</div>
+            <p class="text-gray-500 text-sm">No hay actividades próximas</p>
+            <button 
+              class="mt-2 text-blue-500 text-sm hover:text-blue-600"
+              (click)="goToActivities()"
+            >
+              Ver todas las actividades
+            </button>
+          </div>
+        </div>
       </main>
 
       <!-- Bottom Navigation (Mobile Only) -->
