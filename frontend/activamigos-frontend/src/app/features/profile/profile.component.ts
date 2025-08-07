@@ -10,11 +10,18 @@ import { Activity } from '../../core/models/activity.model';
 import { GroupsService } from '../../core/services/groups.service';
 import { ActivitiesService } from '../../core/services/activities.service';
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav.component';
+import { ProfileEditModalComponent } from './profile-edit-modal/profile-edit-modal.component';
+import { PasswordChangeModalComponent } from './password-change-modal/password-change-modal.component';
 
 @Component({
     selector: 'app-profile',
     standalone: true,
-    imports: [CommonModule, BottomNavComponent],
+    imports: [
+      CommonModule, 
+      BottomNavComponent, 
+      ProfileEditModalComponent, 
+      PasswordChangeModalComponent
+    ],
     templateUrl: './profile.component.html',
     styleUrls: ['./profile.component.scss'],
 })
@@ -23,6 +30,10 @@ export class ProfileComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   userGroups: Group[] = [];
   upcomingActivities: Activity[] = [];
+  
+  // Modal states
+  showEditModal = false;
+  showPasswordModal = false;
 
   constructor(
     private authService: AuthService,
@@ -57,7 +68,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   navigateTo(path: string) {
-    if (path === '/settings' || path === '/notifications' || path === '/privacy') {
+    if (path === '/settings') {
+      this.router.navigate(['/settings/accessibility']);
+    } else if (path === '/notifications' || path === '/privacy') {
       alert('Funcionalidad próximamente');
     } else {
       this.router.navigate([path]);
@@ -65,7 +78,45 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   editProfile() {
-    alert('Editar Perfil - Funcionalidad próximamente');
+    this.showEditModal = true;
+  }
+
+  changePassword() {
+    this.showPasswordModal = true;
+  }
+
+  onProfileUpdated(updatedUser: User) {
+    this.currentUser = updatedUser;
+  }
+
+  onPasswordChanged() {
+    // Optionally show a success message or perform additional actions
+    console.log('Password changed successfully');
+  }
+
+  onEditModalClose() {
+    this.showEditModal = false;
+  }
+
+  onPasswordModalClose() {
+    this.showPasswordModal = false;
+  }
+
+  getDisplayName(): string {
+    if (!this.currentUser) return '';
+    
+    const firstName = this.currentUser.first_name || '';
+    const lastName = this.currentUser.last_name || '';
+    
+    if (firstName || lastName) {
+      return `${firstName} ${lastName}`.trim();
+    }
+    
+    return this.currentUser.username || 'Usuario';
+  }
+
+  getProfileImageUrl(): string | null {
+    return this.currentUser?.profile_image || null;
   }
 
   logout() {
