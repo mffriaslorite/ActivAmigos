@@ -1,125 +1,16 @@
-/* Profile Component Styles */
-
 .profile-menu-item {
-  @apply bg-white rounded-xl p-4 shadow-sm border border-gray-200 cursor-pointer transition-all duration-200;
+    background-color: white;
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
 }
-
 .profile-menu-item:hover {
-  @apply bg-gray-50 shadow-md transform -translate-y-0.5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
-
 .profile-menu-item:active {
-  @apply transform translate-y-0;
-}
-
-/* Profile image hover effect */
-.profile-image-container {
-  position: relative;
-  overflow: hidden;
-  border-radius: 50%;
-}
-
-.profile-image-container:hover {
-  transform: scale(1.05);
-  transition: transform 0.2s ease;
-}
-
-/* Stats section */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-}
-
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .profile-menu-item {
-    @apply p-3;
-  }
-  
-  .stats-grid {
-    gap: 0.5rem;
-  }
-}
-
-/* Animation for profile info */
-.profile-info {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
     transform: translateY(0);
-  }
-}
-
-/* Loading states */
-.loading-skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-}
-
-@keyframes loading {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-/* Profile badge for verified users */
-.verified-badge {
-  position: absolute;
-  top: 0;
-  right: 0;
-  background-color: #3b82f6;
-  color: white;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  border: 2px solid white;
-}
-
-/* Bio text styling */
-.bio-text {
-  line-height: 1.4;
-  word-wrap: break-word;
-  hyphens: auto;
-}
-
-/* Menu item icons */
-.menu-icon {
-  transition: transform 0.2s ease;
-}
-
-.profile-menu-item:hover .menu-icon {
-  transform: scale(1.1);
-}
-
-/* Accessibility improvements */
-.profile-menu-item:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-}
-
-/* Dark mode support preparation */
-@media (prefers-color-scheme: dark) {
-  .profile-menu-item {
-    @apply bg-gray-800 border-gray-700;
-  }
-  
-  .profile-menu-item:hover {
-    @apply bg-gray-700;
-  }
 }

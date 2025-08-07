@@ -125,36 +125,6 @@ export class AuthService {
   }
 
   /**
-   * ✅ Change password
-   */
-  changePassword(passwordData: { current_password: string; new_password: string }): Observable<{ message: string }> {
-    return this.http.put<{ message: string }>(
-      `${this.API_BASE_URL}/user/change-password`,
-      passwordData,
-      { withCredentials: true }
-    ).pipe(
-      catchError(this.handleError)
-    );
-  }
-
-  /**
-   * ✅ Upload profile image
-   */
-  uploadProfileImage(imageFile: File): Observable<User> {
-    const formData = new FormData();
-    formData.append('image', imageFile);
-    
-    return this.http.put<User>(
-      `${this.API_BASE_URL}/user/profile-image`,
-      formData,
-      { withCredentials: true }
-    ).pipe(
-      tap(user => this.currentUserSubject.next(user)),
-      catchError(this.handleError)
-    );
-  }
-
-  /**
    * ✅ Delete user account
    */
   deleteAccount(): Observable<{ message: string }> {

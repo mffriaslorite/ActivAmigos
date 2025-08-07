@@ -14,9 +14,6 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Configure file upload limits
-    app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH
-
     # Configuración CORS
     CORS(app, 
          supports_credentials=True, 
