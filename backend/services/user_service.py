@@ -1,8 +1,11 @@
 from flask_smorest import Blueprint, abort
-from flask import session
+from flask import session, request
 from sqlalchemy.exc import IntegrityError
 from models.user.user import User, db
-from models.user.user_schema import UserSchema, UpdateProfileSchema
+from models.user.user_schema import UserSchema, UpdateProfileSchema, ProfileImageUploadSchema
+from schemas.auth_schema import ChangePasswordSchema
+from utils.minio_client import minio_client
+from utils.validators import validate_password
 
 blp = Blueprint("User", "user", url_prefix="/api/user", description="User profile management")
 
@@ -52,6 +55,90 @@ def update_profile(data):
         db.session.rollback()
         abort(500, message="Failed to update profile")
 
+# ✅ Change password
+@blp.route("/change-password", methods=["PUT"])
+@blp.arguments(ChangePasswordSchema)
+@blp.response(200)
+def change_password(data):
+    if "user_id" not in session:
+        abort(401, message="Authentication required")
+
+    user = User.query.get(session["user_id"])
+    if not user:
+        abort(404, message="User not found")
+
+    # Verify current password
+    if not user.check_password(data["current_password"]):
+        abort(400, message="Current password is incorrect")
+
+    # Validate new password
+    password_valid, password_msg = validate_password(data["new_password"])
+    if not password_valid:
+        abort(400, message=password_msg)
+
+    # Update password
+    user.set_password(data["new_password"])
+    
+    try:
+        db.session.commit()
+        return {"message": "Password changed successfully"}
+    except Exception:
+        db.session.rollback()
+        abort(500, message="Failed to change password")
+
+# ✅ Upload profile image
+@blp.route("/profile-image", methods=["PUT"])
+@blp.arguments(ProfileImageUploadSchema, location="files")
+@blp.response(200, UserSchema)
+def upload_profile_image(files):
+    if "user_id" not in session:
+        abort(401, message="Authentication required")
+
+    user = User.query.get(session["user_id"])
+    if not user:
+        abort(404, message="User not found")
+
+    # Get the uploaded file from request.files
+    if 'image' not in request.files:
+        abort(400, message="No file provided")
+    
+    file = request.files['image']
+    
+    if not file or file.filename == '':
+        abort(400, message="No file selected")
+
+    try:
+        # Read file data
+        file_data = file.read()
+        content_type = file.content_type
+
+        # Validate file size (16MB max)
+        if len(file_data) > 16 * 1024 * 1024:
+            abort(400, message="File too large. Maximum size is 16MB")
+
+        # Delete old profile image if exists
+        if user.profile_image:
+            try:
+                minio_client.delete_profile_image(user.profile_image)
+            except Exception as e:
+                # Log warning but don't fail the upload
+                current_app.logger.warning(f"Failed to delete old profile image: {e}")
+
+        # Upload new image
+        image_url = minio_client.upload_profile_image(file_data, user.id, content_type)
+        
+        # Update user profile
+        user.profile_image = image_url
+        db.session.commit()
+
+        return user
+
+    except ValueError as e:
+        abort(400, message=str(e))
+    except Exception as e:
+        db.session.rollback()
+        abort(500, message="Failed to upload image")
+        
 # ✅ Delete account
 @blp.route("/profile", methods=["DELETE"])
 @blp.response(200)
@@ -62,6 +149,13 @@ def delete_account():
     user = User.query.get(session["user_id"])
     if not user:
         abort(404, message="User not found")
+
+    # Delete profile image if exists
+    if user.profile_image:
+        try:
+            minio_client.delete_profile_image(user.profile_image)
+        except Exception as e:
+            blp.app.logger.warning(f"Failed to delete profile image during account deletion: {e}")
 
     db.session.delete(user)
     db.session.commit()

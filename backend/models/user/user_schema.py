@@ -1,4 +1,5 @@
 from marshmallow import Schema, fields
+from werkzeug.datastructures import FileStorage
 
 class UserSchema(Schema):
     id = fields.Int(dump_only=True)
@@ -17,3 +18,13 @@ class UpdateProfileSchema(Schema):
     first_name = fields.Str()
     last_name = fields.Str()
     bio = fields.Str()
+
+class ProfileImageUploadSchema(Schema):
+    image = fields.Raw(
+        required=True,
+        metadata={
+            "type": "string",
+            "description": "Profile image file (JPG, PNG, WebP)",
+            "format": "binary"
+        }
+    )

@@ -16,7 +16,7 @@
     <main class="flex-1 px-6 py-6 pb-24">
       <!-- Loading State -->
       <div *ngIf="isLoading$ | async" class="text-center py-8">
-        <div class="text-4xl mb-4">⏳</div>
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
         <p class="text-gray-500">Cargando actividades...</p>
       </div>
 

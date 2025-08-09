@@ -1,7 +1,7 @@
 """Add groups and group member association
 
 Revision ID: 85ed0d1d3542
-Revises: 81bfff4c3e76
+Revises: 316b0b3ad690
 Create Date: 2025-07-24 20:50:52.881397
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '85ed0d1d3542'
-down_revision = '81bfff4c3e76'
+down_revision = '316b0b3ad690'
 branch_labels = None
 depends_on = None
 

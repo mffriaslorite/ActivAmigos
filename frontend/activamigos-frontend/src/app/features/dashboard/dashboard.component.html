@@ -144,6 +144,16 @@
               <span class="text-gray-400">→</span>
             </li>
           </ul>
+          <div *ngIf="userGroups.length === 0" class="text-center py-8">
+            <div class="text-4xl mb-2">👥</div>
+            <p class="text-gray-500 text-sm">No hay grupos disponibles</p>
+            <button 
+              class="mt-2 text-blue-500 text-sm hover:text-blue-600"
+              (click)="goToGroups()"
+            >
+              Ver todos los grupos
+            </button>
+          </div>
         </div>
 
         <!-- Lista de Actividades -->
