@@ -7,9 +7,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { User } from '../../core/models/user.model';
 import { Group } from '../../core/models/group.model';
 import { Activity } from '../../core/models/activity.model';
+import { GamificationState } from '../../core/models/achievement.model';
 import { GroupsService } from '../../core/services/groups.service';
 import { ActivitiesService } from '../../core/services/activities.service';
+import { AchievementsService } from '../../core/services/achievements.service';
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav.component';
+import { LevelProgressBarComponent } from '../../shared/components/level-progress-bar/level-progress-bar.component';
 import { ProfileEditModalComponent } from './edit-profile-modal/edit-profile-modal.component';
 import { PasswordChangeModalComponent } from './password-change-modal/password-change-modal.component';
 
@@ -19,6 +22,7 @@ import { PasswordChangeModalComponent } from './password-change-modal/password-c
     imports: [
       CommonModule, 
       BottomNavComponent, 
+      LevelProgressBarComponent,
       ProfileEditModalComponent, 
       PasswordChangeModalComponent
     ],
@@ -30,6 +34,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   userGroups: Group[] = [];
   upcomingActivities: Activity[] = [];
+  gamificationState: GamificationState | null = null;
+  isLoadingAchievements = false;
   
   // Modal states
   showEditModal = false;
@@ -39,7 +45,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private groupsService: GroupsService,
-    private activitiesService: ActivitiesService
+    private activitiesService: ActivitiesService,
+    private achievementsService: AchievementsService
   ) {}
 
   ngOnInit() {
@@ -56,6 +63,24 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.activitiesService.getUpcomingActivities()
       .pipe(takeUntil(this.destroy$))
       .subscribe(activities => this.upcomingActivities = activities);
+
+    this.loadGamificationState();
+  }
+
+  loadGamificationState() {
+    this.isLoadingAchievements = true;
+    this.achievementsService.getGamificationState()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (state) => {
+          this.gamificationState = state;
+          this.isLoadingAchievements = false;
+        },
+        error: (error) => {
+          console.error('Error loading gamification state:', error);
+          this.isLoadingAchievements = false;
+        }
+      });
   }
 
   ngOnDestroy() {
@@ -117,6 +142,19 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   getProfileImageUrl(): string | null {
     return this.authService.getProfileImageSrc ? this.authService.getProfileImageSrc() : null;
+  }
+
+  getAchievementIconUrl(achievementId: number): string {
+    return this.achievementsService.getAchievementIconUrl(achievementId);
+  }
+
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   }
   
   logout() {

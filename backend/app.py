@@ -9,6 +9,7 @@ from services.auth_service import blp as auth_blp
 from services.user_service import blp as user_blp
 from services.group_service import blp as group_blp
 from services.activity_service import blp as activity_blp
+from services.achievements_service import blp as achievements_blp
 
 def create_app():
     app = Flask(__name__)
@@ -36,6 +37,7 @@ def create_app():
         from models import user
         from models import group
         from models import activity
+        from models import achievement
 
     # API con Swagger
     app.config["API_TITLE"] = "ActivAmigos API"
@@ -50,6 +52,7 @@ def create_app():
     api.register_blueprint(user_blp)
     api.register_blueprint(group_blp)
     api.register_blueprint(activity_blp)
+    api.register_blueprint(achievements_blp)
 
     return app
 
