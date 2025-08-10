@@ -50,6 +50,8 @@ The ActivAmigos platform now includes a complete points, levels, and achievement
 
 ## 🔌 Backend API Endpoints
 
+All endpoints are under the `/api/user/achievements` prefix with a dedicated Flask-Smorest blueprint.
+
 ### GET `/api/user/achievements`
 **Description**: Get user's complete gamification state
 **Authentication**: Required (`@require_user`)

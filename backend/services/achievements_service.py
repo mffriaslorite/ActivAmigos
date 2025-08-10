@@ -14,9 +14,9 @@ from utils.decorators import require_user
 from utils.minio_client import minio_client
 from datetime import datetime
 
-blp = Blueprint("Achievements", "achievements", url_prefix="/api/user", description="User achievements and gamification")
+blp = Blueprint("Achievements", "achievements", url_prefix="/api/user/achievements", description="User achievements and gamification")
 
-@blp.route("/achievements", methods=["GET"])
+@blp.route("", methods=["GET"])
 @require_user
 @blp.response(200, GamificationStateSchema)
 def get_achievements(current_user: User):
@@ -43,7 +43,7 @@ def get_achievements(current_user: User):
     }
 
 
-@blp.route("/achievements", methods=["POST"])
+@blp.route("", methods=["POST"])
 @blp.arguments(UpdateGamificationSchema)
 @require_user
 @blp.response(200, GamificationStateSchema)
@@ -114,7 +114,7 @@ def update_achievements(data, current_user: User):
         abort(409, message="Database constraint violation")
 
 
-@blp.route("/achievements/icons/<int:achievement_id>", methods=["GET"])
+@blp.route("/icons/<int:achievement_id>", methods=["GET"])
 def get_achievement_icon(achievement_id: int):
     """
     Stream achievement icon from MinIO storage
@@ -144,7 +144,7 @@ def get_achievement_icon(achievement_id: int):
         abort(404, message="Achievement icon not found")
 
 
-@blp.route("/achievements/all", methods=["GET"])
+@blp.route("/all", methods=["GET"])
 @blp.response(200, AchievementSchema(many=True))
 def get_all_achievements():
     """
