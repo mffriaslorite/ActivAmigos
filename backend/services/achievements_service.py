@@ -97,6 +97,15 @@ def update_achievements(data, current_user: User):
         
         db.session.commit()
         
+        # Trigger level-based achievements after points are added
+        try:
+            from utils.achievement_engine import award_achievement_for_points_gained
+            level_achievements = award_achievement_for_points_gained(current_user.id)
+            if level_achievements:
+                print(f"🏆 User {current_user.id} earned level achievements: {level_achievements}")
+        except Exception as e:
+            print(f"Error triggering level achievements: {e}")
+        
         # Get updated earned achievements
         earned_achievements = UserAchievement.query.filter_by(user_id=current_user.id)\
             .options(joinedload(UserAchievement.achievement))\
@@ -152,3 +161,40 @@ def get_all_achievements():
     """
     achievements = Achievement.query.all()
     return achievements
+
+
+@blp.route("/check-all", methods=["POST"])
+@require_user
+@blp.response(200, GamificationStateSchema)
+def check_all_achievements(current_user: User):
+    """
+    Check all possible achievements for the current user
+    Useful for retroactive achievement awarding
+    """
+    try:
+        from utils.achievement_engine import AchievementEngine
+        achievements_earned = AchievementEngine.check_all_achievements(current_user.id)
+        if achievements_earned:
+            print(f"🏆 User {current_user.id} earned achievements retroactively: {achievements_earned}")
+        
+        # Get updated gamification state
+        user_points = UserPoints.query.filter_by(user_id=current_user.id).first()
+        if not user_points:
+            user_points = UserPoints(user_id=current_user.id, points=0)
+            db.session.add(user_points)
+            db.session.commit()
+        
+        earned_achievements = UserAchievement.query.filter_by(user_id=current_user.id)\
+            .options(joinedload(UserAchievement.achievement))\
+            .all()
+        
+        return {
+            "points": user_points.points,
+            "level": user_points.level,
+            "progress_to_next_level": user_points.progress_to_next_level,
+            "earned_achievements": earned_achievements
+        }
+        
+    except Exception as e:
+        current_app.logger.error(f"Error checking all achievements for user {current_user.id}: {str(e)}")
+        abort(500, message="Error checking achievements")

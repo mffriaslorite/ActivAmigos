@@ -177,6 +177,31 @@
       </div>
     </div>
 
+    <!-- Check Achievements Section -->
+    <div class="mt-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-200">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h4 class="font-semibold text-indigo-900 mb-1 flex items-center gap-2">
+            🔍 Verificar Logros
+          </h4>
+          <p class="text-sm text-indigo-700">
+            ¿Crees que deberías tener más logros? Verifica si hay logros pendientes basados en tus actividades.
+          </p>
+        </div>
+        <button
+          (click)="checkAllAchievements()"
+          [disabled]="isLoadingGamification"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          <span *ngIf="!isLoadingGamification">🔍 Verificar</span>
+          <span *ngIf="isLoadingGamification" class="flex items-center gap-2">
+            <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            Verificando...
+          </span>
+        </button>
+      </div>
+    </div>
+
     <!-- Tips Section -->
     <div class="mt-6 bg-blue-50 rounded-xl p-4 border border-blue-200">
       <h4 class="font-semibold text-blue-900 mb-2 flex items-center gap-2">

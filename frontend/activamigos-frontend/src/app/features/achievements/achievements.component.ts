@@ -125,4 +125,22 @@ export class AchievementsComponent implements OnInit, OnDestroy {
     
     return this.currentUser.username || 'Usuario';
   }
+
+  checkAllAchievements() {
+    this.isLoadingGamification = true;
+    this.achievementsService.checkAllAchievements()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (state) => {
+          this.gamificationState = state;
+          this.isLoadingGamification = false;
+          // Show success message or notification
+          console.log('✅ Achievements checked and updated!');
+        },
+        error: (error) => {
+          console.error('Error checking achievements:', error);
+          this.isLoadingGamification = false;
+        }
+      });
+  }
 }

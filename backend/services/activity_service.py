@@ -56,6 +56,17 @@ def create_activity(args):
         
         db.session.commit()
         
+        # Trigger achievement check for creating activities
+        try:
+            from utils.achievement_engine import award_achievement_for_activity_creation, award_achievement_for_activity_participation
+            creation_achievements = award_achievement_for_activity_creation(current_user.id)
+            participation_achievements = award_achievement_for_activity_participation(current_user.id)
+            all_achievements = creation_achievements + participation_achievements
+            if all_achievements:
+                print(f"🏆 User {current_user.id} earned achievements: {all_achievements}")
+        except Exception as e:
+            print(f"Error triggering activity creation achievements: {e}")
+        
         # Prepare response
         response_data = {
             'id': activity.id,
@@ -201,6 +212,16 @@ def join_activity(activity_id):
     try:
         if activity.add_participant(current_user):
             db.session.commit()
+            
+            # Trigger achievement check for joining activities
+            try:
+                from utils.achievement_engine import award_achievement_for_activity_participation
+                achievements_earned = award_achievement_for_activity_participation(current_user.id)
+                if achievements_earned:
+                    print(f"🏆 User {current_user.id} earned achievements: {achievements_earned}")
+            except Exception as e:
+                print(f"Error triggering activity participation achievements: {e}")
+            
             return {
                 'message': 'Successfully joined the activity',
                 'is_participant': True,

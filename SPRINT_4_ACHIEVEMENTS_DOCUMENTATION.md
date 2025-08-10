@@ -232,6 +232,27 @@ python test_achievements_system.py
 - **Authentication**: Uses existing `@require_user` decorator
 - **File Storage**: MinIO integration for achievement icons
 - **Migration**: Alembic migration for database schema
+- **Achievement Engine**: Automatic triggering system for awarding achievements
+
+### Achievement Triggering System
+
+The system automatically awards achievements when users perform specific actions:
+
+#### **Achievement Types & Triggers:**
+
+1. **"Explorador Social" (75 pts)** - Triggered when user joins their first group
+2. **"Primera Actividad" (50 pts)** - Triggered when user participates in their first activity
+3. **"Organizador Nato" (125 pts)** - Triggered when user creates their first activity
+4. **"Maestro de la Consistencia" (200 pts)** - Triggered when user participates in 10 activities
+5. **"Estrella en Ascenso" (100 pts)** - Triggered when user reaches level 5
+6. **"Embajador ActivAmigos" (300 pts)** - Triggered when user reaches level 10
+
+#### **Integration Points:**
+
+- **Group Service**: Triggers achievements when joining groups
+- **Activity Service**: Triggers achievements when creating or joining activities  
+- **Achievements Service**: Triggers level-based achievements when points are added
+- **Manual Check**: `/check-all` endpoint for retroactive achievement awarding
 
 ### Frontend Architecture
 - **Services**: Angular services following existing HTTP patterns

@@ -68,6 +68,19 @@ export class AchievementsService {
   }
 
   /**
+   * Check all possible achievements for the current user (retroactive)
+   */
+  checkAllAchievements(): Observable<GamificationState> {
+    return this.http.post<GamificationState>(
+      `${this.API_BASE_URL}/user/achievements/check-all`,
+      {},
+      { withCredentials: true }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
    * Get achievement icon URL with cache busting
    */
   getAchievementIconUrl(achievementId: number): string {
