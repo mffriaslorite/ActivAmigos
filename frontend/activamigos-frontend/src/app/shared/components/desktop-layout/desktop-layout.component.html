@@ -25,6 +25,24 @@
             </li>
             </ul>
         </li>
+        <!-- Profile Section -->
+        <li class="mt-auto">
+          <button
+            (click)="navigateTo('/profile')"
+            class="group flex gap-x-3 rounded-md p-3 text-sm font-semibold leading-6 w-full text-left transition-colors duration-200 text-gray-700 hover:text-blue-700 hover:bg-blue-50 border-t border-gray-200"
+          >
+            <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+              <img 
+                *ngIf="getProfileImageUrl()" 
+                [src]="getProfileImageUrl()" 
+                alt="Profile Picture" 
+                class="w-full h-full object-cover"
+              >
+              <span *ngIf="!getProfileImageUrl()" class="text-sm">👤</span>
+            </div>
+            Mi Perfil
+          </button>
+        </li>
         </ul>
     </nav>
     </div>

@@ -16,7 +16,7 @@ export class BottomNavComponent {
     { path: '/dashboard', icon: '🏠', label: 'Inicio' },
     { path: '/activities', icon: '📅', label: 'Actividades' },
     { path: '/groups', icon: '👥', label: 'Grupos' },
-    { path: '/profile', icon: '👤', label: 'Perfil' },
+    { path: '/achievements', icon: '🏆', label: 'Logros' },
     { path: '/help', icon: '❓', label: 'Ayuda' }
   ];
 

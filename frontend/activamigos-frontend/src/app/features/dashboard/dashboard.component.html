@@ -10,10 +10,19 @@
         <h1 class="text-xl font-bold text-gray-900 lg:hidden">ActivAmigos</h1>
         <h1 class="hidden lg:block text-xl font-bold text-gray-900">Inicio</h1>
         <button 
-          class="text-2xl p-2 hover:bg-gray-100 rounded-full transition-colors"
-          (click)="navigateTo('/settings')"
+          class="profile-header-btn p-2 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center"
+          (click)="navigateTo('/profile')"
+          title="Ir al perfil"
         >
-          ⚙️
+          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+            <img 
+              *ngIf="getProfileImageUrl()" 
+              [src]="getProfileImageUrl()" 
+              alt="Profile Picture" 
+              class="w-full h-full object-cover"
+            >
+            <span *ngIf="!getProfileImageUrl()" class="text-lg">👤</span>
+          </div>
         </button>
       </header>
 
@@ -124,8 +133,8 @@
             <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm cursor-pointer hover:bg-yellow-50 transition"
                 (click)="navigateTo('/achievements')">
               <div class="text-center">
-                <div class="text-3xl font-bold text-yellow-600 mb-2">3</div>
-                <div class="text-sm text-gray-500">Nuevos Logros</div>
+                <div class="text-3xl font-bold text-yellow-600 mb-2">🏆</div>
+                <div class="text-sm text-gray-500">Ver Logros</div>
               </div>
             </div>
           </div>

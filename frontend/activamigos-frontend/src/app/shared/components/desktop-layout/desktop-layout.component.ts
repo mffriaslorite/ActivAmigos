@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { NavItem } from '../../../core/models/navitem.model';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
     selector: 'app-desktop-layout',
@@ -15,11 +16,11 @@ export class DesktopLayoutComponent {
     { path: '/dashboard', icon: '🏠', label: 'Inicio' },
     { path: '/groups', icon: '👥', label: 'Grupos' },
     { path: '/activities', icon: '📅', label: 'Actividades' },
-    { path: '/profile', icon: '👤', label: 'Perfil' },
+    { path: '/achievements', icon: '🏆', label: 'Logros' },
     { path: '/help', icon: '❓', label: 'Ayuda' }
   ];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private authService: AuthService) {}
 
   navigateTo(path: string) {
     this.router.navigate([path]);
@@ -28,5 +29,9 @@ export class DesktopLayoutComponent {
   isActiveRoute(path: string): boolean {
     return this.router.url === path || 
            (path === '/dashboard' && this.router.url === '/');
+  }
+
+  getProfileImageUrl(): string | null {
+    return this.authService.getProfileImageSrc ? this.authService.getProfileImageSrc() : null;
   }
 }
