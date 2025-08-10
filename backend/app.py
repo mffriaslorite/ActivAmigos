@@ -38,6 +38,7 @@ def create_app():
         from models import group
         from models import activity
         from models import achievement
+        from models import associations
 
     # API con Swagger
     app.config["API_TITLE"] = "ActivAmigos API"

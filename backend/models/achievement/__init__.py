@@ -1,6 +1,4 @@
 from .achievement import Achievement
-from .user_points import UserPoints
-from .user_achievement import UserAchievement
 from .achievement_schema import (
     AchievementSchema,
     UserAchievementSchema,
@@ -11,8 +9,6 @@ from .achievement_schema import (
 
 __all__ = [
     'Achievement',
-    'UserPoints', 
-    'UserAchievement',
     'AchievementSchema',
     'UserAchievementSchema',
     'UserPointsSchema',

@@ -224,6 +224,8 @@ python test_achievements_system.py
 
 ### Backend Architecture
 - **Models**: SQLAlchemy models following existing patterns
+  - `Achievement` model in `/models/achievement/`
+  - `UserPoints` and `UserAchievement` association models in `/models/associations/`
 - **Services**: Flask-Smorest blueprint with proper error handling
 - **Authentication**: Uses existing `@require_user` decorator
 - **File Storage**: MinIO integration for achievement icons

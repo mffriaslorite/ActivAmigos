@@ -4,8 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from models.user.user import User, db
 from models.achievement.achievement import Achievement
-from models.achievement.user_points import UserPoints
-from models.achievement.user_achievement import UserAchievement
+from models.associations.achievement_associations import UserPoints, UserAchievement
 from models.achievement.achievement_schema import (
     GamificationStateSchema,
     UpdateGamificationSchema,
