@@ -116,9 +116,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   getProfileImageUrl(): string | null {
-    return this.currentUser?.profile_image || null;
+    return this.authService.getProfileImageSrc ? this.authService.getProfileImageSrc() : null;
   }
-
+  
   logout() {
     const confirmLogout = confirm('¿Estás seguro de que quieres cerrar sesión?');
     if (confirmLogout) {

@@ -154,6 +154,30 @@ export class AuthService {
     );
   }
 
+  /** 
+   *  ✅ Get profile image URL
+   */
+
+  public getProfileImageSrc(): string | null {
+    const u = this.currentUserSubject.value;
+    if (!u?.profile_image) return null;
+    // stream + cache-buster
+    return `${this.API_BASE_URL}/user/profile-image/stream?ts=${Date.now()}`;
+  }
+
+  /**
+   * ✅ Delete profile image
+   */
+  deleteProfileImage(): Observable<User> {
+    return this.http.delete<User>(
+      `${this.API_BASE_URL}/user/profile-image`,
+      { withCredentials: true }
+    ).pipe(
+      tap(user => this.currentUserSubject.next(user)),
+      catchError(this.handleError)
+    );
+  }
+
   /**
    * ✅ Delete user account
    */

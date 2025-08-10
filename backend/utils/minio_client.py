@@ -156,5 +156,27 @@ class MinIOClient:
         except:
             pass
         return None
+    
+    def get_object_bytes(self, object_name: str):
+        """Retrieve object bytes from MinIO."""
+        self._ensure_initialized()
+        bucket_name = current_app.config['MINIO_BUCKET_NAME']
+        response = None
+        try:
+            response = self.client.get_object(bucket_name, object_name)
+            data = response.read()
+            # MinIO exposes the type in the headers
+            content_type = response.getheader('Content-Type') or 'application/octet-stream'
+            return data, content_type
+        finally:
+            if response is not None:
+                response.close()
+                response.release_conn()
+
+    def get_presigned_url(self, object_name: str, expires_seconds: int = 600) -> str:
+        """Generate a presigned URL for accessing an object in MinIO."""
+        self._ensure_initialized()
+        bucket_name = current_app.config['MINIO_BUCKET_NAME']
+        return self.client.presigned_get_object(bucket_name, object_name, expires=expires_seconds)
 
 minio_client = MinIOClient()

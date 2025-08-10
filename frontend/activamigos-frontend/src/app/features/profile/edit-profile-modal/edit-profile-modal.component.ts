@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Output, EventEmitter, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, Output, EventEmitter, Input, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject } from 'rxjs';
@@ -25,6 +25,8 @@ export class ProfileEditModalComponent implements OnInit, OnDestroy {
   errorMessage = '';
   successMessage = '';
   private destroy$ = new Subject<void>();
+
+  @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
 
   constructor(
     private fb: FormBuilder,
@@ -53,8 +55,7 @@ export class ProfileEditModalComponent implements OnInit, OnDestroy {
   }
 
   triggerFileInput() {
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    fileInput?.click();
+    this.fileInputRef?.nativeElement.click();
   }
 
   onImageSelected(event: any) {
@@ -93,6 +94,38 @@ export class ProfileEditModalComponent implements OnInit, OnDestroy {
         error: (error) => {
           this.errorMessage = error.message || 'Error al subir la imagen';
           this.isUploading = false;
+        }
+      });
+  }
+
+  getProfileImageUrl(): string | null {
+    return this.authService.getProfileImageSrc ? this.authService.getProfileImageSrc() : null;
+  }
+
+  onDeleteImage() {
+    const confirmDelete = confirm('¿Seguro que quieres eliminar tu foto de perfil?');
+    if (!confirmDelete) return;
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.authService.deleteProfileImage()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (updatedUser) => {
+          this.currentUser = updatedUser;
+          this.profileUpdated.emit(updatedUser);
+          this.successMessage = 'Foto de perfil eliminada';
+          this.isLoading = false;
+          // Limpia el <input type="file"> si lo hubiera
+          if (this.fileInputRef) {
+            this.fileInputRef.nativeElement.value = '';
+          }
+        },
+        error: (error) => {
+          this.errorMessage = error.message || 'No se pudo eliminar la foto';
+          this.isLoading = false;
         }
       });
   }
