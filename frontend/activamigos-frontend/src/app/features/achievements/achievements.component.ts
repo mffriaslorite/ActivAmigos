@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AchievementsService } from '../../core/services/achievements.service';
 import { AuthService } from '../../core/services/auth.service';
+import { AchievementNotificationsService } from '../../core/services/achievement-notifications.service';
 import { GamificationState, Achievement } from '../../core/models/achievement.model';
 import { User } from '../../core/models/user.model';
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav.component';
@@ -32,7 +33,8 @@ export class AchievementsComponent implements OnInit, OnDestroy {
   constructor(
     private achievementsService: AchievementsService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private achievementNotifications: AchievementNotificationsService
   ) {}
 
   ngOnInit() {
@@ -42,8 +44,18 @@ export class AchievementsComponent implements OnInit, OnDestroy {
         this.currentUser = user;
       });
 
-    this.loadGamificationState();
+    // Subscribe to the global gamification state
+    this.achievementNotifications.gamificationState$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(state => {
+        if (state) {
+          this.gamificationState = state;
+          this.isLoadingGamification = false;
+        }
+      });
+
     this.loadAllAchievements();
+    this.loadGamificationState();
   }
 
   ngOnDestroy() {
@@ -126,21 +138,15 @@ export class AchievementsComponent implements OnInit, OnDestroy {
     return this.currentUser.username || 'Usuario';
   }
 
-  checkAllAchievements() {
+  async checkAllAchievements() {
     this.isLoadingGamification = true;
-    this.achievementsService.checkAllAchievements()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (state) => {
-          this.gamificationState = state;
-          this.isLoadingGamification = false;
-          // Show success message or notification
-          console.log('✅ Achievements checked and updated!');
-        },
-        error: (error) => {
-          console.error('Error checking achievements:', error);
-          this.isLoadingGamification = false;
-        }
-      });
+    try {
+      await this.achievementNotifications.refreshAchievements();
+      console.log('✅ Achievements checked and updated!');
+    } catch (error) {
+      console.error('Error checking achievements:', error);
+    } finally {
+      this.isLoadingGamification = false;
+    }
   }
 }

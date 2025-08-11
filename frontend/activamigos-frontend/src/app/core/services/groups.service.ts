@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { Group, GroupCreate, GroupUpdate, JoinLeaveResponse, GroupDetails } from '../models/group.model';
+import { AchievementNotificationsService } from './achievement-notifications.service';
 
 @Injectable({
   providedIn: 'root'
@@ -15,7 +16,10 @@ export class GroupsService {
   public groups$ = this.groupsSubject.asObservable();
   public isLoading$ = this.isLoadingSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private achievementNotifications: AchievementNotificationsService
+  ) {}
 
   /**
    * Get all groups
@@ -116,9 +120,18 @@ export class GroupsService {
       {},
       { withCredentials: true }
     ).pipe(
-      tap(response => {
+      tap(async response => {
         // Update the group's membership status in the current groups list
         this.updateGroupMembership(id, response.is_member, response.member_count);
+        
+        // Automatically refresh achievements after joining a group
+        if (response.is_member) {
+          try {
+            await this.achievementNotifications.refreshAchievements();
+          } catch (error) {
+            console.error('Error refreshing achievements after group join:', error);
+          }
+        }
       }),
       catchError(this.handleError)
     );

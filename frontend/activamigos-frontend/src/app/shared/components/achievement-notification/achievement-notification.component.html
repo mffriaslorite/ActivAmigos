@@ -1,0 +1,37 @@
+<!-- Achievement Notifications Container -->
+<div class="achievement-notifications-container">
+  <div 
+    *ngFor="let notification of notifications; trackBy: trackByNotificationId"
+    class="achievement-notification"
+    [class.show]="!notification.shown"
+  >
+    <div class="notification-content">
+      <!-- Achievement Icon -->
+      <div class="notification-icon">
+        <span class="text-2xl">🏆</span>
+      </div>
+      
+      <!-- Achievement Details -->
+      <div class="notification-details">
+        <div class="notification-title">
+          {{ notification.title }}
+        </div>
+        <div class="notification-description">
+          {{ notification.description }}
+        </div>
+        <div *ngIf="notification.points > 0" class="notification-points">
+          +{{ notification.points }} puntos
+        </div>
+      </div>
+      
+      <!-- Close Button -->
+      <button 
+        class="notification-close"
+        (click)="removeNotification(notification.id)"
+        aria-label="Cerrar notificación"
+      >
+        ×
+      </button>
+    </div>
+  </div>
+</div>
