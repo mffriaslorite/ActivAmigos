@@ -28,10 +28,18 @@ export class AchievementNotificationsSimpleService {
    * Refresh the gamification state
    */
   refreshAchievements(): void {
+    console.log('🔄 Refreshing achievements...');
     this.achievementsService.getGamificationState().subscribe({
       next: (newState) => {
         if (newState) {
           const currentState = this.gamificationStateSubject.value;
+          
+          console.log('📊 Achievement state refreshed:', {
+            hasCurrentState: !!currentState,
+            newPoints: newState.points,
+            newLevel: newState.level,
+            newAchievements: newState.earned_achievements.length
+          });
           
           // Check for new achievements if we had a previous state
           if (currentState) {
@@ -56,6 +64,12 @@ export class AchievementNotificationsSimpleService {
     const newAchievements = newState.earned_achievements.filter(
       ua => !oldAchievementIds.includes(ua.achievement.id)
     );
+
+    console.log('🔍 Checking for new achievements:', {
+      oldCount: oldState.earned_achievements.length,
+      newCount: newState.earned_achievements.length,
+      newAchievements: newAchievements.length
+    });
 
     // Create notifications for new achievements
     newAchievements.forEach(userAchievement => {

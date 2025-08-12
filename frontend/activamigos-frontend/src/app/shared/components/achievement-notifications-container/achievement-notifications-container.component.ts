@@ -49,7 +49,11 @@ export class AchievementNotificationsContainerComponent implements OnInit, OnDes
         // Limit the number of visible notifications to prevent UI overflow
         this.visibleNotifications = newNotifications.slice(0, this.MAX_VISIBLE_NOTIFICATIONS);
         
-        console.log('📢 Notifications container updated:', this.visibleNotifications.length, 'visible');
+        console.log('📢 Notifications container updated:', {
+          totalNotifications: notifications.length,
+          visibleNotifications: this.visibleNotifications.length,
+          notificationTitles: this.visibleNotifications.map(n => n.title)
+        });
       });
   }
 
