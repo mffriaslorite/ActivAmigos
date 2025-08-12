@@ -3,7 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { Group, GroupCreate, GroupUpdate, JoinLeaveResponse, GroupDetails } from '../models/group.model';
-import { AchievementNotificationsService } from './achievement-notifications.service';
+import { AchievementNotificationsSimpleService } from './achievement-notifications-simple.service';
 
 @Injectable({
   providedIn: 'root'
@@ -18,7 +18,7 @@ export class GroupsService {
 
   constructor(
     private http: HttpClient,
-    private achievementNotifications: AchievementNotificationsService
+    private achievementNotifications: AchievementNotificationsSimpleService
   ) {}
 
   /**

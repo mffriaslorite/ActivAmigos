@@ -58,9 +58,9 @@ def create_activity(args):
         
         # Trigger achievement check for creating activities
         try:
-            from utils.achievement_engine import award_achievement_for_activity_creation, award_achievement_for_activity_participation
-            creation_achievements = award_achievement_for_activity_creation(current_user.id)
-            participation_achievements = award_achievement_for_activity_participation(current_user.id)
+            from utils.achievement_engine_simple import trigger_activity_creation, trigger_activity_join
+            creation_achievements = trigger_activity_creation(current_user.id)
+            participation_achievements = trigger_activity_join(current_user.id)
             all_achievements = creation_achievements + participation_achievements
             if all_achievements:
                 print(f"🏆 User {current_user.id} earned achievements: {all_achievements}")
@@ -215,8 +215,8 @@ def join_activity(activity_id):
             
             # Trigger achievement check for joining activities
             try:
-                from utils.achievement_engine import award_achievement_for_activity_participation
-                achievements_earned = award_achievement_for_activity_participation(current_user.id)
+                from utils.achievement_engine_simple import trigger_activity_join
+                achievements_earned = trigger_activity_join(current_user.id)
                 if achievements_earned:
                     print(f"🏆 User {current_user.id} earned achievements: {achievements_earned}")
             except Exception as e:

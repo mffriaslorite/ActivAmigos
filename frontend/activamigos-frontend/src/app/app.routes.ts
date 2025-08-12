@@ -68,6 +68,12 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
     title: 'Logros - ActivAmigos'
   },
+  {
+    path: 'test-achievements',
+    loadComponent: () => import('./features/achievements/test-achievements.component').then(m => m.TestAchievementsComponent),
+    canActivate: [AuthGuard],
+    title: 'Test Achievements - ActivAmigos'
+  },
 
   {
     path: 'help',

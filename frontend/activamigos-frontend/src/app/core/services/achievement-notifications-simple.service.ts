@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { AchievementsService } from './achievements.service';
 import { GamificationState } from '../models/achievement.model';
 
@@ -15,7 +15,7 @@ export interface AchievementNotification {
 @Injectable({
   providedIn: 'root'
 })
-export class AchievementNotificationsService {
+export class AchievementNotificationsSimpleService {
   private gamificationStateSubject = new BehaviorSubject<GamificationState | null>(null);
   private notificationsSubject = new BehaviorSubject<AchievementNotification[]>([]);
 
@@ -25,25 +25,27 @@ export class AchievementNotificationsService {
   constructor(private achievementsService: AchievementsService) {}
 
   /**
-   * Refresh the gamification state and check for new achievements
+   * Refresh the gamification state
    */
-  async refreshAchievements(): Promise<void> {
-    try {
-      const currentState = this.gamificationStateSubject.value;
-      const newState = await firstValueFrom(this.achievementsService.getGamificationState());
-      
-      if (newState) {
-        // Check for new achievements
-        if (currentState) {
-          this.checkForNewAchievements(currentState, newState);
+  refreshAchievements(): void {
+    this.achievementsService.getGamificationState().subscribe({
+      next: (newState) => {
+        if (newState) {
+          const currentState = this.gamificationStateSubject.value;
+          
+          // Check for new achievements if we had a previous state
+          if (currentState) {
+            this.checkForNewAchievements(currentState, newState);
+          }
+          
+          // Update the state
+          this.gamificationStateSubject.next(newState);
         }
-        
-        // Update the state
-        this.gamificationStateSubject.next(newState);
+      },
+      error: (error) => {
+        console.error('Error refreshing achievements:', error);
       }
-    } catch (error) {
-      console.error('Error refreshing achievements:', error);
-    }
+    });
   }
 
   /**
@@ -69,7 +71,7 @@ export class AchievementNotificationsService {
       this.addNotification(notification);
     });
 
-    // Also check for level ups
+    // Check for level ups
     if (newState.level > oldState.level) {
       const levelNotification: AchievementNotification = {
         id: `level_${newState.level}_${Date.now()}`,
@@ -115,31 +117,19 @@ export class AchievementNotificationsService {
   }
 
   /**
-   * Get unshown notifications
-   */
-  getUnshownNotifications(): AchievementNotification[] {
-    return this.notificationsSubject.value.filter(n => !n.shown);
-  }
-
-  /**
-   * Clear all notifications
-   */
-  clearAllNotifications(): void {
-    this.notificationsSubject.next([]);
-  }
-
-  /**
    * Initialize the service by loading current gamification state
    */
-  async initialize(): Promise<void> {
-    try {
-      const state = await firstValueFrom(this.achievementsService.getGamificationState());
-      if (state) {
-        this.gamificationStateSubject.next(state);
+  initialize(): void {
+    this.achievementsService.getGamificationState().subscribe({
+      next: (state) => {
+        if (state) {
+          this.gamificationStateSubject.next(state);
+        }
+      },
+      error: (error) => {
+        console.error('Error initializing achievement notifications:', error);
       }
-    } catch (error) {
-      console.error('Error initializing achievement notifications:', error);
-    }
+    });
   }
 
   /**
@@ -147,5 +137,12 @@ export class AchievementNotificationsService {
    */
   getCurrentState(): GamificationState | null {
     return this.gamificationStateSubject.value;
+  }
+
+  /**
+   * Clear all notifications
+   */
+  clearAllNotifications(): void {
+    this.notificationsSubject.next([]);
   }
 }

@@ -4,8 +4,9 @@ import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AchievementsService } from '../../core/services/achievements.service';
+import { AchievementNotificationsSimpleService } from '../../core/services/achievement-notifications-simple.service';
 import { AuthService } from '../../core/services/auth.service';
-import { AchievementNotificationsService } from '../../core/services/achievement-notifications.service';
+
 import { GamificationState, Achievement } from '../../core/models/achievement.model';
 import { User } from '../../core/models/user.model';
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav.component';
@@ -34,7 +35,7 @@ export class AchievementsComponent implements OnInit, OnDestroy {
     private achievementsService: AchievementsService,
     private authService: AuthService,
     private router: Router,
-    private achievementNotifications: AchievementNotificationsService
+    private achievementNotifications: AchievementNotificationsSimpleService
   ) {}
 
   ngOnInit() {

@@ -190,8 +190,8 @@ def join_group(group_id):
             
             # Trigger achievement check for joining groups
             try:
-                from utils.achievement_engine import award_achievement_for_group_join
-                achievements_earned = award_achievement_for_group_join(current_user.id)
+                from utils.achievement_engine_simple import trigger_group_join
+                achievements_earned = trigger_group_join(current_user.id)
                 if achievements_earned:
                     print(f"🏆 User {current_user.id} earned achievements: {achievements_earned}")
             except Exception as e:

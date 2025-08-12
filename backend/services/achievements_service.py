@@ -99,8 +99,8 @@ def update_achievements(data, current_user: User):
         
         # Trigger level-based achievements after points are added
         try:
-            from utils.achievement_engine import award_achievement_for_points_gained
-            level_achievements = award_achievement_for_points_gained(current_user.id)
+            from utils.achievement_engine_simple import trigger_points_update
+            level_achievements = trigger_points_update(current_user.id)
             if level_achievements:
                 print(f"🏆 User {current_user.id} earned level achievements: {level_achievements}")
         except Exception as e:
@@ -172,8 +172,8 @@ def check_all_achievements(current_user: User):
     Useful for retroactive achievement awarding
     """
     try:
-        from utils.achievement_engine import AchievementEngine
-        achievements_earned = AchievementEngine.check_all_achievements(current_user.id)
+        from utils.achievement_engine_simple import check_all_achievements
+        achievements_earned = check_all_achievements(current_user.id)
         if achievements_earned:
             print(f"🏆 User {current_user.id} earned achievements retroactively: {achievements_earned}")
         

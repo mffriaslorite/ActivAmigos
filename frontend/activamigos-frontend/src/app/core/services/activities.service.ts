@@ -3,7 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { Activity, ActivityCreate, ActivityUpdate, JoinLeaveActivityResponse, ActivityDetails } from '../models/activity.model';
-import { AchievementNotificationsService } from './achievement-notifications.service';
+import { AchievementNotificationsSimpleService } from './achievement-notifications-simple.service';
 
 @Injectable({
   providedIn: 'root'
@@ -18,7 +18,7 @@ export class ActivitiesService {
 
   constructor(
     private http: HttpClient,
-    private achievementNotifications: AchievementNotificationsService
+    private achievementNotifications: AchievementNotificationsSimpleService
   ) {}
 
   /**
