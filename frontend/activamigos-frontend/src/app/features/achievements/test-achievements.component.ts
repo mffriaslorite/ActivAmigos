@@ -40,28 +40,33 @@ import { GamificationState } from '../../core/models/achievement.model';
       <!-- Test Buttons -->
       <div class="bg-white rounded-lg shadow p-6 mb-6">
         <h2 class="text-lg font-semibold mb-4">Test Actions</h2>
-        <div class="flex flex-wrap gap-3">
-          <button 
-            (click)="addTestPoints()"
-            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
-            Add 50 Points
-          </button>
-          <button 
-            (click)="checkAllAchievements()"
-            class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">
-            Check All Achievements
-          </button>
-          <button 
-            (click)="refreshState()"
-            class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition">
-            Refresh State
-          </button>
-          <button 
-            (click)="clearNotifications()"
-            class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">
-            Clear Notifications
-          </button>
-        </div>
+               <div class="flex flex-wrap gap-3">
+         <button 
+           (click)="addTestPoints()"
+           class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
+           Add 50 Points
+         </button>
+         <button 
+           (click)="checkAllAchievements()"
+           class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">
+           Check All Achievements
+         </button>
+         <button 
+           (click)="refreshState()"
+           class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition">
+           Refresh State
+         </button>
+         <button 
+           (click)="clearNotifications()"
+           class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">
+           Clear Notifications
+         </button>
+         <button 
+           (click)="simulateAchievement()"
+           class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition">
+           🏆 Simulate Achievement
+         </button>
+       </div>
       </div>
 
       <!-- Active Notifications -->
@@ -194,6 +199,26 @@ export class TestAchievementsComponent implements OnInit, OnDestroy {
   dismissNotification(notificationId: string): void {
     this.log(`Dismissing notification: ${notificationId}`);
     this.notificationsService.removeNotification(notificationId);
+  }
+
+  simulateAchievement(): void {
+    this.log('Simulating achievement notification...');
+    
+    // Create a fake achievement notification for testing
+    const mockNotification: AchievementNotification = {
+      id: `test_${Date.now()}`,
+      title: 'Test Achievement',
+      description: '¡Has desbloqueado este logro de prueba! Esta es una notificación simulada para probar la interfaz.',
+      points: 100,
+      timestamp: new Date(),
+      shown: false
+    };
+
+    // Add the notification manually to the service
+    const currentNotifications = this.notificationsService['notificationsSubject'].value;
+    this.notificationsService['notificationsSubject'].next([mockNotification, ...currentNotifications]);
+    
+    this.log(`Simulated achievement: ${mockNotification.title}`);
   }
 
   private log(message: string): void {

@@ -1,149 +1,221 @@
-.achievement-notifications-container {
+.achievement-notification {
   position: fixed;
   top: 20px;
   right: 20px;
   z-index: 1000;
   max-width: 400px;
-  pointer-events: none;
-}
+  min-width: 320px;
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+  border-radius: 16px;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 
-.achievement-notification {
-  margin-bottom: 16px;
-  opacity: 0;
-  transform: translateX(100%);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: auto;
-}
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 25px 30px -5px rgba(0, 0, 0, 0.15),
+      0 15px 15px -5px rgba(0, 0, 0, 0.06),
+      0 0 0 1px rgba(255, 255, 255, 0.15);
+  }
 
-.achievement-notification.show {
-  opacity: 1;
-  transform: translateX(0);
+  // Mobile responsiveness
+  @media (max-width: 480px) {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+    min-width: auto;
+  }
 }
 
 .notification-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  padding: 20px;
+  gap: 16px;
   position: relative;
-  overflow: hidden;
 }
 
-.notification-content::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-  animation: shimmer 2s infinite;
-  pointer-events: none;
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.notification-icon {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
+.achievement-icon {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
   flex-shrink: 0;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+
+  .icon-glow {
+    position: absolute;
+    inset: -4px;
+    background: linear-gradient(45deg, #FFD700, #FFA500, #FFD700);
+    border-radius: 50%;
+    opacity: 0.6;
+    animation: pulse-glow 2s ease-in-out infinite;
+    z-index: -1;
+  }
+
+  span {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    animation: bounce-icon 0.6s ease-out;
+  }
 }
 
-.notification-details {
+.notification-text {
   flex: 1;
   color: white;
+  min-width: 0; // Allow text to wrap properly
 }
 
 .notification-title {
-  font-weight: 600;
-  font-size: 16px;
-  margin-bottom: 4px;
-  line-height: 1.3;
-}
-
-.notification-description {
   font-size: 14px;
-  opacity: 0.9;
-  line-height: 1.4;
-  margin-bottom: 6px;
-}
-
-.notification-points {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fbbf24;
   font-weight: 600;
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 20px;
-  display: inline-block;
-  backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.notification-close {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
+.achievement-title {
+  font-size: 18px;
+  font-weight: 700;
   color: white;
-  font-size: 20px;
+  margin-bottom: 6px;
+  line-height: 1.3;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.achievement-description {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.4;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.points-reward {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #FFD700;
+  background: rgba(255, 215, 0, 0.15);
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  backdrop-filter: blur(4px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
   width: 28px;
   height: 28px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  flex-shrink: 0;
-}
+  font-size: 18px;
+  line-height: 1;
+  transition: all 0.2s ease-in-out;
+  backdrop-filter: blur(4px);
 
-.notification-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
+  &:hover {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+    transform: scale(1.1);
+  }
 
-/* Mobile adjustments */
-@media (max-width: 640px) {
-  .achievement-notifications-container {
-    top: 80px;
-    left: 16px;
-    right: 16px;
-    max-width: none;
-  }
-  
-  .notification-content {
-    padding: 14px;
-  }
-  
-  .notification-title {
-    font-size: 15px;
-  }
-  
-  .notification-description {
-    font-size: 13px;
+  &:active {
+    transform: scale(0.95);
   }
 }
 
-/* Accessibility improvements */
-@media (prefers-reduced-motion: reduce) {
-  .achievement-notification {
-    transition: opacity 0.3s ease;
+.progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #FFD700, #FFA500);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  border-radius: 0 0 16px 16px;
+}
+
+// Animations
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
   }
-  
-  .notification-content::before {
-    animation: none;
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes bounce-icon {
+  0% {
+    transform: scale(0.5) rotate(-180deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(-90deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+// Show state
+.achievement-notification.show {
+  .achievement-icon {
+    animation: celebration 0.8s ease-out;
+  }
+
+  .notification-text {
+    animation: slide-up 0.5s ease-out 0.2s both;
+  }
+}
+
+@keyframes celebration {
+  0% {
+    transform: scale(0.8);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
