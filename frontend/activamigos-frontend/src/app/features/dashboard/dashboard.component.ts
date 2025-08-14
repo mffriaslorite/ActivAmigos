@@ -121,4 +121,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (titleLower.includes('parque') || titleLower.includes('naturaleza') || titleLower.includes('jardín')) return '🌳';
     return '🎯';
   }
+
+  getProfileImageUrl(): string | null {
+    return this.authService.getProfileImageSrc ? this.authService.getProfileImageSrc() : null;
+  }
 }

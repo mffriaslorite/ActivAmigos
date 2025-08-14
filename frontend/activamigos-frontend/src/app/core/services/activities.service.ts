@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { Activity, ActivityCreate, ActivityUpdate, JoinLeaveActivityResponse, ActivityDetails } from '../models/activity.model';
+import { AchievementNotificationsSimpleService } from './achievement-notifications-simple.service';
 
 @Injectable({
   providedIn: 'root'
@@ -15,7 +16,10 @@ export class ActivitiesService {
   public activities$ = this.activitiesSubject.asObservable();
   public isLoading$ = this.isLoadingSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private achievementNotifications: AchievementNotificationsSimpleService
+  ) {}
 
   /**
    * Get all activities
@@ -58,11 +62,18 @@ export class ActivitiesService {
       activityData,
       { withCredentials: true }
     ).pipe(
-      tap(newActivity => {
+      tap(async newActivity => {
         // Add the new activity to the current activities list
         const currentActivities = this.activitiesSubject.value;
         this.activitiesSubject.next([newActivity, ...currentActivities]);
         this.isLoadingSubject.next(false);
+        
+        // Automatically refresh achievements after creating an activity
+        try {
+          await this.achievementNotifications.refreshAchievements();
+        } catch (error) {
+          console.error('Error refreshing achievements after activity creation:', error);
+        }
       }),
       catchError(this.handleError)
     );
@@ -116,9 +127,18 @@ export class ActivitiesService {
       {},
       { withCredentials: true }
     ).pipe(
-      tap(response => {
+      tap(async response => {
         // Update the activity's participation status in the current activities list
         this.updateActivityParticipation(id, response.is_participant, response.participant_count);
+        
+        // Automatically refresh achievements after joining an activity
+        if (response.is_participant) {
+          try {
+            await this.achievementNotifications.refreshAchievements();
+          } catch (error) {
+            console.error('Error refreshing achievements after activity join:', error);
+          }
+        }
       }),
       catchError(this.handleError)
     );

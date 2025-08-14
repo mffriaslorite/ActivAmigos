@@ -17,8 +17,21 @@
   }
 }
 
-// Legacy support
+// Profile header button
+.profile-header-btn {
+  transition: all 0.2s ease-in-out;
 
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+
+// Legacy support
 .menu-item {
   border: 2px solid;
   border-radius: 12px;

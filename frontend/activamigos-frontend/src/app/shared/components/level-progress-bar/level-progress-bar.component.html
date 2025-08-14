@@ -1,0 +1,46 @@
+<div class="w-full bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+  <!-- Level and Points Display -->
+  <div class="flex justify-between items-center mb-3">
+    <div *ngIf="showLevel" class="flex items-center gap-2">
+      <span class="text-2xl font-bold text-indigo-600">
+        Nivel {{ level }}
+      </span>
+      <div class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-medium">
+        🏆
+      </div>
+    </div>
+    
+    <div *ngIf="showPoints" class="text-right">
+      <div class="text-sm text-gray-500">Progreso al siguiente nivel</div>
+      <div class="text-lg font-semibold text-gray-700">
+        {{ currentPoints }}/100 puntos
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Bar Container -->
+  <div class="relative">
+    <!-- Background Bar -->
+    <div class="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+      <!-- Progress Fill -->
+      <div 
+        class="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full progress-bar"
+        [ngStyle]="getProgressBarStyle()">
+      </div>
+    </div>
+    
+    <!-- Progress Percentage Label -->
+    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2">
+      <div class="bg-gray-800 text-white px-2 py-1 rounded text-xs font-medium opacity-90">
+        {{ progressPercentage | number:'1.0-0' }}%
+      </div>
+    </div>
+  </div>
+
+  <!-- Next Level Info -->
+  <div *ngIf="showPoints" class="mt-3 text-center">
+    <span class="text-xs text-gray-500">
+      {{ pointsToNextLevel }} puntos para el nivel {{ level + 1 }}
+    </span>
+  </div>
+</div>

@@ -139,6 +139,13 @@ class MinIOClient:
         except Exception as e:
             current_app.logger.error(f"Image processing error: {e}")
             raise ValueError("Invalid image file")
+        
+        
+    def upload_bytes(self, object_name: str, data: bytes, content_type: str = "application/octet-stream"):
+        self._ensure_initialized()
+        bucket = current_app.config['MINIO_BUCKET_NAME']
+        self.client.put_object(bucket, object_name, io.BytesIO(data), length=len(data), content_type=content_type)
+
     
     def _get_public_url(self, filename):
         """Get public URL for the uploaded file"""

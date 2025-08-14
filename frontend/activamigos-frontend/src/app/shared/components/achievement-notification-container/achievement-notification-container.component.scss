@@ -1,0 +1,139 @@
+.notifications-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  pointer-events: none; // Allow clicks through the container
+  max-width: 420px;
+  width: 100%;
+
+  // Mobile responsiveness
+  @media (max-width: 480px) {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+}
+
+.notification-item {
+  pointer-events: auto; // Re-enable clicks on notifications
+  margin-bottom: 12px;
+  display: block;
+  position: relative;
+
+  // Animation delay for stacked notifications
+  animation-delay: calc(var(--notification-index, 0) * 0.1s);
+
+  // Ensure proper stacking order
+  z-index: calc(1000 - var(--notification-index, 0));
+
+  // Fade in animation for new notifications
+  animation: notification-enter 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  // Hover effect for the container affects individual notifications
+  &:hover {
+    // Individual notifications handle their own hover states
+  }
+}
+
+// Entry animation for notifications
+@keyframes notification-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(100%) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+// Exit animation (handled by individual notification component)
+.notification-item.leaving {
+  animation: notification-exit 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes notification-exit {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    max-height: 200px;
+    margin-bottom: 12px;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(100%) scale(0.9);
+    max-height: 0;
+    margin-bottom: 0;
+  }
+}
+
+// Stacking effect for multiple notifications
+.notifications-container:has(.notification-item:nth-child(2)) {
+  .notification-item:nth-child(1) {
+    // First notification is fully visible
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+
+  .notification-item:nth-child(2) {
+    // Second notification is slightly offset
+    transform: translateY(-8px) scale(0.98);
+    opacity: 0.95;
+  }
+
+  .notification-item:nth-child(3) {
+    // Third notification is more offset
+    transform: translateY(-16px) scale(0.96);
+    opacity: 0.9;
+  }
+}
+
+// Reduced motion for accessibility
+@media (prefers-reduced-motion: reduce) {
+  .notification-item {
+    animation: none !important;
+  }
+
+  .notifications-container:has(.notification-item:nth-child(2)) {
+    .notification-item {
+      transform: none !important;
+      opacity: 1 !important;
+    }
+  }
+
+  @keyframes notification-enter {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes notification-exit {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .notification-item {
+    // Individual notifications handle their own high contrast styles
+  }
+}
+
+// Focus management for keyboard accessibility
+.notification-item:focus-within {
+  z-index: 1001; // Bring focused notification to front
+}

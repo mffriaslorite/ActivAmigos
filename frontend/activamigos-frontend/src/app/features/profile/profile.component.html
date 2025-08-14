@@ -52,11 +52,103 @@
             <div class="text-xs text-gray-500">Actividades</div>
         </div>
         <div>
-            <div class="text-2xl font-bold text-yellow-600">5</div>
+            <div class="text-2xl font-bold text-yellow-600">{{ gamificationState?.earned_achievements?.length || 0 }}</div>
             <div class="text-xs text-gray-500">Logros</div>
         </div>
         </div>
     </div>
+
+    <!-- Gamification Section -->
+    <div *ngIf="gamificationState" class="bg-white rounded-xl p-6 mb-6 shadow-sm border border-gray-200">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+          🎯 Tu Progreso
+        </h3>
+        <div class="text-sm text-gray-500">
+          {{ gamificationState.points }} puntos totales
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <app-level-progress-bar
+        [level]="gamificationState.level"
+        [progressToNextLevel]="gamificationState.progress_to_next_level"
+        [showPoints]="true"
+        [showLevel]="true">
+      </app-level-progress-bar>
+    </div>
+
+    <!-- Achievements Section -->
+    <div class="bg-white rounded-xl p-6 mb-6 shadow-sm border border-gray-200">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+          🏆 Mis Logros
+        </h3>
+        <div class="text-sm text-gray-500">
+          {{ gamificationState?.earned_achievements?.length || 0 }} logros
+        </div>
+      </div>
+
+      <!-- Achievements Grid -->
+      <div *ngIf="(gamificationState?.earned_achievements?.length || 0) > 0; else noAchievements" 
+           class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div *ngFor="let userAchievement of gamificationState?.earned_achievements" 
+             class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4 hover:shadow-md transition-all duration-200">
+          <div class="flex items-start gap-3">
+            <!-- Achievement Icon -->
+            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <img *ngIf="userAchievement.achievement.icon_url" 
+                   [src]="getAchievementIconUrl(userAchievement.achievement.id)"
+                   [alt]="userAchievement.achievement.title"
+                   class="w-full h-full object-cover"
+                   (error)="$event.target.style.display='none'">
+              <span *ngIf="!userAchievement.achievement.icon_url" class="text-2xl">🏆</span>
+            </div>
+
+            <!-- Achievement Details -->
+            <div class="flex-1 min-w-0">
+              <h4 class="font-semibold text-gray-900 text-sm mb-1 truncate">
+                {{ userAchievement.achievement.title }}
+              </h4>
+              <p class="text-xs text-gray-600 mb-2 line-clamp-2">
+                {{ userAchievement.achievement.description }}
+              </p>
+              <div class="flex items-center justify-between">
+                <span class="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full font-medium">
+                  +{{ userAchievement.achievement.points_reward }} pts
+                </span>
+                <span class="text-xs text-gray-500">
+                  {{ formatDate(userAchievement.date_earned) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Achievements State -->
+      <ng-template #noAchievements>
+        <div class="text-center py-8">
+          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-3xl">🎯</span>
+          </div>
+          <h4 class="text-lg font-semibold text-gray-900 mb-2">¡Tu aventura comienza aquí!</h4>
+          <p class="text-gray-600 text-sm max-w-xs mx-auto">
+            Participa en actividades y únete a grupos para desbloquear tus primeros logros.
+          </p>
+          <div class="mt-4 text-xs text-gray-500">
+            💡 Cada logro te otorga puntos y te ayuda a subir de nivel
+          </div>
+        </div>
+      </ng-template>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoadingAchievements" class="text-center py-8">
+        <div class="animate-spin w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full mx-auto mb-4"></div>
+        <p class="text-gray-500 text-sm">Cargando tus logros...</p>
+      </div>
+    </div>
+
     <!-- Menu Options -->
     <div class="space-y-4">
         <!-- Editar Perfil -->

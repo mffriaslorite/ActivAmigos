@@ -61,10 +61,12 @@ export const routes: Routes = [
     title: 'Detalles de la Actividad - ActivAmigos'
   },
 
+  // Achievements route (protected)
   {
     path: 'achievements',
-    redirectTo: '/dashboard',
-    pathMatch: 'full'
+    loadComponent: () => import('./features/achievements/achievements.component').then(m => m.AchievementsComponent),
+    canActivate: [AuthGuard],
+    title: 'Logros - ActivAmigos'
   },
 
   {
