@@ -1,7 +1,5 @@
 .achievement-notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
+  position: relative;
   z-index: 1000;
   max-width: 400px;
   min-width: 320px;
@@ -26,9 +24,6 @@
 
   // Mobile responsiveness
   @media (max-width: 480px) {
-    top: 10px;
-    right: 10px;
-    left: 10px;
     max-width: none;
     min-width: auto;
   }
