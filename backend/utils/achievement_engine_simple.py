@@ -2,13 +2,13 @@
 Simplified Achievement Engine
 
 This simplified version focuses on reliability and clarity.
-Updated triggers based on your specifications:
-- "Primera Actividad": Join first activity (not participate)
+Updated for accessibility - achievements designed for people with cognitive difficulties:
+- "Primera Actividad": Join first activity
 - "Explorador Social": Join first group  
-- "Estrella en Ascenso": Reach level 5
+- "Creador de Grupo": Create first group
 - "Organizador Nato": Create first activity
-- "Maestro de la Consistencia": Create 10 activities (not participate)
-- "Embajador ActivAmigos": Reach level 10
+- "Constancia en Grupos": Create 3 groups
+- "Estrella ActivAmigos": Reach level 3
 """
 
 from typing import List
@@ -88,6 +88,33 @@ def check_group_achievements(user_id: int) -> List[str]:
         logger.error(f"Error checking group achievements for user {user_id}: {e}")
         return []
 
+def check_group_creation_achievements(user_id: int) -> List[str]:
+    """Check and award group creation achievements"""
+    try:
+        # Import here to avoid circular imports
+        from models.group.group import Group
+        
+        # Count groups created by user
+        group_count = Group.query.filter_by(creator_id=user_id).count()
+        
+        achievements_awarded = []
+        
+        # First group creation: "Creador de Grupo"
+        if group_count == 1:
+            if award_achievement(user_id, "Creador de Grupo"):
+                achievements_awarded.append("Creador de Grupo")
+        
+        # 3 group creations: "Constancia en Grupos"
+        elif group_count == 3:
+            if award_achievement(user_id, "Constancia en Grupos"):
+                achievements_awarded.append("Constancia en Grupos")
+        
+        return achievements_awarded
+        
+    except Exception as e:
+        logger.error(f"Error checking group creation achievements for user {user_id}: {e}")
+        return []
+
 def check_activity_creation_achievements(user_id: int) -> List[str]:
     """Check and award activity creation achievements"""
     try:
@@ -103,11 +130,6 @@ def check_activity_creation_achievements(user_id: int) -> List[str]:
         if activity_count == 1:
             if award_achievement(user_id, "Organizador Nato"):
                 achievements_awarded.append("Organizador Nato")
-        
-        # 10 activity creations: "Maestro de la Consistencia"
-        elif activity_count == 10:
-            if award_achievement(user_id, "Maestro de la Consistencia"):
-                achievements_awarded.append("Maestro de la Consistencia")
         
         return achievements_awarded
         
@@ -144,15 +166,10 @@ def check_level_achievements(user_id: int) -> List[str]:
         current_level = user_points.level
         achievements_awarded = []
         
-        # Level 5 achievement: "Estrella en Ascenso"
-        if current_level >= 5:
-            if award_achievement(user_id, "Estrella en Ascenso"):
-                achievements_awarded.append("Estrella en Ascenso")
-        
-        # Level 10 achievement: "Embajador ActivAmigos"
-        if current_level >= 10:
-            if award_achievement(user_id, "Embajador ActivAmigos"):
-                achievements_awarded.append("Embajador ActivAmigos")
+        # Level 3 achievement: "Estrella ActivAmigos" 
+        if current_level >= 3:
+            if award_achievement(user_id, "Estrella ActivAmigos"):
+                achievements_awarded.append("Estrella ActivAmigos")
         
         return achievements_awarded
         
@@ -167,6 +184,7 @@ def check_all_achievements(user_id: int) -> List[str]:
         
         # Check all achievement types
         all_achievements.extend(check_group_achievements(user_id))
+        all_achievements.extend(check_group_creation_achievements(user_id))
         all_achievements.extend(check_activity_creation_achievements(user_id))
         all_achievements.extend(check_activity_join_achievements(user_id))
         all_achievements.extend(check_level_achievements(user_id))
@@ -187,6 +205,13 @@ def check_all_achievements(user_id: int) -> List[str]:
 def trigger_group_join(user_id: int) -> List[str]:
     """Trigger when user joins a group"""
     achievements = check_group_achievements(user_id)
+    if achievements:
+        db.session.commit()
+    return achievements
+
+def trigger_group_creation(user_id: int) -> List[str]:
+    """Trigger when user creates a group"""
+    achievements = check_group_creation_achievements(user_id)
     if achievements:
         db.session.commit()
     return achievements
