@@ -5,8 +5,6 @@ Simplified Achievement Seeding Script
 
 import os
 import sys
-from io import BytesIO
-import requests
 from datetime import datetime
 
 # Add the backend directory to the path
@@ -18,51 +16,8 @@ if ROOT_DIR not in sys.path:
 from app import create_app
 from models.user.user import db
 from models.achievement.achievement import Achievement
-from utils.minio_client import minio_client
 
-def create_bucket_if_not_exists():
-    """Create the achievement-icons bucket if it doesn't exist"""
-    bucket_name = "achievement-icons"
-    try:
-        if not minio_client.bucket_exists(bucket_name):
-            minio_client.make_bucket(bucket_name)
-            print(f"Created bucket: {bucket_name}")
-        else:
-            print(f"Bucket {bucket_name} already exists")
-    except Exception as e:
-        print(f"Error creating bucket: {e}")
 
-def download_placeholder_icon(achievement_name):
-    """Download a placeholder icon for the achievement"""
-    # Using a placeholder service that generates colorful icons
-    icon_url = f"https://via.placeholder.com/128x128/4F46E5/FFFFFF?text={achievement_name[0]}"
-    
-    try:
-        response = requests.get(icon_url, timeout=10)
-        response.raise_for_status()
-        return BytesIO(response.content)
-    except Exception as e:
-        print(f"Error downloading icon for {achievement_name}: {e}")
-        return None
-
-def upload_icon_to_minio(icon_data, filename):
-    """Upload icon to MinIO"""
-    try:
-        # Reset stream position
-        icon_data.seek(0)
-        
-        # Upload to MinIO
-        minio_client.put_object(
-            "achievement-icons",
-            filename,
-            icon_data,
-            length=len(icon_data.getvalue()),
-            content_type='image/png'
-        )
-        return filename
-    except Exception as e:
-        print(f"Error uploading icon {filename}: {e}")
-        return None
 
 def seed_achievements():
     """Create simplified achievements"""
@@ -114,20 +69,11 @@ def seed_achievements():
     for i, achievement_data in enumerate(achievements_data, 1):
         print(f"Processing: {achievement_data['title']}")
         
-        # Download and upload icon
-        icon_data = download_placeholder_icon(achievement_data["title"])
-        icon_filename = None
-        if icon_data:
-            icon_filename = f"achievement_{i}_{datetime.now().strftime('%Y%m%d')}.png"
-            uploaded_filename = upload_icon_to_minio(icon_data, icon_filename)
-            if uploaded_filename:
-                print(f"Uploaded icon: {uploaded_filename}")
-        
-        # Create achievement
+        # Create achievement without icon
         achievement = Achievement(
             title=achievement_data["title"],
             description=achievement_data["description"],
-            icon_url=icon_filename,
+            icon_url=None,  # No icon for now
             points_reward=achievement_data["points_reward"]
         )
         
@@ -148,9 +94,6 @@ def main():
     app = create_app()
     
     with app.app_context():
-        # Create MinIO bucket
-        create_bucket_if_not_exists()
-        
         # Seed achievements
         seed_achievements()
         

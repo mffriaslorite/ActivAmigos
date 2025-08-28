@@ -37,8 +37,11 @@ def award_achievement(user_id: int, achievement_title: str) -> bool:
         # Find the achievement
         achievement = Achievement.query.filter_by(title=achievement_title).first()
         if not achievement:
+            print(f"❌ Achievement '{achievement_title}' not found in database")
             logger.warning(f"Achievement '{achievement_title}' not found")
             return False
+        
+        print(f"✅ Found achievement '{achievement_title}' (ID: {achievement.id})")
         
         # Check if user already has this achievement
         existing = UserAchievement.query.filter_by(
@@ -47,7 +50,10 @@ def award_achievement(user_id: int, achievement_title: str) -> bool:
         ).first()
         
         if existing:
+            print(f"⚠️ User {user_id} already has achievement '{achievement_title}'")
             return False  # Already has achievement
+        
+        print(f"✅ User {user_id} eligible for achievement '{achievement_title}'")
         
         # Award the achievement
         user_achievement = UserAchievement(
@@ -61,12 +67,15 @@ def award_achievement(user_id: int, achievement_title: str) -> bool:
         if achievement.points_reward > 0:
             user_points = get_or_create_user_points(user_id)
             user_points.add_points(achievement.points_reward)
+            print(f"🎯 Added {achievement.points_reward} points to user {user_id}")
         
         logger.info(f"Awarded achievement '{achievement_title}' to user {user_id}")
+        print(f"🏆 Successfully awarded '{achievement_title}' to user {user_id}")
         return True
         
     except Exception as e:
         logger.error(f"Error awarding achievement '{achievement_title}' to user {user_id}: {e}")
+        print(f"❌ Error awarding achievement '{achievement_title}': {e}")
         return False
 
 def check_group_achievements(user_id: int) -> List[str]:
@@ -95,24 +104,30 @@ def check_group_creation_achievements(user_id: int) -> List[str]:
         from models.group.group import Group
         
         # Count groups created by user
-        group_count = Group.query.filter_by(creator_id=user_id).count()
+        group_count = Group.query.filter_by(created_by=user_id).count()
+        print(f"🔍 User {user_id} has created {group_count} groups")
         
         achievements_awarded = []
         
         # First group creation: "Creador de Grupo"
         if group_count == 1:
+            print(f"🎯 Checking 'Creador de Grupo' achievement for user {user_id}")
             if award_achievement(user_id, "Creador de Grupo"):
                 achievements_awarded.append("Creador de Grupo")
+                print(f"🏆 Awarded 'Creador de Grupo' to user {user_id}")
         
         # 3 group creations: "Constancia en Grupos"
         elif group_count == 3:
+            print(f"🎯 Checking 'Constancia en Grupos' achievement for user {user_id}")
             if award_achievement(user_id, "Constancia en Grupos"):
                 achievements_awarded.append("Constancia en Grupos")
+                print(f"🏆 Awarded 'Constancia en Grupos' to user {user_id}")
         
         return achievements_awarded
         
     except Exception as e:
         logger.error(f"Error checking group creation achievements for user {user_id}: {e}")
+        print(f"❌ Error in group creation achievements: {e}")
         return []
 
 def check_activity_creation_achievements(user_id: int) -> List[str]:
@@ -122,19 +137,23 @@ def check_activity_creation_achievements(user_id: int) -> List[str]:
         from models.activity.activity import Activity
         
         # Count activities created by user
-        activity_count = Activity.query.filter_by(creator_id=user_id).count()
+        activity_count = Activity.query.filter_by(created_by=user_id).count()
+        print(f"🔍 User {user_id} has created {activity_count} activities")
         
         achievements_awarded = []
         
         # First activity creation: "Organizador Nato"
         if activity_count == 1:
+            print(f"🎯 Checking 'Organizador Nato' achievement for user {user_id}")
             if award_achievement(user_id, "Organizador Nato"):
                 achievements_awarded.append("Organizador Nato")
+                print(f"🏆 Awarded 'Organizador Nato' to user {user_id}")
         
         return achievements_awarded
         
     except Exception as e:
         logger.error(f"Error checking activity creation achievements for user {user_id}: {e}")
+        print(f"❌ Error in activity creation achievements: {e}")
         return []
 
 def check_activity_join_achievements(user_id: int) -> List[str]:
