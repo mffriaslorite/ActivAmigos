@@ -4,11 +4,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { GroupsService } from '../../../core/services/groups.service';
 import { GroupDetails, GroupMember } from '../../../core/models/group.model';
+import { ChatComponent } from '../../../shared/components/chat/chat.component';
 
 @Component({
   selector: 'app-group-details',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ChatComponent],
   templateUrl: './group-details.component.html',
   styleUrls: ['./group-details.component.scss']
 })
@@ -18,25 +19,6 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   groupDetails: GroupDetails | null = null;
   isLoading = true;
   errorMessage = '';
-  newMessage = '';
-
-  // Mock chat messages for preview
-  chatMessages = [
-    {
-      id: 1,
-      sender: 'Sofia',
-      message: 'Hola a todos, ¿qué libro leemos?',
-      timestamp: new Date(Date.now() - 3600000), // 1 hour ago
-      isCurrentUser: false
-    },
-    {
-      id: 2,
-      sender: 'Carlos',
-      message: 'Hola Sofia, estamos con "El Principito"',
-      timestamp: new Date(Date.now() - 1800000), // 30 minutes ago
-      isCurrentUser: true
-    }
-  ];
 
   constructor(
     private route: ActivatedRoute,
@@ -98,147 +80,90 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
           username: 'sofia',
           first_name: 'Sofia',
           last_name: '',
-          profile_image: '',
-          is_admin: true,
-          joined_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+          is_admin: true
         },
         {
           id: 2,
           username: 'carlos',
           first_name: 'Carlos',
-          last_name: '',
-          profile_image: '',
-          is_admin: false,
-          joined_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: 3,
-          username: 'ana',
-          first_name: 'Ana',
-          last_name: '',
-          profile_image: '',
-          is_admin: false,
-          joined_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: 4,
-          username: 'javier',
-          first_name: 'Javier',
-          last_name: '',
-          profile_image: '',
-          is_admin: false,
-          joined_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: 5,
-          username: 'elena',
-          first_name: 'Elena',
-          last_name: '',
-          profile_image: '',
-          is_admin: false,
-          joined_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+          last_name: 'García',
+          is_admin: false
         }
       ]
     };
   }
 
-  goBack() {
+  goBack(): void {
     this.router.navigate(['/groups']);
   }
 
   getGroupIcon(): string {
-    if (!this.groupDetails) return '👥';
+    if (!this.groupDetails) return '📚';
     
     const name = this.groupDetails.name.toLowerCase();
     if (name.includes('lectura') || name.includes('libro')) return '📚';
-    if (name.includes('deporte') || name.includes('fútbol') || name.includes('ejercicio')) return '⚽';
-    if (name.includes('cocina') || name.includes('receta')) return '👨‍🍳';
-    if (name.includes('arte') || name.includes('pintura')) return '🎨';
-    if (name.includes('música') || name.includes('canto')) return '🎵';
-    if (name.includes('juego') || name.includes('mesa')) return '🎲';
-    if (name.includes('naturaleza') || name.includes('jardín')) return '🌱';
+    if (name.includes('deporte') || name.includes('ejercicio')) return '⚽';
+    if (name.includes('arte') || name.includes('creativo')) return '🎨';
+    if (name.includes('música') || name.includes('musica')) return '🎵';
+    if (name.includes('cocina') || name.includes('gastronomía')) return '👨‍🍳';
+    if (name.includes('tecnología') || name.includes('tecnologia')) return '💻';
+    if (name.includes('naturaleza') || name.includes('aire libre')) return '🌲';
+    if (name.includes('juego') || name.includes('entretenimiento')) return '🎮';
+    
     return '👥';
   }
 
   getIconBackground(): string {
-    if (!this.groupDetails) return 'bg-blue-100';
+    if (!this.groupDetails) return 'bg-blue-500';
     
     const name = this.groupDetails.name.toLowerCase();
-    if (name.includes('lectura') || name.includes('libro')) return 'bg-purple-100';
-    if (name.includes('deporte') || name.includes('fútbol') || name.includes('ejercicio')) return 'bg-green-100';
-    if (name.includes('cocina') || name.includes('receta')) return 'bg-orange-100';
-    if (name.includes('arte') || name.includes('pintura')) return 'bg-pink-100';
-    if (name.includes('música') || name.includes('canto')) return 'bg-yellow-100';
-    if (name.includes('juego') || name.includes('mesa')) return 'bg-red-100';
-    if (name.includes('naturaleza') || name.includes('jardín')) return 'bg-green-100';
-    return 'bg-blue-100';
+    if (name.includes('lectura') || name.includes('libro')) return 'bg-green-500';
+    if (name.includes('deporte') || name.includes('ejercicio')) return 'bg-red-500';
+    if (name.includes('arte') || name.includes('creativo')) return 'bg-purple-500';
+    if (name.includes('música') || name.includes('musica')) return 'bg-pink-500';
+    if (name.includes('cocina') || name.includes('gastronomía')) return 'bg-orange-500';
+    if (name.includes('tecnología') || name.includes('tecnologia')) return 'bg-blue-500';
+    if (name.includes('naturaleza') || name.includes('aire libre')) return 'bg-emerald-500';
+    if (name.includes('juego') || name.includes('entretenimiento')) return 'bg-indigo-500';
+    
+    return 'bg-blue-500';
+  }
+
+  getMemberInitials(member: GroupMember): string {
+    const firstName = member.first_name || '';
+    const lastName = member.last_name || '';
+    
+    if (firstName && lastName) {
+      return (firstName[0] + lastName[0]).toUpperCase();
+    } else if (firstName) {
+      return firstName[0].toUpperCase();
+    } else if (lastName) {
+      return lastName[0].toUpperCase();
+    } else {
+      return member.username.substring(0, 2).toUpperCase();
+    }
   }
 
   getMemberDisplayName(member: GroupMember): string {
     if (member.first_name && member.last_name) {
       return `${member.first_name} ${member.last_name}`;
-    }
-    if (member.first_name) {
+    } else if (member.first_name) {
       return member.first_name;
+    } else if (member.last_name) {
+      return member.last_name;
+    } else {
+      return member.username;
     }
-    return member.username;
-  }
-
-  getMemberInitials(member: GroupMember): string {
-    const name = this.getMemberDisplayName(member);
-    const names = name.split(' ');
-    if (names.length >= 2) {
-      return `${names[0][0]}${names[1][0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
   }
 
   parseRules(): string[] {
     if (!this.groupDetails?.rules) return [];
-
-    const raw = this.groupDetails.rules;
-
-    const matches = raw.match(/(?:^\s*|\n|\r)(?:\d+[.)]|•|-)?\s*(.+?)(?=(?:\n\d+[.)]|$))/gs);
-
-    return matches
-        ?.map(rule => {
-        return rule.replace(/^\s*(\d+[.)]|•|-)\s*/, '').trim();
-        })
-        .filter(rule => rule.length > 0) ?? [];
-}
-
-
-
-  formatChatTime(timestamp: Date): string {
-    const now = new Date();
-    const diffMs = now.getTime() - timestamp.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    
-    if (diffMins < 1) return 'Ahora';
-    if (diffMins < 60) return `hace ${diffMins}m`;
-    if (diffHours < 24) return `hace ${diffHours}h`;
-    
-    return timestamp.toLocaleDateString('es-ES', { 
-      day: 'numeric', 
-      month: 'short' 
-    });
+    return this.groupDetails.rules.split('.').filter(rule => rule.trim().length > 0);
   }
 
-  onMessageInput(event: Event) {
-    const target = event.target as HTMLInputElement;
-    this.newMessage = target.value;
-  }
-
-  // Mock function for image upload - disabled for now
-  onImageUpload() {
-    // This will be implemented later when chat functionality is added
-    console.log('Image upload clicked - not implemented yet');
-  }
-
-  // Mock function for sending message - disabled for now
-  onSendMessage() {
-    // This will be implemented later when chat functionality is added
-    console.log('Send message clicked - not implemented yet');
+  getCurrentUserId(): number {
+    // TODO: Get from auth service
+    // For now, return a mock user ID
+    return 1;
   }
 }

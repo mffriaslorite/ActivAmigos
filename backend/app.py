@@ -10,6 +10,7 @@ from services.user_service import blp as user_blp
 from services.group_service import blp as group_blp
 from services.activity_service import blp as activity_blp
 from services.achievement_service import blp as achievement_blp
+from services.chat_service import blp as chat_blp, init_socketio
 
 def create_app():
     app = Flask(__name__)
@@ -38,7 +39,11 @@ def create_app():
         from models import group
         from models import activity
         from models import achievement
+        from models import message
         from models import associations
+
+    # Initialize SocketIO
+    socketio = init_socketio(app)
 
     # API con Swagger
     app.config["API_TITLE"] = "ActivAmigos API"
@@ -54,10 +59,11 @@ def create_app():
     api.register_blueprint(group_blp)
     api.register_blueprint(activity_blp)
     api.register_blueprint(achievement_blp)
+    api.register_blueprint(chat_blp)
 
-    return app
+    return app, socketio
 
-app = create_app()
+app, socketio = create_app()
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    socketio.run(app, debug=True, host="0.0.0.0", port=5000)

@@ -1,0 +1,159 @@
+<div class="chat-container" role="region" aria-label="Chat de {{ chatName }}">
+  <!-- Chat Header -->
+  <div class="chat-header">
+    <div class="chat-title">
+      <h3 class="text-lg font-semibold text-gray-900">
+        <span class="mr-2" role="img" aria-label="Chat">💬</span>
+        Chat de {{ chatName }}
+      </h3>
+    </div>
+    
+    <!-- Connection Status -->
+    <div class="connection-status">
+      <span 
+        class="status-indicator"
+        [class]="getConnectionStatusClass()"
+        [attr.aria-label]="'Estado de conexión: ' + getConnectionStatusText()"
+      ></span>
+      <span class="status-text text-sm" [class]="getConnectionStatusClass()">
+        {{ getConnectionStatusText() }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Chat Status Bar -->
+  <div class="chat-status-bar" *ngIf="chatStatus">
+    <div class="status-info">
+      <span class="member-count">
+        <span class="mr-1" role="img" aria-label="Miembros">👥</span>
+        {{ chatStatus.member_count }} {{ chatStatus.member_count === 1 ? 'miembro' : 'miembros' }}
+      </span>
+      <span class="message-count">
+        <span class="mr-1" role="img" aria-label="Mensajes">💭</span>
+        {{ chatStatus.message_count }} {{ chatStatus.message_count === 1 ? 'mensaje' : 'mensajes' }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Messages Container -->
+  <div 
+    class="messages-container" 
+    #messagesContainer
+    (scroll)="onScroll()"
+    role="log"
+    aria-label="Historial de mensajes"
+    tabindex="0"
+  >
+    <!-- Loading More Messages -->
+    <div *ngIf="isLoadingMore" class="loading-more">
+      <div class="loading-spinner"></div>
+      <span class="loading-text">Cargando mensajes anteriores...</span>
+    </div>
+
+    <!-- Load More Button -->
+    <div *ngIf="hasMoreMessages && !isLoadingMore" class="load-more-container">
+      <button 
+        class="load-more-btn"
+        (click)="loadMoreMessages()"
+        aria-label="Cargar mensajes anteriores"
+      >
+        <span class="mr-2" role="img" aria-label="Cargar más">⬆️</span>
+        Cargar mensajes anteriores
+      </button>
+    </div>
+
+    <!-- Messages List -->
+    <div class="messages-list">
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Cargando chat...</p>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="errorMessage && !isLoading" class="error-state">
+        <div class="error-icon">⚠️</div>
+        <p class="error-text">{{ errorMessage }}</p>
+        <button 
+          class="retry-btn"
+          (click)="loadChatHistory()"
+          aria-label="Reintentar cargar chat"
+        >
+          Reintentar
+        </button>
+      </div>
+
+      <!-- No Messages State -->
+      <div *ngIf="!isLoading && !errorMessage && messages.length === 0" class="no-messages">
+        <div class="no-messages-icon">💬</div>
+        <p class="no-messages-text">No hay mensajes aún</p>
+        <p class="no-messages-subtext">¡Sé el primero en escribir!</p>
+      </div>
+
+      <!-- Individual Messages -->
+      <div 
+        *ngFor="let message of messages; trackBy: trackByMessageId"
+        class="message-item"
+        [class]="getMessageClass(message)"
+        [attr.aria-label]="'Mensaje de ' + message.sender_name + ': ' + message.content"
+      >
+        <!-- Message Avatar -->
+        <div class="message-avatar">
+          <div class="avatar-initials">
+            {{ getSenderInitials(message) }}
+          </div>
+        </div>
+
+        <!-- Message Content -->
+        <div class="message-content">
+          <!-- Message Header -->
+          <div class="message-header">
+            <span class="sender-name" [class.current-user]="isCurrentUserMessage(message)">
+              {{ message.sender_name }}
+            </span>
+            <span class="message-time" aria-label="Enviado el {{ formatTimestamp(message.timestamp) }}">
+              {{ formatTimestamp(message.timestamp) }}
+            </span>
+          </div>
+
+          <!-- Message Text -->
+          <div class="message-text">
+            {{ message.content }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message Input -->
+  <div class="message-input-container">
+    <div class="input-wrapper">
+      <textarea
+        #messageInput
+        [(ngModel)]="newMessage"
+        (keypress)="onMessageInputKeyPress($event)"
+        placeholder="Escribe tu mensaje..."
+        class="message-input"
+        rows="1"
+        aria-label="Escribir mensaje"
+        maxlength="1000"
+      ></textarea>
+      
+      <button 
+        class="send-button"
+        (click)="sendMessage()"
+        [disabled]="!newMessage.trim() || !isConnected"
+        aria-label="Enviar mensaje"
+      >
+        <span class="send-icon" role="img" aria-label="Enviar">📤</span>
+      </button>
+    </div>
+    
+    <!-- Character Count -->
+    <div class="character-count">
+      <span class="count-text" [class.near-limit]="newMessage.length > 800">
+        {{ newMessage.length }}/1000
+      </span>
+    </div>
+  </div>
+</div>
