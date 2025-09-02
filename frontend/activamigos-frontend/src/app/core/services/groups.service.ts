@@ -67,6 +67,10 @@ export class GroupsService {
         const currentGroups = this.groupsSubject.value;
         this.groupsSubject.next([newGroup, ...currentGroups]);
         this.isLoadingSubject.next(false);
+
+        if (newGroup) {
+          this.achievementNotifications.refreshAchievements();
+        }
       }),
       catchError(this.handleError)
     );
@@ -127,7 +131,7 @@ export class GroupsService {
         // Automatically refresh achievements after joining a group
         if (response.is_member) {
           try {
-            await this.achievementNotifications.refreshAchievements();
+            this.achievementNotifications.refreshAchievements();
           } catch (error) {
             console.error('Error refreshing achievements after group join:', error);
           }

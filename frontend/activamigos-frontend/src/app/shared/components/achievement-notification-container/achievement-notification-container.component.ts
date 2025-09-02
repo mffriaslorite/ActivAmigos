@@ -52,7 +52,9 @@ export class AchievementNotificationsContainerComponent implements OnInit, OnDes
         console.log('📢 Notifications container updated:', {
           totalNotifications: notifications.length,
           visibleNotifications: this.visibleNotifications.length,
-          notificationTitles: this.visibleNotifications.map(n => n.title)
+          notificationTitles: this.visibleNotifications.map(n => n.title),
+          isMobile: window.innerWidth <= 768,
+          viewport: { width: window.innerWidth, height: window.innerHeight }
         });
       });
   }

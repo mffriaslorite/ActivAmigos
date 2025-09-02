@@ -70,7 +70,7 @@ export class ActivitiesService {
         
         // Automatically refresh achievements after creating an activity
         try {
-          await this.achievementNotifications.refreshAchievements();
+          this.achievementNotifications.refreshAchievements();
         } catch (error) {
           console.error('Error refreshing achievements after activity creation:', error);
         }
@@ -134,7 +134,7 @@ export class ActivitiesService {
         // Automatically refresh achievements after joining an activity
         if (response.is_participant) {
           try {
-            await this.achievementNotifications.refreshAchievements();
+            this.achievementNotifications.refreshAchievements();
           } catch (error) {
             console.error('Error refreshing achievements after activity join:', error);
           }

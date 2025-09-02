@@ -18,6 +18,7 @@ export interface AchievementNotification {
 export class AchievementNotificationsSimpleService {
   private gamificationStateSubject = new BehaviorSubject<GamificationState | null>(null);
   private notificationsSubject = new BehaviorSubject<AchievementNotification[]>([]);
+  private isInitialized = false;
 
   public gamificationState$ = this.gamificationStateSubject.asObservable();
   public notifications$ = this.notificationsSubject.asObservable();
@@ -41,8 +42,9 @@ export class AchievementNotificationsSimpleService {
             newAchievements: newState.earned_achievements.length
           });
           
-          // Check for new achievements if we had a previous state
-          if (currentState) {
+          // Check for new achievements if we had a previous state AND we're initialized
+          // This prevents showing notifications for existing achievements on app startup
+          if (currentState && this.isInitialized) {
             this.checkForNewAchievements(currentState, newState);
           }
           
@@ -132,12 +134,23 @@ export class AchievementNotificationsSimpleService {
 
   /**
    * Initialize the service by loading current gamification state
+   * Do NOT show notifications for existing achievements during initialization
    */
   initialize(): void {
     this.achievementsService.getGamificationState().subscribe({
       next: (state) => {
         if (state) {
+          // Set initial state without showing notifications for existing achievements
+          console.log('🔧 Initializing achievement service with current state:', {
+            points: state.points,
+            level: state.level,
+            achievements: state.earned_achievements.length
+          });
           this.gamificationStateSubject.next(state);
+          
+          // Mark as initialized AFTER setting the initial state
+          this.isInitialized = true;
+          console.log('✅ Achievement notification service initialized');
         }
       },
       error: (error) => {

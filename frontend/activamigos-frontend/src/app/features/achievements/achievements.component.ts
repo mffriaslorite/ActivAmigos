@@ -139,10 +139,10 @@ export class AchievementsComponent implements OnInit, OnDestroy {
     return this.currentUser.username || 'Usuario';
   }
 
-  async checkAllAchievements() {
+  checkAllAchievements() {
     this.isLoadingGamification = true;
     try {
-      await this.achievementNotifications.refreshAchievements();
+      this.achievementNotifications.refreshAchievements();
       console.log('✅ Achievements checked and updated!');
     } catch (error) {
       console.error('Error checking achievements:', error);
