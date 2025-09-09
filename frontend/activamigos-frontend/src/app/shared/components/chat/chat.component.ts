@@ -72,6 +72,20 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.shouldScrollToBottom = true;
       });
 
+    // Handle WebSocket errors (like authentication failures)
+    this.webSocketService.getConnectionStatus()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(connected => {
+        if (!connected && this.isConnected) {
+          // Connection lost, try to reconnect after a delay
+          setTimeout(() => {
+            if (this.webSocketService.getCurrentUserId()) {
+              this.webSocketService.connect();
+            }
+          }, 2000);
+        }
+      });
+
     // Load chat history
     this.loadChatHistory();
   }

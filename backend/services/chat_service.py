@@ -42,11 +42,18 @@ def init_socketio(app, socketio_instance):
         """Handle client connection"""
         user_id = session.get('user_id')
         if not user_id:
-            logger.warning("Unauthorized connection attempt")
+            logger.warning("Unauthorized connection attempt - no user_id in session")
             disconnect()
             return False
         
-        logger.info(f"User {user_id} connected")
+        # Verify user exists in database
+        user = User.query.get(user_id)
+        if not user:
+            logger.warning(f"Invalid user_id {user_id} in session")
+            disconnect()
+            return False
+        
+        logger.info(f"User {user_id} ({user.username}) connected to WebSocket")
         return True
     
     @socketio.on('disconnect')
@@ -61,7 +68,16 @@ def init_socketio(app, socketio_instance):
         """Handle joining a chat room"""
         user_id = session.get('user_id')
         if not user_id:
+            logger.warning("Join chat attempt without authentication")
             emit('error', {'message': 'Not authenticated'})
+            return
+        
+        # Double-check user exists
+        user = User.query.get(user_id)
+        if not user:
+            logger.warning(f"Join chat attempt with invalid user_id {user_id}")
+            emit('error', {'message': 'Invalid user session'})
+            disconnect()
             return
         
         try:
@@ -131,7 +147,16 @@ def init_socketio(app, socketio_instance):
         """Handle sending a message"""
         user_id = session.get('user_id')
         if not user_id:
+            logger.warning("Send message attempt without authentication")
             emit('error', {'message': 'Not authenticated'})
+            return
+        
+        # Double-check user exists
+        user = User.query.get(user_id)
+        if not user:
+            logger.warning(f"Send message attempt with invalid user_id {user_id}")
+            emit('error', {'message': 'Invalid user session'})
+            disconnect()
             return
         
         try:

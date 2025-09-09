@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Message } from '../models/message.model';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,10 +13,45 @@ export class WebSocketService {
   private connected$ = new BehaviorSubject<boolean>(false);
   private messages$ = new BehaviorSubject<Message[]>([]);
   private currentRoom: string | null = null;
+  private currentUserId: number | null = null;
 
-  constructor() {}
+  constructor(private authService: AuthService) {
+    // Listen for authentication changes
+    this.authService.getCurrentUser().subscribe(user => {
+      const newUserId = user?.id || null;
+      
+      // If user changed (login/logout), reconnect WebSocket
+      if (this.currentUserId !== newUserId) {
+        this.currentUserId = newUserId;
+        this.handleUserChange(newUserId);
+      }
+    });
+  }
+
+  private handleUserChange(userId: number | null): void {
+    if (userId === null) {
+      // User logged out - disconnect WebSocket
+      this.disconnect();
+      this.clearMessages();
+    } else {
+      // User logged in or switched - reconnect WebSocket
+      if (this.socket?.connected) {
+        this.disconnect();
+      }
+      // Small delay to ensure session is properly set
+      setTimeout(() => {
+        this.connect();
+      }, 100);
+    }
+  }
 
   connect(): void {
+    // Don't connect if no user is logged in
+    if (!this.currentUserId) {
+      console.log('No user logged in, skipping WebSocket connection');
+      return;
+    }
+
     if (this.socket?.connected) {
       return;
     }
@@ -24,7 +60,8 @@ export class WebSocketService {
     
     this.socket = io(backendUrl, {
       withCredentials: true,
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      forceNew: true // Force new connection to ensure fresh authentication
     });
 
     this.socket.on('connect', () => {
@@ -39,6 +76,16 @@ export class WebSocketService {
 
     this.socket.on('error', (error: any) => {
       console.error('WebSocket error:', error);
+      
+      // Handle authentication errors
+      if (error.message && (
+        error.message.includes('Not authenticated') || 
+        error.message.includes('Invalid user session')
+      )) {
+        console.warn('WebSocket authentication failed, disconnecting...');
+        this.disconnect();
+        this.connected$.next(false);
+      }
     });
 
     this.socket.on('new_message', (message: Message) => {
@@ -124,5 +171,18 @@ export class WebSocketService {
 
   isConnected(): boolean {
     return this.socket?.connected || false;
+  }
+
+  getCurrentUserId(): number | null {
+    return this.currentUserId;
+  }
+
+  // Force reconnection (useful for debugging or manual refresh)
+  forceReconnect(): void {
+    console.log('Forcing WebSocket reconnection...');
+    this.disconnect();
+    setTimeout(() => {
+      this.connect();
+    }, 500);
   }
 }

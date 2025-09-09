@@ -5,13 +5,15 @@ import { Subject, takeUntil } from 'rxjs';
 import { GroupsService } from '../../../core/services/groups.service';
 import { GroupDetails, GroupMember } from '../../../core/models/group.model';
 import { ChatComponent } from '../../../shared/components/chat/chat.component';
+import { WebSocketDebugComponent } from '../../../shared/components/websocket-debug/websocket-debug.component';
 import { ChatRoom } from '../../../core/models/message.model';
 import { AuthService } from '../../../core/services/auth.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-group-details',
   standalone: true,
-  imports: [CommonModule, ChatComponent],
+  imports: [CommonModule, ChatComponent, WebSocketDebugComponent],
   templateUrl: './group-details.component.html',
   styleUrls: ['./group-details.component.scss']
 })
@@ -27,6 +29,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   chatRoom: ChatRoom | null = null;
   currentUserId: number | null = null;
   showChat = true;
+  showDebug = !environment.production;
 
   // Mock chat messages for preview
   chatMessages = [
