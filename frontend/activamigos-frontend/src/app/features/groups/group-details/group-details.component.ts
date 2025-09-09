@@ -4,11 +4,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { GroupsService } from '../../../core/services/groups.service';
 import { GroupDetails, GroupMember } from '../../../core/models/group.model';
+import { ChatComponent } from '../../../shared/components/chat/chat.component';
+import { ChatRoom } from '../../../core/models/message.model';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-group-details',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ChatComponent],
   templateUrl: './group-details.component.html',
   styleUrls: ['./group-details.component.scss']
 })
@@ -19,6 +22,11 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   isLoading = true;
   errorMessage = '';
   newMessage = '';
+  
+  // Chat-related properties
+  chatRoom: ChatRoom | null = null;
+  currentUserId: number | null = null;
+  showChat = true;
 
   // Mock chat messages for preview
   chatMessages = [
@@ -41,7 +49,8 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private groupsService: GroupsService
+    private groupsService: GroupsService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
@@ -51,6 +60,15 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     } else {
       this.router.navigate(['/groups']);
     }
+
+    // Get current user ID for chat
+    this.authService.getCurrentUser()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        if (user) {
+          this.currentUserId = user.id;
+        }
+      });
   }
 
   ngOnDestroy() {
@@ -68,6 +86,13 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
         next: (details) => {
           this.groupDetails = details;
           this.isLoading = false;
+          
+          // Set up chat room
+          this.chatRoom = {
+            type: 'group',
+            id: details.id,
+            name: details.name
+          };
         },
         error: (error) => {
           console.error('Error loading group details:', error);
@@ -75,6 +100,13 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
           // Create a fallback mock group if all fails
           this.groupDetails = this.createFallbackGroup(groupId);
           this.isLoading = false;
+          
+          // Set up chat room for fallback
+          this.chatRoom = {
+            type: 'group',
+            id: groupId,
+            name: this.groupDetails.name
+          };
           
           // Show a warning but don't block the UI
           console.warn('Using fallback mock data for group details');
@@ -240,5 +272,9 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   onSendMessage() {
     // This will be implemented later when chat functionality is added
     console.log('Send message clicked - not implemented yet');
+  }
+
+  toggleChat() {
+    this.showChat = !this.showChat;
   }
 }
