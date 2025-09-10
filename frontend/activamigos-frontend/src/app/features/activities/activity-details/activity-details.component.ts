@@ -4,11 +4,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { ActivitiesService } from '../../../core/services/activities.service';
 import { ActivityDetails, ActivityParticipant } from '../../../core/models/activity.model';
+import { ChatComponent } from '../../../shared/components/chat/chat.component';
+import { ChatRoom } from '../../../core/models/message.model';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-activity-details',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ChatComponent],
   templateUrl: './activity-details.component.html',
   styleUrls: ['./activity-details.component.scss']
 })
@@ -19,6 +22,11 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
   isLoading = true;
   errorMessage = '';
   newMessage = '';
+  
+  // Chat-related properties
+  chatRoom: ChatRoom | null = null;
+  currentUserId: number | null = null;
+  showChat = true;
 
   // Mock chat messages for preview
   chatMessages = [
@@ -41,7 +49,8 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private activitiesService: ActivitiesService
+    private activitiesService: ActivitiesService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
@@ -51,6 +60,15 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
     } else {
       this.router.navigate(['/activities']);
     }
+
+    // Get current user ID for chat
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        if (user) {
+          this.currentUserId = user.id;
+        }
+      });
   }
 
   ngOnDestroy() {
@@ -68,6 +86,13 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
         next: (details) => {
           this.activityDetails = details;
           this.isLoading = false;
+          
+          // Set up chat room
+          this.chatRoom = {
+            type: 'activity',
+            id: details.id,
+            name: details.title
+          };
         },
         error: (error) => {
           console.error('Error loading activity details:', error);
@@ -75,6 +100,13 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
           // Create a fallback mock activity if all fails
           this.activityDetails = this.createFallbackActivity(activityId);
           this.isLoading = false;
+          
+          // Set up chat room for fallback
+          this.chatRoom = {
+            type: 'activity',
+            id: activityId,
+            name: this.activityDetails.title
+          };
           
           // Show a warning but don't block the UI
           console.warn('Using fallback mock data for activity details');
@@ -281,5 +313,7 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
     console.log('Send message clicked - not implemented yet');
   }
 
-  
+  toggleChat() {
+    this.showChat = !this.showChat;
+  }
 }

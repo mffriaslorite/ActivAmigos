@@ -144,62 +144,49 @@
         </div>
       </section>
 
-      <!-- Chat Preview Section -->
+      <!-- Chat Section -->
       <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="p-6 pb-0">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <span class="mr-2" role="img" aria-label="Chat">💬</span>
-            Chat de la Actividad
-            <span class="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
-              Vista previa
-            </span>
-          </h3>
-        </div>
-        
-        <!-- Chat Messages Preview -->
-        <div class="px-6 pb-4 space-y-3 max-h-64 overflow-y-auto">
-          <div 
-            *ngFor="let message of chatMessages" 
-            [class]="'flex ' + (message.isCurrentUser ? 'justify-end' : 'justify-start')"
-          >
-            <div [class]="'max-w-xs lg:max-w-md px-4 py-2 rounded-lg ' + 
-              (message.isCurrentUser ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900')">
-              <p class="text-sm">{{ message.message }}</p>
-              <p [class]="'text-xs mt-1 ' + (message.isCurrentUser ? 'text-blue-100' : 'text-gray-500')">
-                {{ message.sender }} • {{ formatChatTime(message.timestamp) }}
-              </p>
+        <div class="p-4 border-b border-gray-200 bg-gray-50">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+              <span class="mr-2" role="img" aria-label="Chat">💬</span>
+              Chat de la Actividad
+            </h3>
+            <div class="flex items-center space-x-2">
+              <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
+                ✨ Nuevo
+              </span>
+              <button 
+                (click)="toggleChat()"
+                class="p-1 text-gray-500 hover:text-gray-700 rounded"
+                [attr.aria-label]="showChat ? 'Ocultar chat' : 'Mostrar chat'"
+              >
+                <svg class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" 
+                     [class.rotate-180]="!showChat">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
         
-        <!-- Chat Input (Disabled) -->
-        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-          <div class="flex space-x-3">
-            <button 
-              class="p-2 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              (click)="onImageUpload()"
-              disabled
-              title="Subir imagen (próximamente)"
-            >
-              📎
-            </button>
-            <input 
-              type="text" 
-              placeholder="El chat estará disponible próximamente..."
-              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-              [value]="newMessage"
-              (input)="onMessageInput($event)"
-              disabled
-            >
-            <button 
-              class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              (click)="onSendMessage()"
-              disabled
-              title="Enviar mensaje (próximamente)"
-            >
-              Enviar
-            </button>
-          </div>
+        <!-- Chat Component -->
+        <div *ngIf="showChat && chatRoom && currentUserId" class="h-96">
+          <app-chat 
+            [chatRoom]="chatRoom"
+            [currentUserId]="currentUserId">
+          </app-chat>
+        </div>
+        
+        <!-- Loading/Error States -->
+        <div *ngIf="showChat && (!chatRoom || !currentUserId)" class="p-8 text-center text-gray-500">
+          <div class="text-4xl mb-2">💬</div>
+          <p>Preparando el chat...</p>
+        </div>
+        
+        <!-- Collapsed State -->
+        <div *ngIf="!showChat" class="p-4 text-center text-gray-500">
+          <p class="text-sm">Chat minimizado - Haz clic en la flecha para expandir</p>
         </div>
       </section>
     </div>

@@ -3,6 +3,7 @@ from flask_smorest import Api
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_session import Session
+from flask_socketio import SocketIO
 from config.config import Config
 from models.user.user import db
 from services.auth_service import blp as auth_blp
@@ -10,6 +11,7 @@ from services.user_service import blp as user_blp
 from services.group_service import blp as group_blp
 from services.activity_service import blp as activity_blp
 from services.achievement_service import blp as achievement_blp
+from services.chat_service import blp as chat_blp, init_socketio
 
 def create_app():
     app = Flask(__name__)
@@ -20,10 +22,19 @@ def create_app():
 
     # Configuración CORS
     CORS(app, 
-         supports_credentials=True, 
-         origins=['http://localhost:4200'],
-         allow_headers=['Content-Type', 'Authorization'],
-         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+        supports_credentials=True, 
+        origins=['http://localhost:4200'],
+        allow_headers=['Content-Type', 'Authorization'],
+        methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    )
+
+    # Initialize SocketIO
+    socketio = SocketIO(
+        app, 
+        cors_allowed_origins="http://localhost:4200",
+        manage_session=False,  # We'll handle sessions manually
+        logger=True,
+        engineio_logger=True
     )
 
     # Inicializar Session (la configuración ya está en Config)
@@ -54,10 +65,14 @@ def create_app():
     api.register_blueprint(group_blp)
     api.register_blueprint(activity_blp)
     api.register_blueprint(achievement_blp)
+    api.register_blueprint(chat_blp)
 
-    return app
+    # Initialize SocketIO with chat handlers
+    init_socketio(app, socketio)
 
-app = create_app()
+    return app, socketio
+
+app, socketio = create_app()
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    socketio.run(app, debug=True, host="0.0.0.0", port=5000)
