@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,6 +20,11 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SECURE = False  # False para HTTP en desarrollo
     SESSION_COOKIE_SAMESITE = "Lax"  # Lax para desarrollo local
+
+    # JWT Configuration for remember me tokens
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", SECRET_KEY)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 
     # MinIO Configuration
     MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")

@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Message } from '../models/message.model';
+import { UserBannedEvent, WarningIssuedEvent, UserUnbannedEvent } from '../models/moderation.model';
 import { AuthService } from './auth.service';
 
 @Injectable({

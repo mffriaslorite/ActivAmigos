@@ -3,7 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { User } from '../models/user.model';
-import { LoginRequest, RegisterRequest, AuthResponse } from '../models/auth.model';
+import { LoginRequest, RegisterRequest, AuthResponse, PasswordHintResponse, AnimalsResponse, ChangePasswordRequest, ChangePasswordResponse } from '../models/auth.model';
 
 
 @Injectable({
@@ -215,6 +215,68 @@ export class AuthService {
 
   setCurrentUser(user: User | null) {
     this.currentUserSubject.next(user);
+  }
+
+  // Sprint 1: Animal list for password hints
+  getAnimalList(): Observable<AnimalsResponse> {
+    return this.http.get<AnimalsResponse>(
+      `${this.API_BASE_URL}/auth/animals`
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Sprint 1: Get password hint for email
+  getPasswordHint(email: string): Observable<PasswordHintResponse> {
+    return this.http.get<PasswordHintResponse>(
+      `${this.API_BASE_URL}/auth/hint`,
+      { params: { email } }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Sprint 1: Enhanced change password with hint support
+  changePasswordEnhanced(passwordData: ChangePasswordRequest): Observable<ChangePasswordResponse> {
+    return this.http.post<ChangePasswordResponse>(
+      `${this.API_BASE_URL}/auth/change-password`,
+      passwordData,
+      { withCredentials: true }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Sprint 1: Token refresh for remember me
+  refreshToken(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(
+      `${this.API_BASE_URL}/auth/refresh`,
+      {},
+      { withCredentials: true }
+    ).pipe(
+      tap(response => {
+        if (response.user) {
+          this.currentUserSubject.next(response.user);
+        }
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  // Helper method to check if user has specific role
+  hasRole(role: string): boolean {
+    const user = this.currentUserSubject.value;
+    return user?.role === role;
+  }
+
+  // Helper method to check if user is organizer or admin
+  isOrganizerOrAdmin(): boolean {
+    return this.hasRole('ORGANIZER') || this.hasRole('SUPERADMIN');
+  }
+
+  // Helper method to check if user is superadmin
+  isSuperAdmin(): boolean {
+    return this.hasRole('SUPERADMIN');
   }
 
 }

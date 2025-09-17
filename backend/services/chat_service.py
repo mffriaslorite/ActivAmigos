@@ -9,7 +9,9 @@ import logging
 from models.user.user import db, User
 from models.group.group import Group
 from models.activity.activity import Activity
-from models.message.message import Message
+from models.message.message import Message, MessageType
+from models.memberships.group_membership import GroupMembership
+from models.memberships.activity_membership import ActivityMembership
 from models.message.message_schema import (
     MessageSchema, 
     MessageCreateSchema, 
@@ -88,17 +90,29 @@ def init_socketio(app, socketio_instance):
                 emit('error', {'message': 'Invalid room data'})
                 return
             
-            # Verify user has access to the chat room
+            # Verify user has access to the chat room and check ban status
             if room_type == 'group':
-                group = Group.query.get(room_id)
-                if not group or not group.is_member(user_id):
+                membership = GroupMembership.query.filter_by(
+                    user_id=user_id, 
+                    group_id=room_id
+                ).first()
+                if not membership or not membership.is_active:
                     emit('error', {'message': 'Access denied to group chat'})
+                    return
+                if not membership.can_chat():
+                    emit('error', {'message': 'You are banned from this chat'})
                     return
                 room_name = f"group_{room_id}"
             elif room_type == 'activity':
-                activity = Activity.query.get(room_id)
-                if not activity or not activity.is_participant(user_id):
+                membership = ActivityMembership.query.filter_by(
+                    user_id=user_id, 
+                    activity_id=room_id
+                ).first()
+                if not membership or not membership.is_active:
                     emit('error', {'message': 'Access denied to activity chat'})
+                    return
+                if not membership.can_chat():
+                    emit('error', {'message': 'You are banned from this chat'})
                     return
                 room_name = f"activity_{room_id}"
             else:
@@ -164,21 +178,37 @@ def init_socketio(app, socketio_instance):
             schema = MessageCreateSchema()
             message_data = schema.load(data)
             
-            # Verify user has access to the chat room
+            # Verify user has access to the chat room and can send messages
             group_id = message_data.get('group_id')
             activity_id = message_data.get('activity_id')
             
             if group_id:
-                group = Group.query.get(group_id)
-                if not group or not group.is_member(user_id):
+                membership = GroupMembership.query.filter_by(
+                    user_id=user_id, 
+                    group_id=group_id
+                ).first()
+                if not membership or not membership.is_active:
                     emit('error', {'message': 'Access denied to group chat'})
                     return
+                if not membership.can_chat():
+                    emit('error', {'message': 'You are banned from this chat'})
+                    return
+                # Update chat activity
+                membership.update_chat_activity()
                 room_name = f"group_{group_id}"
             elif activity_id:
-                activity = Activity.query.get(activity_id)
-                if not activity or not activity.is_participant(user_id):
+                membership = ActivityMembership.query.filter_by(
+                    user_id=user_id, 
+                    activity_id=activity_id
+                ).first()
+                if not membership or not membership.is_active:
                     emit('error', {'message': 'Access denied to activity chat'})
                     return
+                if not membership.can_chat():
+                    emit('error', {'message': 'You are banned from this chat'})
+                    return
+                # Update chat activity
+                membership.update_chat_activity()
                 room_name = f"activity_{activity_id}"
             else:
                 emit('error', {'message': 'Invalid message data'})
@@ -220,7 +250,7 @@ def require_authentication(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def require_chat_access(room_type, room_id_param='id'):
+def require_chat_access(room_type, room_id_param='id', check_ban=True):
     """Decorator to require access to a specific chat room"""
     def decorator(f):
         @functools.wraps(f)
@@ -229,13 +259,23 @@ def require_chat_access(room_type, room_id_param='id'):
             room_id = kwargs.get(room_id_param) or request.view_args.get(room_id_param)
             
             if room_type == 'group':
-                group = Group.query.get_or_404(room_id)
-                if not group.is_member(user_id):
+                membership = GroupMembership.query.filter_by(
+                    user_id=user_id, 
+                    group_id=room_id
+                ).first()
+                if not membership or not membership.is_active:
                     return {"message": "Access denied to group chat"}, 403
+                if check_ban and not membership.can_chat():
+                    return {"message": "You are banned from this chat"}, 403
             elif room_type == 'activity':
-                activity = Activity.query.get_or_404(room_id)
-                if not activity.is_participant(user_id):
+                membership = ActivityMembership.query.filter_by(
+                    user_id=user_id, 
+                    activity_id=room_id
+                ).first()
+                if not membership or not membership.is_active:
                     return {"message": "Access denied to activity chat"}, 403
+                if check_ban and not membership.can_chat():
+                    return {"message": "You are banned from this chat"}, 403
             
             return f(*args, **kwargs)
         return decorated_function
@@ -268,7 +308,7 @@ def get_group_messages(query_args, group_id):
 @blp.arguments(MessageCreateSchema)
 @blp.response(201, MessageSchema)
 @require_authentication
-@require_chat_access('group', 'group_id')
+@require_chat_access('group', 'group_id', check_ban=True)
 def post_group_message(message_data, group_id):
     """Send a message to a group chat (REST fallback)"""
     user_id = session.get('user_id')
@@ -276,6 +316,14 @@ def post_group_message(message_data, group_id):
     # Override group_id from URL
     message_data['group_id'] = group_id
     message_data.pop('activity_id', None)
+    
+    # Update chat activity
+    membership = GroupMembership.query.filter_by(
+        user_id=user_id, 
+        group_id=group_id
+    ).first()
+    if membership:
+        membership.update_chat_activity()
     
     message = Message(
         content=message_data['content'],
@@ -321,7 +369,7 @@ def get_activity_messages(query_args, activity_id):
 @blp.arguments(MessageCreateSchema)
 @blp.response(201, MessageSchema)
 @require_authentication
-@require_chat_access('activity', 'activity_id')
+@require_chat_access('activity', 'activity_id', check_ban=True)
 def post_activity_message(message_data, activity_id):
     """Send a message to an activity chat (REST fallback)"""
     user_id = session.get('user_id')
@@ -329,6 +377,14 @@ def post_activity_message(message_data, activity_id):
     # Override activity_id from URL
     message_data['activity_id'] = activity_id
     message_data.pop('group_id', None)
+    
+    # Update chat activity
+    membership = ActivityMembership.query.filter_by(
+        user_id=user_id, 
+        activity_id=activity_id
+    ).first()
+    if membership:
+        membership.update_chat_activity()
     
     message = Message(
         content=message_data['content'],

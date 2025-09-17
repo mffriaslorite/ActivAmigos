@@ -1,53 +1,112 @@
 <div class="min-h-screen flex flex-col px-6 py-10 bg-white">
   <!-- Header -->
   <div class="mb-8">
-    <button class="text-2xl mb-6" (click)="goBack()">←</button>
-    <h1 class="text-2xl font-bold mb-6">Iniciar Sesión</h1>
+    <button class="text-2xl mb-6" (click)="goBack()" aria-label="Volver">←</button>
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">Iniciar Sesión</h1>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="errorMessage" class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+    {{ errorMessage }}
   </div>
 
   <!-- Form -->
   <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-6">
     <!-- Usuario / Email -->
     <div>
-      <label class="block mb-2 text-gray-700 text-sm font-medium">
+      <label class="block mb-3 text-gray-700 text-lg font-medium">
         Nombre de usuario o correo electrónico
       </label>
       <input
         type="text"
-        class="input-field"
+        class="w-full px-4 py-4 text-lg border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
         placeholder="Ingresa tu nombre de usuario o correo electrónico"
         formControlName="username"
+        [class.border-red-500]="loginForm.get('username')?.invalid && loginForm.get('username')?.touched"
       />
     </div>
 
     <!-- Contraseña -->
     <div>
-      <label class="block mb-2 text-gray-700 text-sm font-medium">Contraseña</label>
+      <label class="block mb-3 text-gray-700 text-lg font-medium">Contraseña</label>
       <div class="relative">
         <input
           [type]="showPassword ? 'text' : 'password'"
-          class="input-field pr-12"
+          class="w-full px-4 py-4 pr-12 text-lg border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
           placeholder="Ingresa tu contraseña"
           formControlName="password"
+          [class.border-red-500]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
         />
         <button
           type="button"
-          class="absolute inset-y-0 right-3 flex items-center text-gray-500"
+          class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-xl"
           (click)="togglePasswordVisibility()"
+          aria-label="Mostrar/ocultar contraseña"
         >
           {{ showPassword ? '🙈' : '👁️' }}
         </button>
       </div>
     </div>
 
-    <!-- Botón -->
-    <button type="submit" class="w-full py-4 rounded-full bg-blue-400 text-white font-semibold text-lg">
-      Iniciar Sesión
+    <!-- Remember Me -->
+    <div class="flex items-center">
+      <input
+        type="checkbox"
+        id="remember_me"
+        class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+        formControlName="remember_me"
+      />
+      <label for="remember_me" class="ml-3 text-lg text-gray-700">
+        Recordarme por 30 días
+      </label>
+    </div>
+
+    <!-- Password Hint -->
+    <div class="text-center">
+      <button
+        type="button"
+        class="text-blue-600 text-lg underline hover:text-blue-800"
+        (click)="showPasswordHint()"
+        [disabled]="isLoading"
+      >
+        ¿Necesitas una pista para tu contraseña?
+      </button>
+    </div>
+
+    <!-- Hint Display -->
+    <div *ngIf="showHint && hintData" class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <h3 class="text-lg font-semibold text-blue-800 mb-3">{{ hintData.hint }}</h3>
+      <div class="grid grid-cols-2 gap-2">
+        <span 
+          *ngFor="let animal of hintData.animals" 
+          class="px-3 py-2 bg-blue-100 text-blue-800 rounded-full text-center text-sm font-medium"
+        >
+          {{ animal }}
+        </span>
+      </div>
+      <p class="text-sm text-blue-600 mt-3">
+        Tu contraseña puede ser uno de estos animales (en inglés o español)
+      </p>
+    </div>
+
+    <!-- Submit Button -->
+    <button 
+      type="submit" 
+      class="w-full py-4 rounded-full bg-blue-500 text-white font-semibold text-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+      [disabled]="loginForm.invalid || isLoading"
+    >
+      <span *ngIf="isLoading">Iniciando sesión...</span>
+      <span *ngIf="!isLoading">Iniciar Sesión</span>
     </button>
   </form>
 
-  <!-- Forgot Password -->
-  <div class="text-center mt-6">
-    <a href="#" class="text-blue-600 text-sm">¿Olvidaste tu contraseña?</a>
+  <!-- Register Link -->
+  <div class="text-center mt-8">
+    <p class="text-lg text-gray-600">
+      ¿No tienes cuenta? 
+      <a routerLink="/auth/register" class="text-blue-600 font-semibold hover:text-blue-800 underline">
+        Regístrate aquí
+      </a>
+    </p>
   </div>
 </div>

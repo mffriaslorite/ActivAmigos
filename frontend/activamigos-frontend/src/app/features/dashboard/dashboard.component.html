@@ -1,203 +1,177 @@
 <div class="min-h-screen bg-gray-50">
-  <!-- Desktop Layout -->
-  <app-desktop-layout></app-desktop-layout>
-
-  <!-- Main Content Area -->
-  <div class="lg:pl-72">
-    <div class="flex flex-col min-h-screen">
-      <!-- Header -->
-      <header class="bg-white flex items-center justify-between px-6 py-4 border-b border-gray-200 shadow-sm">
-        <h1 class="text-xl font-bold text-gray-900 lg:hidden">ActivAmigos</h1>
-        <h1 class="hidden lg:block text-xl font-bold text-gray-900">Inicio</h1>
+  <!-- Main Content -->
+  <div class="flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-white flex items-center justify-between px-6 py-6 border-b border-gray-200 shadow-sm">
+      <div class="flex-1">
+        <h1 class="text-2xl font-bold text-gray-900 mb-1">
+          {{ getUserGreeting() }}
+        </h1>
+        <p class="text-lg text-gray-600">¿Qué puedes hacer hoy?</p>
+      </div>
+      <div class="flex items-center space-x-4">
+        <!-- Points Display -->
+        <div class="bg-blue-50 px-4 py-2 rounded-full border border-blue-200">
+          <span class="text-blue-800 font-semibold">🏆 {{ totalPoints }} puntos</span>
+        </div>
+        <!-- Profile Button -->
         <button 
-          class="profile-header-btn p-2 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center"
+          class="p-2 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center"
           (click)="navigateTo('/profile')"
-          title="Ir al perfil"
+          [attr.aria-label]="'Ir al perfil de ' + (currentUser?.username || 'usuario')"
         >
-          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+          <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
             <img 
               *ngIf="getProfileImageUrl()" 
               [src]="getProfileImageUrl()" 
-              alt="Profile Picture" 
+              [alt]="'Foto de perfil de ' + (currentUser?.username || 'usuario')"
               class="w-full h-full object-cover"
             >
-            <span *ngIf="!getProfileImageUrl()" class="text-lg">👤</span>
+            <span *ngIf="!getProfileImageUrl()" class="text-xl">👤</span>
           </div>
         </button>
-      </header>
+      </div>
+    </header>
 
-      <!-- Main Content -->
-      <main class="flex-1 px-6 py-6 pb-24 lg:pb-6">
-        <!-- Welcome Section -->
-        <div class="mb-8">
-          <h2 class="text-2xl font-bold text-gray-900 mb-2">
-            Bienvenido, {{ currentUser?.first_name || currentUser?.username || 'Usuario' }}
-          </h2>
-          <p class="text-gray-600">¿Qué te gustaría hacer hoy?</p>
+    <!-- Main Content -->
+    <main class="flex-1 px-6 py-6 pb-24">
+      <!-- User Role Badge -->
+      <div class="mb-6 flex items-center justify-between">
+        <div class="bg-green-50 px-3 py-1 rounded-full border border-green-200">
+          <span class="text-green-800 text-sm font-medium">{{ getUserRole() }}</span>
+        </div>
+        <button 
+          class="text-blue-600 text-sm font-medium hover:text-blue-800"
+          (click)="toggleCalendarView()"
+        >
+          {{ showCalendarView ? 'Ver lista' : 'Ver calendario' }}
+        </button>
+      </div>
+
+      <!-- Today's Activities Section -->
+      <div class="mb-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Para hoy</h2>
+        
+        <!-- Today's Activities - Joined -->
+        <div *ngIf="todayActivities.length > 0" class="mb-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">Actividades en las que participas</h3>
+          <div class="space-y-3">
+            <div *ngFor="let activity of todayActivities" 
+                 class="bg-green-50 border border-green-200 rounded-lg p-4 hover:bg-green-100 cursor-pointer transition-colors"
+                 (click)="navigateTo('/activities/' + activity.id)">
+              <div class="flex items-center space-x-3">
+                <span class="text-2xl">{{ getActivityEmoji(activity.title) }}</span>
+                <div class="flex-1">
+                  <h4 class="font-semibold text-gray-900">{{ activity.title }}</h4>
+                  <p class="text-sm text-gray-600">{{ formatActivityDate(activity.date) }}</p>
+                  <p class="text-sm text-gray-600" *ngIf="activity.location">📍 {{ activity.location }}</p>
+                </div>
+                <span class="text-green-600 font-medium">¡Confirmado!</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Dashboard Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6">
-          <!-- Grupos -->
-          <div 
-            class="menu-card border-l-4 border-blue-500 bg-white hover:bg-blue-50 cursor-pointer" 
-            (click)="navigateTo('/groups')"
+        <!-- Available Activities -->
+        <div *ngIf="availableActivities.length > 0" class="mb-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">Actividades disponibles</h3>
+          <div class="space-y-3">
+            <div *ngFor="let activity of availableActivities.slice(0, 3)" 
+                 class="bg-blue-50 border border-blue-200 rounded-lg p-4 hover:bg-blue-100 cursor-pointer transition-colors"
+                 (click)="navigateTo('/activities/' + activity.id)">
+              <div class="flex items-center space-x-3">
+                <span class="text-2xl">{{ getActivityEmoji(activity.title) }}</span>
+                <div class="flex-1">
+                  <h4 class="font-semibold text-gray-900">{{ activity.title }}</h4>
+                  <p class="text-sm text-gray-600">{{ formatActivityDate(activity.date) }}</p>
+                  <p class="text-sm text-gray-600" *ngIf="activity.location">📍 {{ activity.location }}</p>
+                </div>
+                <span class="text-blue-600 font-medium">¡Únete!</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- No Activities Today -->
+        <div *ngIf="todayActivities.length === 0 && availableActivities.length === 0" 
+             class="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+          <div class="text-4xl mb-3">📅</div>
+          <p class="text-gray-600 text-lg mb-2">No hay actividades para hoy</p>
+          <p class="text-gray-500 text-sm mb-4">¡Pero puedes ver las próximas actividades!</p>
+          <button 
+            class="px-6 py-2 bg-blue-500 text-white rounded-full font-semibold hover:bg-blue-600 transition-colors"
+            (click)="navigateTo('/activities')"
           >
-            <div class="flex items-center space-x-4">
-              <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            Ver todas las actividades
+          </button>
+        </div>
+      </div>
+
+      <!-- Weekly Calendar or List View -->
+      <div class="mb-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Esta semana</h2>
+        
+        <!-- Calendar View -->
+        <div *ngIf="showCalendarView" class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="grid grid-cols-7 gap-1 mb-2">
+            <div *ngFor="let day of weekDays" 
+                 class="text-center p-3 rounded-lg transition-colors"
+                 [class]="day.isToday ? 'bg-blue-100 border border-blue-300' : 'hover:bg-gray-50'">
+              <div class="text-sm font-semibold text-gray-700 mb-1">{{ day.dayName }}</div>
+              <div class="text-lg font-bold" 
+                   [class]="day.isToday ? 'text-blue-600' : 'text-gray-900'">
+                {{ day.dayNumber }}
+              </div>
+              <div *ngIf="day.activities.length > 0" class="mt-1">
+                <div class="w-2 h-2 bg-green-500 rounded-full mx-auto"></div>
+                <div class="text-xs text-gray-600 mt-1">{{ day.activities.length }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- List View -->
+        <div *ngIf="!showCalendarView" class="space-y-3">
+          <div *ngFor="let activity of upcomingActivities.slice(0, 5)" 
+               class="bg-white rounded-lg border border-gray-200 p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+               (click)="navigateTo('/activities/' + activity.id)">
+            <div class="flex items-center space-x-3">
+              <span class="text-2xl">{{ getActivityEmoji(activity.title) }}</span>
+              <div class="flex-1">
+                <h4 class="font-semibold text-gray-900">{{ activity.title }}</h4>
+                <p class="text-sm text-gray-600">{{ formatActivityDate(activity.date) }}</p>
+                <p class="text-sm text-gray-600" *ngIf="activity.location">📍 {{ activity.location }}</p>
+              </div>
+              <span class="text-gray-400">→</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Groups Section -->
+      <div *ngIf="userGroups.length > 0" class="mb-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Tus grupos</h2>
+        <div class="space-y-3">
+          <div *ngFor="let group of userGroups.slice(0, 3)" 
+               class="bg-white rounded-lg border border-gray-200 p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+               (click)="navigateTo('/groups/' + group.id)">
+            <div class="flex items-center space-x-3">
+              <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
                 <span class="text-2xl">👥</span>
               </div>
               <div class="flex-1">
-                <h3 class="font-semibold text-gray-900">Grupos</h3>
-                <p class="text-sm text-gray-500">Encuentra amigos y participa en grupos</p>
-              </div>
-              <span class="text-gray-400">→</span>
-            </div>
-          </div>
-
-          <!-- Actividades -->
-          <div 
-            class="menu-card border-l-4 border-green-500 bg-white hover:bg-green-50 cursor-pointer" 
-            (click)="navigateTo('/activities')"
-          >
-            <div class="flex items-center space-x-4">
-              <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <span class="text-2xl">📅</span>
-              </div>
-              <div class="flex-1">
-                <h3 class="font-semibold text-gray-900">Actividades</h3>
-                <p class="text-sm text-gray-500">Explora actividades</p>
-              </div>
-              <span class="text-gray-400">→</span>
-            </div>
-          </div>
-
-          <!-- Logros -->
-          <div 
-            class="menu-card border-l-4 border-yellow-500 bg-white hover:bg-yellow-50 cursor-pointer" 
-            (click)="navigateTo('/achievements')"
-          >
-            <div class="flex items-center space-x-4">
-              <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                <span class="text-2xl">🏆</span>
-              </div>
-              <div class="flex-1">
-                <h3 class="font-semibold text-gray-900">Logros</h3>
-                <p class="text-sm text-gray-500">Celebra tus logros</p>
-              </div>
-              <span class="text-gray-400">→</span>
-            </div>
-          </div>
-
-          <!-- Ayuda -->
-          <div 
-            class="menu-card border-l-4 border-gray-400 bg-white hover:bg-gray-50 cursor-pointer" 
-            (click)="navigateTo('/help')"
-          >
-            <div class="flex items-center space-x-4">
-              <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                <span class="text-2xl">❓</span>
-              </div>
-              <div class="flex-1">
-                <h3 class="font-semibold text-gray-900">Ayuda</h3>
-                <p class="text-sm text-gray-500">Obtén ayuda y soporte</p>
+                <h4 class="font-semibold text-gray-900">{{ group.name }}</h4>
+                <p class="text-sm text-gray-600">{{ group.member_count }} miembros</p>
               </div>
               <span class="text-gray-400">→</span>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Quick Stats Section (Desktop Enhancement) -->
-        <div class="hidden lg:block mt-8">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Resumen Rápido</h3>
-          <div class="grid grid-cols-3 gap-6">
-            <!-- Grupos Activos -->
-            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm cursor-pointer hover:bg-blue-50 transition"
-                (click)="navigateTo('/groups')">
-              <div class="text-center">
-                <div class="text-3xl font-bold text-blue-600 mb-2">{{ userGroups.length }}</div>
-                <div class="text-sm text-gray-500">Grupos Activos</div>
-              </div>
-            </div>
+    </main>
 
-            <!-- Actividades -->
-            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm cursor-pointer hover:bg-green-50 transition"
-                (click)="navigateTo('/activities')">
-              <div class="text-center">
-                <div class="text-3xl font-bold text-green-600 mb-2">{{ upcomingActivities.length }}</div>
-                <div class="text-sm text-gray-500">Actividades Próximas</div>
-              </div>
-            </div>
-
-            <!-- Logros -->
-            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm cursor-pointer hover:bg-yellow-50 transition"
-                (click)="navigateTo('/achievements')">
-              <div class="text-center">
-                <div class="text-3xl font-bold text-yellow-600 mb-2">🏆</div>
-                <div class="text-sm text-gray-500">Ver Logros</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Lista de Grupos -->
-        <div class="hidden lg:block mt-12">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Tus Grupos</h3>
-          <ul class="space-y-3">
-            <li *ngFor="let group of userGroups.slice(0, 4)" class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-200 hover:bg-gray-50 transition cursor-pointer"
-                (click)="goToGroups(group.id)">
-              <div>
-                <p class="font-semibold text-gray-800">{{ group.name }}</p>
-                <p class="text-sm text-gray-500">{{ group.member_count }} miembros</p>
-              </div>
-              <span class="text-gray-400">→</span>
-            </li>
-          </ul>
-          <div *ngIf="userGroups.length === 0" class="text-center py-8">
-            <div class="text-4xl mb-2">👥</div>
-            <p class="text-gray-500 text-sm">No hay grupos disponibles</p>
-            <button 
-              class="mt-2 text-blue-500 text-sm hover:text-blue-600"
-              (click)="goToGroups()"
-            >
-              Ver todos los grupos
-            </button>
-          </div>
-        </div>
-
-        <!-- Lista de Actividades -->
-        <div class="hidden lg:block mt-12">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Actividades Próximas</h3>
-          <ul class="space-y-3" *ngIf="upcomingActivities.length > 0">
-            <li *ngFor="let activity of upcomingActivities.slice(0, 4)" 
-                class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-200 hover:bg-gray-50 transition cursor-pointer"
-                (click)="goToActivities(activity.id)">
-              <div class="flex items-center space-x-3">
-                <span class="text-2xl">{{ getActivityEmoji(activity.title) }}</span>
-                <div>
-                  <p class="font-semibold text-gray-800">{{ activity.title }}</p>
-                  <p class="text-sm text-gray-500">📅 {{ formatActivityDate(activity.date) }}</p>
-                  <p class="text-sm text-gray-500" *ngIf="activity.location">📍 {{ activity.location }}</p>
-                </div>
-              </div>
-              <span class="text-gray-400">→</span>
-            </li>
-          </ul>
-          <div *ngIf="upcomingActivities.length === 0" class="text-center py-8">
-            <div class="text-4xl mb-2">📅</div>
-            <p class="text-gray-500 text-sm">No hay actividades próximas</p>
-            <button 
-              class="mt-2 text-blue-500 text-sm hover:text-blue-600"
-              (click)="goToActivities()"
-            >
-              Ver todas las actividades
-            </button>
-          </div>
-        </div>
-      </main>
-
-      <!-- Bottom Navigation (Mobile Only) -->
-      <app-bottom-nav></app-bottom-nav>
-    </div>
+    <!-- Bottom Navigation -->
+    <app-bottom-nav></app-bottom-nav>
   </div>
 </div>

@@ -1,27 +1,55 @@
-.nav-item {
-    min-width: 60px;
-    color: #6b7280;
-    transition: color 0.2s ease-in-out;
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  nav {
+    border-color: #000;
+    border-width: 3px;
+  }
+  
+  button {
+    border: 2px solid transparent;
+  }
+  
+  button:focus {
+    border-color: #000;
+    outline: none;
+  }
+  
+  .bg-blue-100 {
+    background-color: #000;
+    color: #fff;
+  }
 }
-.nav-item:hover {
-    color: #3b82f6;
-    background-color: #eff6ff;
+
+/* Large text support */
+@media (prefers-font-size: large) {
+  button span:last-child {
+    font-size: 1rem;
+  }
+  
+  button span:first-child {
+    font-size: 1.75rem;
+  }
 }
-.nav-item.active {
-    color: #3b82f6;
-    background-color: #eff6ff;
+
+/* Focus styles for keyboard navigation */
+button:focus {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
 }
-.nav-item.active span:first-child {
-    transform: scale(1.1);
+
+/* Active state for better visibility */
+.bg-blue-100 {
+  position: relative;
 }
-/* Safe area for devices with home indicators */
-.safe-area-bottom {
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
-}
-/* Desktop responsive behavior */
-@media (min-width: 1024px) {
-    /* Hide mobile navigation on desktop */
-    nav {
-        display: none;
-    }
+
+.bg-blue-100::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background-color: #3b82f6;
+  border-radius: 50%;
 }

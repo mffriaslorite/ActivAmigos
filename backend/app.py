@@ -6,12 +6,14 @@ from flask_session import Session
 from flask_socketio import SocketIO
 from config.config import Config
 from models.user.user import db
-from services.auth_service import blp as auth_blp
+from services.auth_service_enhanced import blp as auth_blp
 from services.user_service import blp as user_blp
 from services.group_service import blp as group_blp
 from services.activity_service import blp as activity_blp
 from services.achievement_service import blp as achievement_blp
 from services.chat_service import blp as chat_blp, init_socketio
+from services.points_service import blp as points_blp
+from services.moderation_service import blp as moderation_blp
 
 def create_app():
     app = Flask(__name__)
@@ -66,6 +68,8 @@ def create_app():
     api.register_blueprint(activity_blp)
     api.register_blueprint(achievement_blp)
     api.register_blueprint(chat_blp)
+    api.register_blueprint(points_blp)
+    api.register_blueprint(moderation_blp)
 
     # Initialize SocketIO with chat handlers
     init_socketio(app, socketio)

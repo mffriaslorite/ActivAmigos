@@ -1,33 +1,64 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
-import { NavItem } from '../../../core/models/navitem.model';
-
+import { Router, NavigationEnd, RouterLink } from '@angular/router';
+import { filter } from 'rxjs/operators';
 
 @Component({
-    selector: 'app-bottom-nav',
-    standalone: true,
-    imports: [CommonModule, RouterModule],
-    templateUrl: './bottom-nav.component.html',
-    styleUrls: ['./bottom-nav.component.scss'],
+  selector: 'app-bottom-nav',
+  standalone: true,
+  imports: [CommonModule, RouterLink],
+  templateUrl: './bottom-nav.component.html',
+  styleUrls: ['./bottom-nav.component.scss']
 })
-export class BottomNavComponent {
-  navItems: NavItem[] = [
-    { path: '/dashboard', icon: '🏠', label: 'Inicio' },
-    { path: '/activities', icon: '📅', label: 'Actividades' },
-    { path: '/groups', icon: '👥', label: 'Grupos' },
-    { path: '/achievements', icon: '🏆', label: 'Logros' },
-    { path: '/help', icon: '❓', label: 'Ayuda' }
+export class BottomNavComponent implements OnInit {
+  currentRoute = '';
+
+  navItems = [
+    {
+      path: '/dashboard',
+      icon: '🏠',
+      label: 'Home',
+      ariaLabel: 'Ir a la página principal'
+    },
+    {
+      path: '/activities',
+      icon: '🎯',
+      label: 'Activities',
+      ariaLabel: 'Ver actividades disponibles'
+    },
+    {
+      path: '/groups',
+      icon: '👥',
+      label: 'Groups',
+      ariaLabel: 'Ver grupos disponibles'
+    },
+    {
+      path: '/profile',
+      icon: '👤',
+      label: 'Profile',
+      ariaLabel: 'Ver mi perfil'
+    }
   ];
 
   constructor(private router: Router) {}
 
-  navigateTo(path: string) {
-    this.router.navigate([path]);
+  ngOnInit() {
+    // Track current route for highlighting active tab
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe((event: NavigationEnd) => {
+        this.currentRoute = event.urlAfterRedirects;
+      });
+
+    // Set initial route
+    this.currentRoute = this.router.url;
   }
 
-  isActiveRoute(path: string): boolean {
-    return this.router.url === path || 
-           (path === '/dashboard' && this.router.url === '/');
+  isActive(path: string): boolean {
+    return this.currentRoute.startsWith(path);
+  }
+
+  navigateTo(path: string) {
+    this.router.navigate([path]);
   }
 }

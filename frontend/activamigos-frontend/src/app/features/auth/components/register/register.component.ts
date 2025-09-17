@@ -17,8 +17,11 @@ import { RegisterRequest } from '../../../../core/models/auth.model';
 export class RegisterComponent implements OnInit, OnDestroy {
   registerForm: FormGroup;
   errorMessage = '';
+  successMessage = '';
   isLoading = false;
   showPassword = false;
+  showConfirmPassword = false;
+  animalList: string[] = [];
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -39,6 +42,19 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.authService.isLoading$
       .pipe(takeUntil(this.destroy$))
       .subscribe(loading => this.isLoading = loading);
+    
+    // Load animal list for password hints
+    this.authService.getAnimalList()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.animalList = response.animals;
+        },
+        error: (error) => {
+          // Fallback animal list if API fails
+          this.animalList = ['cat', 'dog', 'elephant', 'lion', 'tiger', 'bear', 'rabbit', 'horse', 'bird', 'fish'];
+        }
+      });
   }
 
   ngOnDestroy() {
@@ -55,11 +71,19 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.showPassword = !this.showPassword;
   }
 
+  toggleConfirmPasswordVisibility() {
+    this.showConfirmPassword = !this.showConfirmPassword;
+  }
+
   onSubmit() {
     if (this.registerForm.invalid) {
       this.errorMessage = 'Por favor, completa correctamente todos los campos.';
       return;
     }
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
 
     const formValues = this.registerForm.value;
     const registerData: RegisterRequest = {
@@ -73,10 +97,20 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.authService.register(registerData)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => {
-          this.router.navigate(['/dashboard']);
+        next: (response) => {
+          this.isLoading = false;
+          this.successMessage = '¡Cuenta creada exitosamente!';
+          
+          if (response.hint_info) {
+            this.successMessage += ' Recuerda: ' + response.hint_info.hint;
+          }
+          
+          setTimeout(() => {
+            this.router.navigate(['/dashboard']);
+          }, 2000);
         },
         error: (error) => {
+          this.isLoading = false;
           this.errorMessage = error.message || 'Error al registrar el usuario';
         }
       });
