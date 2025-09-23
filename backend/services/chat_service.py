@@ -9,7 +9,8 @@ import logging
 from models.user.user import db, User
 from models.group.group import Group
 from models.activity.activity import Activity
-from models.message.message import Message
+from models.message.message import Message, MessageContextType
+from services.moderation_service import ModerationService
 from models.message.message_schema import (
     MessageSchema, 
     MessageCreateSchema, 
@@ -164,32 +165,43 @@ def init_socketio(app, socketio_instance):
             schema = MessageCreateSchema()
             message_data = schema.load(data)
             
-            # Verify user has access to the chat room
-            group_id = message_data.get('group_id')
-            activity_id = message_data.get('activity_id')
+            # Get context info
+            context_type = message_data.get('context_type')  # 'GROUP' or 'ACTIVITY'
+            context_id = message_data.get('context_id')
             
-            if group_id:
-                group = Group.query.get(group_id)
+            if not context_type or not context_id:
+                emit('error', {'message': 'Missing context information'})
+                return
+            
+            # Verify user has access and is not banned
+            if context_type == 'GROUP':
+                group = Group.query.get(context_id)
                 if not group or not group.is_member(user_id):
                     emit('error', {'message': 'Access denied to group chat'})
                     return
-                room_name = f"group_{group_id}"
-            elif activity_id:
-                activity = Activity.query.get(activity_id)
+                room_name = f"group:{context_id}"
+            elif context_type == 'ACTIVITY':
+                activity = Activity.query.get(context_id)
                 if not activity or not activity.is_participant(user_id):
                     emit('error', {'message': 'Access denied to activity chat'})
                     return
-                room_name = f"activity_{activity_id}"
+                room_name = f"activity:{context_id}"
             else:
-                emit('error', {'message': 'Invalid message data'})
+                emit('error', {'message': 'Invalid context type'})
+                return
+            
+            # Check if user is banned from chatting
+            if not ModerationService.can_user_chat(context_type, context_id, user_id):
+                emit('error', {'message': 'You are banned from chatting in this context'})
                 return
             
             # Create and save the message
+            message_context = MessageContextType.GROUP if context_type == 'GROUP' else MessageContextType.ACTIVITY
             message = Message(
                 content=message_data['content'],
                 sender_id=user_id,
-                group_id=group_id,
-                activity_id=activity_id
+                context_type=message_context,
+                context_id=context_id
             )
             
             db.session.add(message)

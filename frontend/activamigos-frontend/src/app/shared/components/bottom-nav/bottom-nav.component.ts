@@ -13,11 +13,10 @@ import { NavItem } from '../../../core/models/navitem.model';
 })
 export class BottomNavComponent {
   navItems: NavItem[] = [
-    { path: '/dashboard', icon: '🏠', label: 'Inicio' },
-    { path: '/activities', icon: '📅', label: 'Actividades' },
-    { path: '/groups', icon: '👥', label: 'Grupos' },
-    { path: '/achievements', icon: '🏆', label: 'Logros' },
-    { path: '/help', icon: '❓', label: 'Ayuda' }
+    { path: '/dashboard', icon: '🏠', label: 'Home' },
+    { path: '/activities', icon: '📅', label: 'Activities' },
+    { path: '/groups', icon: '👥', label: 'Groups' },
+    { path: '/profile', icon: '👤', label: 'Profile' }
   ];
 
   constructor(private router: Router) {}

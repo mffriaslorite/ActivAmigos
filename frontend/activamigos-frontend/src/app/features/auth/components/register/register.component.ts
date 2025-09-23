@@ -19,6 +19,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
   errorMessage = '';
   isLoading = false;
   showPassword = false;
+  showPasswordHint = true; // Show hint by default on registration
+  animalsList: string[] = [];
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -39,6 +41,16 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.authService.isLoading$
       .pipe(takeUntil(this.destroy$))
       .subscribe(loading => this.isLoading = loading);
+    
+    // Load animals list for password hints
+    this.authService.getAnimalsList().subscribe({
+      next: (response) => {
+        this.animalsList = response.animals;
+      },
+      error: (err) => {
+        console.error('Error loading animals list:', err);
+      }
+    });
   }
 
   ngOnDestroy() {

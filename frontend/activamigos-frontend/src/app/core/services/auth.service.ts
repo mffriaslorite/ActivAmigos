@@ -3,7 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { User } from '../models/user.model';
-import { LoginRequest, RegisterRequest, AuthResponse } from '../models/auth.model';
+import { LoginRequest, RegisterRequest, AuthResponse, PasswordHint, AnimalListResponse } from '../models/auth.model';
 
 
 @Injectable({
@@ -215,6 +215,63 @@ export class AuthService {
 
   setCurrentUser(user: User | null) {
     this.currentUserSubject.next(user);
+  }
+
+  /**
+   * ✅ Get password hint for email
+   */
+  getPasswordHint(email: string): Observable<PasswordHint> {
+    return this.http.get<PasswordHint>(
+      `${this.API_BASE_URL}/auth/hint`,
+      { params: { email } }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * ✅ Get available animals list
+   */
+  getAnimalsList(): Observable<AnimalListResponse> {
+    return this.http.get<AnimalListResponse>(
+      `${this.API_BASE_URL}/auth/animals`
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * ✅ Refresh token automatically
+   */
+  refreshToken(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(
+      `${this.API_BASE_URL}/auth/refresh`,
+      {},
+      { withCredentials: true }
+    ).pipe(
+      tap(response => {
+        if (response.user) {
+          this.currentUserSubject.next(response.user);
+        }
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * ✅ Check if user has specific role
+   */
+  hasRole(role: 'USER' | 'ORGANIZER' | 'SUPERADMIN'): boolean {
+    const user = this.currentUserSubject.value;
+    return user?.role === role;
+  }
+
+  /**
+   * ✅ Check if user is organizer or admin
+   */
+  isOrganizerOrAdmin(): boolean {
+    const user = this.currentUserSubject.value;
+    return user?.role === 'ORGANIZER' || user?.role === 'SUPERADMIN';
   }
 
 }

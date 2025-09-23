@@ -1,0 +1,530 @@
+/* ActivAmigos Accessibility Styles */
+
+/* Base accessibility improvements */
+* {
+  /* Ensure all interactive elements have focus indicators */
+  &:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+  
+  /* Remove default outline and use custom one */
+  &:focus:not(:focus-visible) {
+    outline: none;
+  }
+  
+  &:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+}
+
+/* Large text support */
+html {
+  font-size: 18px; /* Increased base font size for better readability */
+  
+  @media (min-width: 768px) {
+    font-size: 20px;
+  }
+  
+  @media (min-width: 1024px) {
+    font-size: 22px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --bg-white: #ffffff;
+    --bg-black: #000000;
+    --text-black: #000000;
+    --text-white: #ffffff;
+    --border-black: #000000;
+    --focus-color: #0066cc;
+  }
+  
+  body {
+    background-color: var(--bg-white);
+    color: var(--text-black);
+  }
+  
+  .bg-white {
+    background-color: var(--bg-white) !important;
+    border: 2px solid var(--border-black) !important;
+  }
+  
+  .bg-gray-50, .bg-gray-100 {
+    background-color: #f0f0f0 !important;
+    border: 1px solid var(--border-black) !important;
+  }
+  
+  .text-gray-600, .text-gray-700, .text-gray-500 {
+    color: var(--text-black) !important;
+  }
+  
+  .border-gray-200, .border-gray-300 {
+    border-color: var(--border-black) !important;
+  }
+  
+  .bg-blue-500, .bg-blue-600 {
+    background-color: #0066cc !important;
+    color: var(--text-white) !important;
+  }
+  
+  .bg-green-500, .bg-green-600 {
+    background-color: #006600 !important;
+    color: var(--text-white) !important;
+  }
+  
+  .bg-red-500, .bg-red-600 {
+    background-color: #cc0000 !important;
+    color: var(--text-white) !important;
+  }
+  
+  .bg-yellow-500 {
+    background-color: #cc9900 !important;
+    color: var(--text-black) !important;
+  }
+  
+  /* Focus indicators in high contrast */
+  *:focus, *:focus-visible {
+    outline: 3px solid var(--focus-color) !important;
+    outline-offset: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .animate-spin {
+    animation: none !important;
+  }
+  
+  .transition-colors, .transition-all, .transition-transform {
+    transition: none !important;
+  }
+}
+
+/* Large text and button sizes for cognitive accessibility */
+.btn, button, .button {
+  min-height: 44px; /* Minimum touch target size */
+  min-width: 44px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 12px 24px;
+  
+  @media (min-width: 768px) {
+    min-height: 48px;
+    min-width: 48px;
+    font-size: 1.2rem;
+    padding: 16px 32px;
+  }
+}
+
+/* Input field accessibility */
+input, textarea, select {
+  min-height: 44px;
+  font-size: 1rem;
+  padding: 12px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  
+  @media (min-width: 768px) {
+    min-height: 48px;
+    font-size: 1.1rem;
+    padding: 16px;
+  }
+  
+  &:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  &[aria-invalid="true"] {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  }
+}
+
+/* Label accessibility */
+label {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  display: block;
+  
+  &[for] {
+    cursor: pointer;
+  }
+}
+
+/* Error message styling */
+.error-message, .form-error, [role="alert"] {
+  color: #dc2626;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-top: 4px;
+  
+  &::before {
+    content: "⚠️ ";
+    margin-right: 4px;
+  }
+}
+
+/* Success message styling */
+.success-message, [role="status"] {
+  color: #059669;
+  font-weight: 600;
+  font-size: 1rem;
+  
+  &::before {
+    content: "✅ ";
+    margin-right: 4px;
+  }
+}
+
+/* Navigation accessibility */
+nav, [role="navigation"] {
+  a, button {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 8px;
+    
+    &:hover, &:focus {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    
+    &[aria-current="page"] {
+      background-color: #3b82f6;
+      color: white;
+      font-weight: 700;
+    }
+  }
+}
+
+/* Modal accessibility */
+.modal, [role="dialog"] {
+  &:focus {
+    outline: none; /* Modal container shouldn't have outline */
+  }
+  
+  /* Ensure modal content is focusable */
+  .modal-content {
+    &:focus {
+      outline: none;
+    }
+  }
+  
+  /* Close button accessibility */
+  .modal-close, [aria-label*="close"], [aria-label*="cerrar"] {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    
+    &:hover, &:focus {
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+    }
+  }
+}
+
+/* Card and container accessibility */
+.card, .bg-white {
+  border-radius: 12px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  
+  @media (prefers-contrast: high) {
+    border: 2px solid #000;
+    box-shadow: none;
+  }
+}
+
+/* Loading states accessibility */
+.loading, [aria-busy="true"] {
+  position: relative;
+  
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #3b82f6;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      animation: none;
+      content: "Cargando...";
+      width: auto;
+      height: auto;
+      border: none;
+      font-weight: 600;
+    }
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Skip links for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #3b82f6;
+  color: white;
+  padding: 8px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+  z-index: 1000;
+  
+  &:focus {
+    top: 6px;
+  }
+}
+
+/* Screen reader only content */
+.sr-only, .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Ensure sufficient color contrast for links */
+a {
+  color: #1d4ed8;
+  text-decoration: underline;
+  
+  &:hover, &:focus {
+    color: #1e40af;
+    text-decoration: underline;
+  }
+  
+  &:visited {
+    color: #7c3aed;
+  }
+}
+
+/* Table accessibility */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  
+  th, td {
+    border: 1px solid #d1d5db;
+    padding: 12px;
+    text-align: left;
+    
+    @media (prefers-contrast: high) {
+      border-color: #000;
+    }
+  }
+  
+  th {
+    background-color: #f9fafb;
+    font-weight: 700;
+    
+    @media (prefers-contrast: high) {
+      background-color: #e5e7eb;
+    }
+  }
+}
+
+/* Form fieldset accessibility */
+fieldset {
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  
+  legend {
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 0 8px;
+    background: white;
+  }
+  
+  @media (prefers-contrast: high) {
+    border-color: #000;
+  }
+}
+
+/* Tooltip accessibility */
+[title], [aria-describedby] {
+  position: relative;
+  
+  &:hover::after, &:focus::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+  }
+}
+
+/* Responsive text sizing */
+@media (max-width: 640px) {
+  .text-sm { font-size: 0.95rem !important; }
+  .text-base { font-size: 1.1rem !important; }
+  .text-lg { font-size: 1.25rem !important; }
+  .text-xl { font-size: 1.4rem !important; }
+  .text-2xl { font-size: 1.6rem !important; }
+}
+
+/* Ensure minimum contrast ratios */
+.text-gray-400, .text-gray-500 {
+  color: #6b7280 !important; /* Ensure minimum contrast */
+}
+
+.text-gray-600 {
+  color: #4b5563 !important; /* Better contrast */
+}
+
+/* Chat and messaging accessibility */
+.message, .chat-message {
+  padding: 12px 16px;
+  margin: 8px 0;
+  border-radius: 12px;
+  max-width: 80%;
+  word-wrap: break-word;
+  
+  &[data-sender="self"] {
+    background-color: #3b82f6;
+    color: white;
+    margin-left: auto;
+  }
+  
+  &[data-sender="other"] {
+    background-color: #f3f4f6;
+    color: #1f2937;
+  }
+  
+  &[data-system="true"] {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #f59e0b;
+    font-weight: 600;
+    text-align: center;
+  }
+}
+
+/* Status indicators accessibility */
+.status-indicator, .semaphore {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  
+  .status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    
+    &[data-status="active"] {
+      background-color: #10b981;
+      border-color: #059669;
+    }
+    
+    &[data-status="warning"] {
+      background-color: #f59e0b;
+      border-color: #d97706;
+    }
+    
+    &[data-status="danger"] {
+      background-color: #ef4444;
+      border-color: #dc2626;
+    }
+    
+    &[data-status="inactive"] {
+      background-color: #9ca3af;
+      border-color: #6b7280;
+    }
+  }
+}
+
+/* Notification accessibility */
+.notification, .toast {
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid;
+  margin: 8px 0;
+  
+  &[data-type="success"] {
+    background-color: #d1fae5;
+    border-color: #10b981;
+    color: #065f46;
+  }
+  
+  &[data-type="error"] {
+    background-color: #fee2e2;
+    border-color: #ef4444;
+    color: #991b1b;
+  }
+  
+  &[data-type="warning"] {
+    background-color: #fef3c7;
+    border-color: #f59e0b;
+    color: #92400e;
+  }
+  
+  &[data-type="info"] {
+    background-color: #dbeafe;
+    border-color: #3b82f6;
+    color: #1e40af;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print, .modal, [role="dialog"] {
+    display: none !important;
+  }
+  
+  body {
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  
+  p, li {
+    page-break-inside: avoid;
+  }
+}

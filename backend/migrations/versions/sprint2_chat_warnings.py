@@ -1,0 +1,118 @@
+"""Sprint 2: Add chat context, warnings, and membership status
+
+Revision ID: sprint2_chat_warnings
+Revises: sprint1_user_roles_points
+Create Date: 2025-01-23 12:00:00.000000
+
+"""
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+
+# revision identifiers, used by Alembic.
+revision = 'sprint2_chat_warnings'
+down_revision = 'sprint1_user_roles_points'
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    # Create enum types
+    warning_context_type_enum = postgresql.ENUM('GROUP', 'ACTIVITY', name='warningcontexttype')
+    warning_context_type_enum.create(op.get_bind())
+    
+    membership_status_enum = postgresql.ENUM('ACTIVE', 'BANNED', name='membershipstatus')
+    membership_status_enum.create(op.get_bind())
+    
+    message_context_type_enum = postgresql.ENUM('GROUP', 'ACTIVITY', name='messagecontexttype')
+    message_context_type_enum.create(op.get_bind())
+    
+    # Update messages table
+    op.add_column('messages', sa.Column('context_type', sa.Enum('GROUP', 'ACTIVITY', name='messagecontexttype'), nullable=True))
+    op.add_column('messages', sa.Column('context_id', sa.Integer(), nullable=True))
+    
+    # Migrate existing data
+    op.execute("""
+        UPDATE messages SET 
+            context_type = 'GROUP',
+            context_id = group_id
+        WHERE group_id IS NOT NULL
+    """)
+    
+    op.execute("""
+        UPDATE messages SET 
+            context_type = 'ACTIVITY',
+            context_id = activity_id
+        WHERE activity_id IS NOT NULL
+    """)
+    
+    # Make context fields non-nullable and rename timestamp
+    op.alter_column('messages', 'context_type', nullable=False)
+    op.alter_column('messages', 'context_id', nullable=False)
+    op.alter_column('messages', 'timestamp', new_column_name='created_at')
+    
+    # Drop old columns
+    op.drop_column('messages', 'group_id')
+    op.drop_column('messages', 'activity_id')
+    
+    # Create warnings table
+    op.create_table('warnings',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('context_type', sa.Enum('GROUP', 'ACTIVITY', name='warningcontexttype'), nullable=False),
+        sa.Column('context_id', sa.Integer(), nullable=False),
+        sa.Column('target_user_id', sa.Integer(), nullable=False),
+        sa.Column('issued_by', sa.Integer(), nullable=False),
+        sa.Column('reason', sa.String(255), nullable=False),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+        sa.ForeignKeyConstraint(['issued_by'], ['users.id'], ),
+        sa.ForeignKeyConstraint(['target_user_id'], ['users.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    
+    # Update group_members table
+    op.add_column('group_members', sa.Column('warning_count', sa.Integer(), nullable=False, server_default='0'))
+    op.add_column('group_members', sa.Column('status', sa.Enum('ACTIVE', 'BANNED', name='membershipstatus'), nullable=False, server_default='ACTIVE'))
+    
+    # Update activity_participants table
+    op.add_column('activity_participants', sa.Column('warning_count', sa.Integer(), nullable=False, server_default='0'))
+    op.add_column('activity_participants', sa.Column('status', sa.Enum('ACTIVE', 'BANNED', name='membershipstatus'), nullable=False, server_default='ACTIVE'))
+
+
+def downgrade():
+    # Remove new columns from association tables
+    op.drop_column('activity_participants', 'status')
+    op.drop_column('activity_participants', 'warning_count')
+    op.drop_column('group_members', 'status')
+    op.drop_column('group_members', 'warning_count')
+    
+    # Drop warnings table
+    op.drop_table('warnings')
+    
+    # Restore old messages structure
+    op.add_column('messages', sa.Column('group_id', sa.Integer(), nullable=True))
+    op.add_column('messages', sa.Column('activity_id', sa.Integer(), nullable=True))
+    
+    # Migrate data back
+    op.execute("""
+        UPDATE messages SET 
+            group_id = context_id
+        WHERE context_type = 'GROUP'
+    """)
+    
+    op.execute("""
+        UPDATE messages SET 
+            activity_id = context_id
+        WHERE context_type = 'ACTIVITY'
+    """)
+    
+    # Rename created_at back to timestamp
+    op.alter_column('messages', 'created_at', new_column_name='timestamp')
+    
+    # Drop new columns
+    op.drop_column('messages', 'context_id')
+    op.drop_column('messages', 'context_type')
+    
+    # Drop enum types
+    op.execute('DROP TYPE messagecontexttype')
+    op.execute('DROP TYPE membershipstatus')
+    op.execute('DROP TYPE warningcontexttype')

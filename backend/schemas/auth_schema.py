@@ -10,7 +10,11 @@ class RegisterSchema(Schema):
 class LoginSchema(Schema):
     username = fields.Str(required=True)
     password = fields.Str(required=True)
+    remember_me = fields.Bool(required=False, default=False)
 
 class ChangePasswordSchema(Schema):
     current_password = fields.Str(required=True)
     new_password = fields.Str(required=True, validate=validate.Length(min=8))
+
+class PasswordHintSchema(Schema):
+    email = fields.Email(required=True)
