@@ -2,7 +2,7 @@ from flask import Blueprint, request, session, current_app
 from flask_smorest import Api, Blueprint
 from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
 from marshmallow import ValidationError
-from datetime import datetime
+from datetime import datetime, timezone
 import functools
 import logging
 
@@ -10,7 +10,6 @@ from models.user.user import db, User
 from models.group.group import Group
 from models.activity.activity import Activity
 from models.message.message import Message, MessageContextType
-from services.moderation_service import ModerationService
 from models.message.message_schema import (
     MessageSchema, 
     MessageCreateSchema, 
@@ -32,6 +31,29 @@ blp = Blueprint(
 
 # SocketIO instance will be initialized in app.py
 socketio = None
+
+def can_user_chat(context_type, context_id, user_id):
+    """Check if user is allowed to chat in this context"""
+    from models.associations.group_associations import group_members
+    from models.associations.activity_associations import activity_participants
+    from models.warnings.warnings import MembershipStatus
+    
+    if context_type == 'GROUP':
+        membership = db.session.execute(
+            group_members.select().where(
+                group_members.c.user_id == user_id,
+                group_members.c.group_id == context_id
+            )
+        ).first()
+    else:  # ACTIVITY
+        membership = db.session.execute(
+            activity_participants.select().where(
+                activity_participants.c.user_id == user_id,
+                activity_participants.c.activity_id == context_id
+            )
+        ).first()
+    
+    return membership and membership.status == MembershipStatus.ACTIVE
 
 def init_socketio(app, socketio_instance):
     """Initialize SocketIO with the app and set up event handlers"""
@@ -191,7 +213,7 @@ def init_socketio(app, socketio_instance):
                 return
             
             # Check if user is banned from chatting
-            if not ModerationService.can_user_chat(context_type, context_id, user_id):
+            if not can_user_chat(context_type, context_id, user_id):
                 emit('error', {'message': 'You are banned from chatting in this context'})
                 return
             
@@ -358,3 +380,52 @@ def post_activity_message(message_data, activity_id):
         socketio.emit('new_message', message_dict, room=f"activity_{activity_id}")
     
     return message
+
+# New Sprint 2 endpoints with context_type/context_id format
+@blp.route("/history", methods=["GET"])
+@blp.arguments(MessageListQuerySchema, location="query")
+@require_authentication
+def get_chat_history(query_args):
+    """Get chat history for a context (group or activity)"""
+    context_type = query_args['context_type']
+    context_id = query_args['context_id']
+    cursor = query_args.get('cursor')
+    
+    user_id = session.get('user_id')
+    
+    # Verify user has access to this context
+    if context_type == 'GROUP':
+        group = Group.query.get(context_id)
+        if not group or not group.is_member(user_id):
+            blp.abort(403, message="Access denied to group chat")
+    elif context_type == 'ACTIVITY':
+        activity = Activity.query.get(context_id)
+        if not activity or not activity.is_participant(user_id):
+            blp.abort(403, message="Access denied to activity chat")
+    else:
+        blp.abort(400, message="Invalid context type")
+    
+    # Get messages
+    message_context = MessageContextType.GROUP if context_type == 'GROUP' else MessageContextType.ACTIVITY
+    query = Message.query.filter_by(
+        context_type=message_context,
+        context_id=context_id
+    )
+    
+    # Apply cursor pagination if provided
+    if cursor:
+        try:
+            cursor_date = datetime.fromisoformat(cursor.replace('Z', '+00:00'))
+            query = query.filter(Message.created_at < cursor_date)
+        except:
+            pass  # Invalid cursor, ignore
+    
+    messages = query.order_by(Message.created_at.desc()).limit(50).all()
+    
+    # Reverse to show oldest first
+    messages = list(reversed(messages))
+    
+    return {
+        "messages": [message.to_dict() for message in messages],
+        "has_more": len(messages) == 50
+    }

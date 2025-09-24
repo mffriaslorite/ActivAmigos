@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test ActivAmigos Chat</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #messages { border: 1px solid #ccc; height: 300px; overflow-y: auto; padding: 10px; margin: 10px 0; }
+        .message { margin: 5px 0; padding: 5px; background: #f0f0f0; border-radius: 5px; }
+        .system { background: #fff3cd; border: 1px solid #ffeaa7; }
+        input, button { padding: 10px; margin: 5px; }
+        #messageInput { width: 300px; }
+    </style>
+</head>
+<body>
+    <h1>Test ActivAmigos Chat</h1>
+    
+    <div>
+        <h3>1. Login first</h3>
+        <input type="text" id="username" placeholder="Username or email" value="testuser">
+        <input type="password" id="password" placeholder="Password" value="password123">
+        <button onclick="login()">Login</button>
+        <span id="loginStatus"></span>
+    </div>
+
+    <div>
+        <h3>2. Join Room</h3>
+        <select id="contextType">
+            <option value="GROUP">GROUP</option>
+            <option value="ACTIVITY">ACTIVITY</option>
+        </select>
+        <input type="number" id="contextId" placeholder="Context ID" value="1">
+        <button onclick="joinRoom()">Join Room</button>
+        <button onclick="leaveRoom()">Leave Room</button>
+    </div>
+
+    <div>
+        <h3>3. Send Message</h3>
+        <input type="text" id="messageInput" placeholder="Type your message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <div>
+        <h3>4. Messages</h3>
+        <div id="messages"></div>
+    </div>
+
+    <script>
+        let socket = null;
+        let isLoggedIn = false;
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.username) {
+                    document.getElementById('loginStatus').textContent = '✅ Logged in as ' + data.username;
+                    isLoggedIn = true;
+                    initSocket();
+                } else {
+                    document.getElementById('loginStatus').textContent = '❌ Login failed';
+                }
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                document.getElementById('loginStatus').textContent = '❌ Login error';
+            });
+        }
+
+        function initSocket() {
+            socket = io('http://localhost:5000', {
+                withCredentials: true,
+                transports: ['websocket', 'polling']
+            });
+
+            socket.on('connect', () => {
+                console.log('✅ Connected to server');
+                addMessage('system', 'Conectado al servidor');
+            });
+
+            socket.on('disconnect', () => {
+                console.log('❌ Disconnected from server');
+                addMessage('system', 'Desconectado del servidor');
+            });
+
+            socket.on('new_message', (message) => {
+                console.log('📨 New message:', message);
+                addMessage('received', `${message.sender?.username || 'Unknown'}: ${message.content}`);
+            });
+
+            socket.on('joined_chat', (data) => {
+                console.log('✅ Joined room:', data);
+                addMessage('system', `Te uniste a la sala: ${data.room}`);
+            });
+
+            socket.on('left_chat', (data) => {
+                console.log('👋 Left room:', data);
+                addMessage('system', `Saliste de la sala: ${data.room}`);
+            });
+
+            socket.on('error', (error) => {
+                console.error('❌ Socket error:', error);
+                addMessage('system', `Error: ${error.message}`);
+            });
+        }
+
+        function joinRoom() {
+            if (!socket || !isLoggedIn) {
+                alert('Please login first');
+                return;
+            }
+
+            const contextType = document.getElementById('contextType').value;
+            const contextId = parseInt(document.getElementById('contextId').value);
+
+            socket.emit('join_chat', {
+                context_type: contextType,
+                context_id: contextId
+            });
+        }
+
+        function leaveRoom() {
+            if (!socket || !isLoggedIn) {
+                alert('Please login first');
+                return;
+            }
+
+            const contextType = document.getElementById('contextType').value;
+            const contextId = parseInt(document.getElementById('contextId').value);
+
+            socket.emit('leave_chat', {
+                context_type: contextType,
+                context_id: contextId
+            });
+        }
+
+        function sendMessage() {
+            if (!socket || !isLoggedIn) {
+                alert('Please login first');
+                return;
+            }
+
+            const content = document.getElementById('messageInput').value.trim();
+            if (!content) return;
+
+            const contextType = document.getElementById('contextType').value;
+            const contextId = parseInt(document.getElementById('contextId').value);
+
+            socket.emit('send_message', {
+                context_type: contextType,
+                context_id: contextId,
+                content: content
+            });
+
+            document.getElementById('messageInput').value = '';
+            addMessage('sent', `Tú: ${content}`);
+        }
+
+        function addMessage(type, text) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Allow sending message with Enter key
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('messageInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -4,15 +4,16 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { GroupsService } from '../../../core/services/groups.service';
 import { GroupDetails, GroupMember } from '../../../core/models/group.model';
-import { ChatComponent } from '../../../shared/components/chat/chat.component';
-import { ChatRoom } from '../../../core/models/message.model';
+import { ChatRoomComponent } from '../../../shared/components/chat/chat-room.component';
+import { SemaphoreBadgeComponent } from '../../../shared/components/semaphore-badge/semaphore-badge.component';
+import { RulesSelectorComponent } from '../../../shared/components/rules-selector/rules-selector.component';
+import { RulesService } from '../../../core/services/rules.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-group-details',
   standalone: true,
-  imports: [CommonModule, ChatComponent],
+  imports: [CommonModule, ChatRoomComponent, SemaphoreBadgeComponent, RulesSelectorComponent],
   templateUrl: './group-details.component.html',
   styleUrls: ['./group-details.component.scss']
 })
@@ -22,12 +23,15 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   groupDetails: GroupDetails | null = null;
   isLoading = true;
   errorMessage = '';
-  newMessage = '';
   
-  // Chat-related properties
-  chatRoom: ChatRoom | null = null;
+  // Chat and moderation
   currentUserId: number | null = null;
   showChat = true;
+  
+  // Rules management
+  showRulesSelector = false;
+  groupRules: any[] = [];
+  canManageRules = false;
   
 
   // Mock chat messages for preview
@@ -52,7 +56,8 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private groupsService: GroupsService,
-    private authService: AuthService
+    private authService: AuthService,
+    private rulesService: RulesService
   ) {}
 
   ngOnInit() {
@@ -63,12 +68,13 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
       this.router.navigate(['/groups']);
     }
 
-    // Get current user ID for chat
+    // Get current user ID for chat and check permissions
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
         if (user) {
           this.currentUserId = user.id;
+          this.canManageRules = user.role === 'ORGANIZER' || user.role === 'SUPERADMIN';
         }
       });
   }
@@ -89,12 +95,8 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
           this.groupDetails = details;
           this.isLoading = false;
           
-          // Set up chat room
-          this.chatRoom = {
-            type: 'group',
-            id: details.id,
-            name: details.name
-          };
+          // Load group rules
+          this.loadGroupRules(details.id);
         },
         error: (error) => {
           console.error('Error loading group details:', error);
@@ -278,5 +280,45 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
 
   toggleChat() {
     this.showChat = !this.showChat;
+  }
+
+  loadGroupRules(groupId: number) {
+    this.rulesService.getGroupRules(groupId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.groupRules = response.rules;
+        },
+        error: (error) => {
+          console.error('Error loading group rules:', error);
+          this.groupRules = [];
+        }
+      });
+  }
+
+  openRulesSelector() {
+    this.showRulesSelector = true;
+  }
+
+  closeRulesSelector() {
+    this.showRulesSelector = false;
+  }
+
+  onRulesSaved(ruleIds: number[]) {
+    if (!this.groupDetails) return;
+
+    this.rulesService.attachGroupRules(this.groupDetails.id, ruleIds)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.showRulesSelector = false;
+          this.loadGroupRules(this.groupDetails!.id);
+          alert('Reglas guardadas correctamente');
+        },
+        error: (error) => {
+          console.error('Error saving rules:', error);
+          alert('Error al guardar las reglas');
+        }
+      });
   }
 }

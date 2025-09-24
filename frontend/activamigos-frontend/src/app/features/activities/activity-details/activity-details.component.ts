@@ -4,14 +4,17 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { ActivitiesService } from '../../../core/services/activities.service';
 import { ActivityDetails, ActivityParticipant } from '../../../core/models/activity.model';
-import { ChatComponent } from '../../../shared/components/chat/chat.component';
-import { ChatRoom } from '../../../core/models/message.model';
+import { ChatRoomComponent } from '../../../shared/components/chat/chat-room.component';
+import { SemaphoreBadgeComponent } from '../../../shared/components/semaphore-badge/semaphore-badge.component';
+import { RulesSelectorComponent } from '../../../shared/components/rules-selector/rules-selector.component';
+import { AttendanceService } from '../../../core/services/attendance.service';
+import { RulesService } from '../../../core/services/rules.service';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-activity-details',
   standalone: true,
-  imports: [CommonModule, ChatComponent],
+  imports: [CommonModule, ChatRoomComponent, SemaphoreBadgeComponent, RulesSelectorComponent],
   templateUrl: './activity-details.component.html',
   styleUrls: ['./activity-details.component.scss']
 })
@@ -21,12 +24,19 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
   activityDetails: ActivityDetails | null = null;
   isLoading = true;
   errorMessage = '';
-  newMessage = '';
   
-  // Chat-related properties
-  chatRoom: ChatRoom | null = null;
+  // Chat and moderation
   currentUserId: number | null = null;
   showChat = true;
+  
+  // Rules management
+  showRulesSelector = false;
+  activityRules: any[] = [];
+  canManageRules = false;
+  
+  // Attendance management
+  showAttendanceMarking = false;
+  attendanceRecords: any[] = [];
 
   // Mock chat messages for preview
   chatMessages = [
@@ -50,7 +60,9 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private activitiesService: ActivitiesService,
-    private authService: AuthService
+    private authService: AuthService,
+    private attendanceService: AttendanceService,
+    private rulesService: RulesService
   ) {}
 
   ngOnInit() {
@@ -315,5 +327,67 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
 
   toggleChat() {
     this.showChat = !this.showChat;
+  }
+
+  loadActivityRules(activityId: number) {
+    this.rulesService.getActivityRules(activityId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.activityRules = response.rules;
+        },
+        error: (error) => {
+          console.error('Error loading activity rules:', error);
+          this.activityRules = [];
+        }
+      });
+  }
+
+  loadAttendanceRecords(activityId: number) {
+    this.attendanceService.getActivityAttendance(activityId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.attendanceRecords = response.attendance;
+        },
+        error: (error) => {
+          console.error('Error loading attendance records:', error);
+          this.attendanceRecords = [];
+        }
+      });
+  }
+
+  openRulesSelector() {
+    this.showRulesSelector = true;
+  }
+
+  closeRulesSelector() {
+    this.showRulesSelector = false;
+  }
+
+  onRulesSaved(ruleIds: number[]) {
+    if (!this.activityDetails) return;
+
+    this.rulesService.attachActivityRules(this.activityDetails.id, ruleIds)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.showRulesSelector = false;
+          this.loadActivityRules(this.activityDetails!.id);
+          alert('Reglas guardadas correctamente');
+        },
+        error: (error) => {
+          console.error('Error saving rules:', error);
+          alert('Error al guardar las reglas');
+        }
+      });
+  }
+
+  openAttendanceMarking() {
+    this.showAttendanceMarking = true;
+  }
+
+  closeAttendanceMarking() {
+    this.showAttendanceMarking = false;
   }
 }

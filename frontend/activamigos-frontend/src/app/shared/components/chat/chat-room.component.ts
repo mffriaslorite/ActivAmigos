@@ -5,6 +5,8 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ChatService } from '../../../core/services/chat.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { SemaphoreBadgeComponent } from '../semaphore-badge/semaphore-badge.component';
+import { ModerationModalComponent, UserToWarn } from '../moderation-modal/moderation-modal.component';
 
 export interface ChatMessage {
   id: number;
@@ -26,7 +28,7 @@ export interface ChatMessage {
 @Component({
   selector: 'app-chat-room',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SemaphoreBadgeComponent, ModerationModalComponent],
   template: `
     <div class="flex flex-col h-full bg-white rounded-lg border border-gray-200">
       <!-- Chat Header -->
@@ -36,24 +38,21 @@ export interface ChatMessage {
         </h3>
         <div class="flex items-center space-x-2">
           <!-- Semaphore Badge -->
-          <div 
+          <app-semaphore-badge
             *ngIf="userSemaphoreColor"
-            class="w-4 h-4 rounded-full"
-            [class.bg-gray-400]="userSemaphoreColor === 'grey'"
-            [class.bg-green-300]="userSemaphoreColor === 'light_green'"
-            [class.bg-green-600]="userSemaphoreColor === 'dark_green'"
-            [class.bg-yellow-500]="userSemaphoreColor === 'yellow'"
-            [class.bg-red-500]="userSemaphoreColor === 'red'"
-            [title]="getSemaphoreTooltip()"
-          ></div>
+            [color]="userSemaphoreColor"
+            [warningCount]="userWarningCount"
+            [showText]="false"
+          ></app-semaphore-badge>
           
-          <!-- Warning count -->
-          <span 
-            *ngIf="userWarningCount > 0" 
-            class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full"
+          <!-- Moderation button for organizers -->
+          <button
+            *ngIf="canModerate && selectedUserToWarn"
+            class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200 transition-colors"
+            (click)="openModerationModal()"
           >
-            {{ userWarningCount }} advertencia{{ userWarningCount > 1 ? 's' : '' }}
-          </span>
+            ⚠️ Moderar
+          </button>
         </div>
       </div>
 
@@ -69,7 +68,8 @@ export interface ChatMessage {
           [class.justify-end]="message.sender_id === currentUserId"
         >
           <div 
-            class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg break-words"
+            class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg break-words cursor-pointer"
+            (click)="onMessageClick(message)"
             [class.bg-blue-500]="message.sender_id === currentUserId && !message.is_system"
             [class.text-white]="message.sender_id === currentUserId && !message.is_system"
             [class.bg-gray-200]="message.sender_id !== currentUserId && !message.is_system"
@@ -149,6 +149,16 @@ export interface ChatMessage {
         </div>
       </div>
     </div>
+
+    <!-- Moderation Modal -->
+    <app-moderation-modal
+      [isOpen]="showModerationModal"
+      [user]="selectedUserToWarn"
+      [contextType]="contextType"
+      [contextId]="contextId"
+      (close)="closeModerationModal()"
+      (warningIssued)="onWarningIssued($event)"
+    ></app-moderation-modal>
   `,
   styleUrls: ['./chat-room.component.scss']
 })
@@ -168,6 +178,11 @@ export class ChatRoomComponent implements OnInit, OnDestroy {
   userSemaphoreColor: string | null = null;
   userWarningCount = 0;
   
+  // Moderation
+  canModerate = false;
+  selectedUserToWarn: UserToWarn | null = null;
+  showModerationModal = false;
+  
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -184,6 +199,7 @@ export class ChatRoomComponent implements OnInit, OnDestroy {
     // Get current user
     this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.currentUserId = user?.id || null;
+      this.canModerate = user?.role === 'ORGANIZER' || user?.role === 'SUPERADMIN';
       if (user) {
         this.loadUserModerationStatus();
       }
@@ -318,6 +334,37 @@ export class ChatRoomComponent implements OnInit, OnDestroy {
       case 'yellow': return `${this.userWarningCount} advertencia(s)`;
       case 'red': return 'Suspendido';
       default: return '';
+    }
+  }
+
+  openModerationModal() {
+    if (this.selectedUserToWarn) {
+      this.showModerationModal = true;
+    }
+  }
+
+  closeModerationModal() {
+    this.showModerationModal = false;
+  }
+
+  onWarningIssued(response: any) {
+    console.log('Warning issued:', response);
+    // Refresh moderation status
+    if (this.currentUserId) {
+      this.loadUserModerationStatus();
+    }
+  }
+
+  onMessageClick(message: ChatMessage) {
+    // Allow moderators to select users for moderation
+    if (this.canModerate && message.sender_id !== this.currentUserId && !message.is_system) {
+      this.selectedUserToWarn = {
+        id: message.sender.id,
+        username: message.sender.username,
+        first_name: message.sender.first_name,
+        last_name: message.sender.last_name,
+        warning_count: 0 // We'd need to fetch this
+      };
     }
   }
 }
