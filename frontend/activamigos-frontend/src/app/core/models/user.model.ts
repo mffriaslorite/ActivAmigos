@@ -6,6 +6,7 @@ export interface User {
   last_name?: string;
   profile_image?: string;
   bio?: string;
+  role?: 'USER' | 'ORGANIZER' | 'SUPERADMIN';
   is_active: boolean;
   created_at: string;
   last_login?: string;

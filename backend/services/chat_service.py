@@ -2,14 +2,14 @@ from flask import Blueprint, request, session, current_app
 from flask_smorest import Api, Blueprint
 from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
 from marshmallow import ValidationError
-from datetime import datetime
+from datetime import datetime, timezone
 import functools
 import logging
 
 from models.user.user import db, User
 from models.group.group import Group
 from models.activity.activity import Activity
-from models.message.message import Message
+from models.message.message import Message, MessageContextType
 from models.message.message_schema import (
     MessageSchema, 
     MessageCreateSchema, 
@@ -31,6 +31,29 @@ blp = Blueprint(
 
 # SocketIO instance will be initialized in app.py
 socketio = None
+
+def can_user_chat(context_type, context_id, user_id):
+    """Check if user is allowed to chat in this context"""
+    from models.associations.group_associations import group_members
+    from models.associations.activity_associations import activity_participants
+    from models.warnings.warnings import MembershipStatus
+    
+    if context_type == 'GROUP':
+        membership = db.session.execute(
+            group_members.select().where(
+                group_members.c.user_id == user_id,
+                group_members.c.group_id == context_id
+            )
+        ).first()
+    else:  # ACTIVITY
+        membership = db.session.execute(
+            activity_participants.select().where(
+                activity_participants.c.user_id == user_id,
+                activity_participants.c.activity_id == context_id
+            )
+        ).first()
+    
+    return membership and membership.status == MembershipStatus.ACTIVE
 
 def init_socketio(app, socketio_instance):
     """Initialize SocketIO with the app and set up event handlers"""
@@ -164,32 +187,43 @@ def init_socketio(app, socketio_instance):
             schema = MessageCreateSchema()
             message_data = schema.load(data)
             
-            # Verify user has access to the chat room
-            group_id = message_data.get('group_id')
-            activity_id = message_data.get('activity_id')
+            # Get context info
+            context_type = message_data.get('context_type')  # 'GROUP' or 'ACTIVITY'
+            context_id = message_data.get('context_id')
             
-            if group_id:
-                group = Group.query.get(group_id)
+            if not context_type or not context_id:
+                emit('error', {'message': 'Missing context information'})
+                return
+            
+            # Verify user has access and is not banned
+            if context_type == 'GROUP':
+                group = Group.query.get(context_id)
                 if not group or not group.is_member(user_id):
                     emit('error', {'message': 'Access denied to group chat'})
                     return
-                room_name = f"group_{group_id}"
-            elif activity_id:
-                activity = Activity.query.get(activity_id)
+                room_name = f"group:{context_id}"
+            elif context_type == 'ACTIVITY':
+                activity = Activity.query.get(context_id)
                 if not activity or not activity.is_participant(user_id):
                     emit('error', {'message': 'Access denied to activity chat'})
                     return
-                room_name = f"activity_{activity_id}"
+                room_name = f"activity:{context_id}"
             else:
-                emit('error', {'message': 'Invalid message data'})
+                emit('error', {'message': 'Invalid context type'})
+                return
+            
+            # Check if user is banned from chatting
+            if not can_user_chat(context_type, context_id, user_id):
+                emit('error', {'message': 'You are banned from chatting in this context'})
                 return
             
             # Create and save the message
+            message_context = MessageContextType.GROUP if context_type == 'GROUP' else MessageContextType.ACTIVITY
             message = Message(
                 content=message_data['content'],
                 sender_id=user_id,
-                group_id=group_id,
-                activity_id=activity_id
+                context_type=message_context,
+                context_id=context_id
             )
             
             db.session.add(message)
@@ -252,12 +286,41 @@ def get_group_messages(query_args, group_id):
     per_page = query_args.get('per_page', 20)
     before = query_args.get('before')
     
-    query = Message.query.filter_by(group_id=group_id)
+    query = Message.query.filter_by(
+        context_type=MessageContextType.GROUP,
+        context_id=group_id
+    )
     
     if before:
-        query = query.filter(Message.timestamp < before)
+        query = query.filter(Message.created_at < before)
     
-    messages = query.order_by(Message.timestamp.desc()).paginate(
+    messages = query.order_by(Message.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    ).items
+    
+    # Reverse to show oldest first
+    return list(reversed(messages))
+
+@blp.route("/activities/<int:activity_id>/messages", methods=["GET"])
+@blp.arguments(MessageListQuerySchema, location="query")
+@blp.response(200, MessageSchema(many=True))
+@require_authentication
+@require_chat_access('activity', 'activity_id')
+def get_activity_messages(query_args, activity_id):
+    """Get messages for an activity chat with pagination"""
+    page = query_args.get('page', 1)
+    per_page = query_args.get('per_page', 20)
+    before = query_args.get('before')
+    
+    query = Message.query.filter_by(
+        context_type=MessageContextType.ACTIVITY,
+        context_id=activity_id
+    )
+    
+    if before:
+        query = query.filter(Message.created_at < before)
+    
+    messages = query.order_by(Message.created_at.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     ).items
     
@@ -273,14 +336,11 @@ def post_group_message(message_data, group_id):
     """Send a message to a group chat (REST fallback)"""
     user_id = session.get('user_id')
     
-    # Override group_id from URL
-    message_data['group_id'] = group_id
-    message_data.pop('activity_id', None)
-    
     message = Message(
         content=message_data['content'],
         sender_id=user_id,
-        group_id=group_id
+        context_type=MessageContextType.GROUP,
+        context_id=group_id
     )
     
     db.session.add(message)
@@ -294,29 +354,6 @@ def post_group_message(message_data, group_id):
     
     return message
 
-@blp.route("/activities/<int:activity_id>/messages", methods=["GET"])
-@blp.arguments(MessageListQuerySchema, location="query")
-@blp.response(200, MessageSchema(many=True))
-@require_authentication
-@require_chat_access('activity', 'activity_id')
-def get_activity_messages(query_args, activity_id):
-    """Get messages for an activity chat with pagination"""
-    page = query_args.get('page', 1)
-    per_page = query_args.get('per_page', 20)
-    before = query_args.get('before')
-    
-    query = Message.query.filter_by(activity_id=activity_id)
-    
-    if before:
-        query = query.filter(Message.timestamp < before)
-    
-    messages = query.order_by(Message.timestamp.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
-    ).items
-    
-    # Reverse to show oldest first
-    return list(reversed(messages))
-
 @blp.route("/activities/<int:activity_id>/messages", methods=["POST"])
 @blp.arguments(MessageCreateSchema)
 @blp.response(201, MessageSchema)
@@ -326,14 +363,11 @@ def post_activity_message(message_data, activity_id):
     """Send a message to an activity chat (REST fallback)"""
     user_id = session.get('user_id')
     
-    # Override activity_id from URL
-    message_data['activity_id'] = activity_id
-    message_data.pop('group_id', None)
-    
     message = Message(
         content=message_data['content'],
         sender_id=user_id,
-        activity_id=activity_id
+        context_type=MessageContextType.ACTIVITY,
+        context_id=activity_id
     )
     
     db.session.add(message)
@@ -346,3 +380,51 @@ def post_activity_message(message_data, activity_id):
         socketio.emit('new_message', message_dict, room=f"activity_{activity_id}")
     
     return message
+
+@blp.route("/history", methods=["GET"])
+@blp.arguments(MessageListQuerySchema, location="query")
+@require_authentication
+def get_chat_history(query_args):
+    """Get chat history for a context (group or activity)"""
+    context_type = query_args['context_type']
+    context_id = query_args['context_id']
+    cursor = query_args.get('cursor')
+    
+    user_id = session.get('user_id')
+    
+    # Verify user has access to this context
+    if context_type == 'GROUP':
+        group = Group.query.get(context_id)
+        if not group or not group.is_member(user_id):
+            blp.abort(403, message="Access denied to group chat")
+    elif context_type == 'ACTIVITY':
+        activity = Activity.query.get(context_id)
+        if not activity or not activity.is_participant(user_id):
+            blp.abort(403, message="Access denied to activity chat")
+    else:
+        blp.abort(400, message="Invalid context type")
+    
+    # Get messages
+    message_context = MessageContextType.GROUP if context_type == 'GROUP' else MessageContextType.ACTIVITY
+    query = Message.query.filter_by(
+        context_type=message_context,
+        context_id=context_id
+    )
+    
+    # Apply cursor pagination if provided
+    if cursor:
+        try:
+            cursor_date = datetime.fromisoformat(cursor.replace('Z', '+00:00'))
+            query = query.filter(Message.created_at < cursor_date)
+        except:
+            pass  # Invalid cursor, ignore
+    
+    messages = query.order_by(Message.created_at.desc()).limit(50).all()
+    
+    # Reverse to show oldest first
+    messages = list(reversed(messages))
+    
+    return {
+        "messages": [message.to_dict() for message in messages],
+        "has_more": len(messages) == 50
+    }

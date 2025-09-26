@@ -9,6 +9,7 @@ class UserSchema(Schema):
     last_name = fields.Str()
     profile_image = fields.Str()
     bio = fields.Str()
+    role = fields.Str(dump_only=True)  # Don't allow role changes via API
     is_active = fields.Bool()
     created_at = fields.DateTime()
     last_login = fields.DateTime()

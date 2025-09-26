@@ -138,12 +138,19 @@ export class WebSocketService {
       return;
     }
 
-    const messageData: any = { content };
+    const messageData: any = { 
+      content 
+    };
     
     if (groupId) {
-      messageData.group_id = groupId;
+      messageData.context_type = 'GROUP';
+      messageData.context_id = groupId;
     } else if (activityId) {
-      messageData.activity_id = activityId;
+      messageData.context_type = 'ACTIVITY';
+      messageData.context_id = activityId;
+    } else {
+      console.error('Either groupId or activityId must be provided');
+      return;
     }
 
     this.socket.emit('send_message', messageData);

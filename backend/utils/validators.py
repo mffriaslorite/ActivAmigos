@@ -10,10 +10,6 @@ def validate_username(username):
     return True, "Username is valid"
 
 def validate_password(password):
-    if len(password) < 8:
-        return False, "Password must be at least 8 characters long"
-    if not re.search(r'[A-Za-z]', password):
-        return False, "Password must contain at least one letter"
-    if not re.search(r'\d', password):
-        return False, "Password must contain at least one number"
+    if len(password) < 2:
+        return False, "Password must be at least 2 characters long"
     return True, "Password is valid"

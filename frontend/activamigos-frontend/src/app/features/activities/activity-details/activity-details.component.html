@@ -172,10 +172,10 @@
         
         <!-- Chat Component -->
         <div *ngIf="showChat && chatRoom && currentUserId" class="h-96">
-          <app-chat 
+          <app-chat-room
             [chatRoom]="chatRoom"
             [currentUserId]="currentUserId">
-          </app-chat>
+          </app-chat-room>
         </div>
         
         <!-- Loading/Error States -->

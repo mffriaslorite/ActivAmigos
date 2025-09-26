@@ -1,0 +1,43 @@
+/* Chat Room Styles */
+.chat-room {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Accessibility improvements */
+.message-bubble {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .bg-blue-500 {
+    background-color: #1e40af !important;
+  }
+  
+  .bg-gray-200 {
+    background-color: #e5e7eb !important;
+    border: 1px solid #374151 !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin {
+    animation: none;
+  }
+}
+
+/* Large text support */
+@media (min-width: 1024px) {
+  .text-sm {
+    font-size: 0.95rem;
+  }
+  
+  .text-xs {
+    font-size: 0.8rem;
+  }
+}

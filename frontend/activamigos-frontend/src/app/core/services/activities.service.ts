@@ -298,4 +298,23 @@ export class ActivitiesService {
       })
     );
   }
+
+  /**
+   * Get activities by date
+   */
+  getActivitiesByDate(date: Date): Observable<Activity[]> {
+    return this.getActivities().pipe(
+      map(activities => {
+        const targetDate = new Date(date);
+        targetDate.setHours(0, 0, 0, 0);
+        const nextDay = new Date(targetDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        return activities.filter(activity => {
+          const activityDate = new Date(activity.date);
+          return activityDate >= targetDate && activityDate < nextDay;
+        });
+      })
+    );
+  }
 }
