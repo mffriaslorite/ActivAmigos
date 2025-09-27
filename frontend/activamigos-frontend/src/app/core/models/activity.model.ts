@@ -31,6 +31,7 @@ export interface ActivityCreate {
   location?: string;
   date: string;
   rules?: string;
+  rule_ids?: number[];
 }
 
 export interface ActivityUpdate {

@@ -6,6 +6,7 @@ import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { PointsService } from '../../core/services/points.service';
 import { AttendanceService } from '../../core/services/attendance.service';
+import { UserStatusService } from '../../core/services/user-status.service';
 import { User } from '../../core/models/user.model';
 import { Group } from '../../core/models/group.model';
 import { Activity } from '../../core/models/activity.model';
@@ -14,11 +15,12 @@ import { ActivitiesService } from '../../core/services/activities.service';
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav.component';
 import { DesktopLayoutComponent } from '../../shared/components/desktop-layout/desktop-layout.component';
 import { AttendanceModalComponent, ActivityToConfirm } from '../../shared/components/attendance-modal/attendance-modal.component';
+import { SemaphoreBadgeComponent } from '../../shared/components/semaphore-badge/semaphore-badge.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, BottomNavComponent, DesktopLayoutComponent, AttendanceModalComponent],
+  imports: [CommonModule, BottomNavComponent, DesktopLayoutComponent, AttendanceModalComponent, SemaphoreBadgeComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -42,11 +44,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // Attendance confirmation
   showAttendanceModal = false;
   activityToConfirm: ActivityToConfirm | null = null;
+  
+  // User status
+  userSemaphoreColor = 'light_green';
+  userWarningCount = 0;
 
   constructor(
     private authService: AuthService,
     private pointsService: PointsService,
     private attendanceService: AttendanceService,
+    private userStatusService: UserStatusService,
     private router: Router,
     private groupsService: GroupsService,
     private activitiesService: ActivitiesService
@@ -74,6 +81,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(points => {
         this.currentPoints = points;
+      });
+    
+    // Subscribe to user status changes
+    this.userStatusService.userStatus$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(status => {
+        this.userSemaphoreColor = status.overall_semaphore_color;
+        this.userWarningCount = status.total_warnings;
       });
 
     this.generateWeekCalendar();

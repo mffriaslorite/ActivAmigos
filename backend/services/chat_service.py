@@ -104,35 +104,42 @@ def init_socketio(app, socketio_instance):
             return
         
         try:
-            room_type = data.get('type')  # 'group' or 'activity'
-            room_id = data.get('id')
+            # Support both old and new formats
+            context_type = data.get('context_type') or data.get('type')
+            context_id = data.get('context_id') or data.get('id')
             
-            if not room_type or not room_id:
+            if not context_type or not context_id:
                 emit('error', {'message': 'Invalid room data'})
                 return
             
+            # Normalize context_type
+            if context_type.lower() == 'group':
+                context_type = 'GROUP'
+            elif context_type.lower() == 'activity':
+                context_type = 'ACTIVITY'
+            
             # Verify user has access to the chat room
-            if room_type == 'group':
-                group = Group.query.get(room_id)
+            if context_type == 'GROUP':
+                group = Group.query.get(context_id)
                 if not group or not group.is_member(user_id):
                     emit('error', {'message': 'Access denied to group chat'})
                     return
-                room_name = f"group_{room_id}"
-            elif room_type == 'activity':
-                activity = Activity.query.get(room_id)
+                room_name = f"group:{context_id}"
+            elif context_type == 'ACTIVITY':
+                activity = Activity.query.get(context_id)
                 if not activity or not activity.is_participant(user_id):
                     emit('error', {'message': 'Access denied to activity chat'})
                     return
-                room_name = f"activity_{room_id}"
+                room_name = f"activity:{context_id}"
             else:
-                emit('error', {'message': 'Invalid room type'})
+                emit('error', {'message': 'Invalid context type'})
                 return
             
             join_room(room_name)
             emit('joined_chat', {
                 'room': room_name,
-                'type': room_type,
-                'id': room_id
+                'context_type': context_type,
+                'context_id': context_id
             })
             logger.info(f"User {user_id} joined {room_name}")
             
@@ -148,13 +155,18 @@ def init_socketio(app, socketio_instance):
             return
         
         try:
-            room_type = data.get('type')
-            room_id = data.get('id')
+            # Support both old and new formats
+            context_type = data.get('context_type') or data.get('type')
+            context_id = data.get('context_id') or data.get('id')
             
-            if room_type == 'group':
-                room_name = f"group_{room_id}"
-            elif room_type == 'activity':
-                room_name = f"activity_{room_id}"
+            if not context_type or not context_id:
+                return
+                
+            # Normalize context_type
+            if context_type.lower() == 'group':
+                room_name = f"group:{context_id}"
+            elif context_type.lower() == 'activity':
+                room_name = f"activity:{context_id}"
             else:
                 return
             
@@ -230,8 +242,7 @@ def init_socketio(app, socketio_instance):
             db.session.commit()
             
             # Serialize message for broadcast
-            message_schema = MessageSchema()
-            message_dict = message_schema.dump(message)
+            message_dict = message.to_dict()
             
             # Broadcast to all users in the room
             socketio.emit('new_message', message_dict, room=room_name)

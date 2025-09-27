@@ -1,4 +1,8 @@
-from flask_smorest import Blueprint, abort
+from flask_smorest import Blueprint
+from models.warnings.warnings import Warning, WarningContextType, MembershipStatus
+from models.associations.group_associations import group_members
+from models.associations.activity_associations import activity_participants
+from models.message.message import Message, MessageContextType
 from flask import session, request, current_app, Response
 from sqlalchemy.exc import IntegrityError
 from models.user.user import User, db
@@ -187,4 +191,62 @@ def stream_profile_image(current_user: User):
     except Exception as e:
         current_app.logger.error(f"Failed to fetch profile image: {e}")
         abort(500, message="Failed to fetch profile image")
+
+@blp.route("/status/overall", methods=["GET"])
+@login_required
+def get_user_overall_status():
+    """Get user's overall moderation status across all contexts"""
+    user_id = session.get('user_id')
+    
+    # Count total warnings
+    total_warnings = Warning.query.filter_by(target_user_id=user_id).count()
+    
+    # Count active groups
+    active_groups = db.session.execute(
+        group_members.select().where(
+            group_members.c.user_id == user_id,
+            group_members.c.status == MembershipStatus.ACTIVE
+        )
+    ).rowcount
+    
+    # Count active activities
+    active_activities = db.session.execute(
+        activity_participants.select().where(
+            activity_participants.c.user_id == user_id,
+            activity_participants.c.status == MembershipStatus.ACTIVE
+        )
+    ).rowcount
+    
+    # Count banned contexts
+    banned_contexts = db.session.execute(
+        group_members.select().where(
+            group_members.c.user_id == user_id,
+            group_members.c.status == MembershipStatus.BANNED
+        )
+    ).rowcount + db.session.execute(
+        activity_participants.select().where(
+            activity_participants.c.user_id == user_id,
+            activity_participants.c.status == MembershipStatus.BANNED
+        )
+    ).rowcount
+    
+    # Determine overall semaphore color
+    if banned_contexts > 0:
+        overall_color = 'red'
+    elif total_warnings > 0:
+        overall_color = 'yellow'
+    elif active_groups > 0 or active_activities > 0:
+        # Check if user has ever chatted in any context
+        has_chatted = Message.query.filter_by(sender_id=user_id).first() is not None
+        overall_color = 'dark_green' if has_chatted else 'light_green'
+    else:
+        overall_color = 'grey'
+    
+    return {
+        'overall_semaphore_color': overall_color,
+        'total_warnings': total_warnings,
+        'active_groups': active_groups,
+        'active_activities': active_activities,
+        'banned_contexts': banned_contexts
+    }
 

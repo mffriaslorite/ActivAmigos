@@ -27,6 +27,7 @@ export interface GroupCreate {
   name: string;
   description?: string;
   rules?: string;
+  rule_ids?: number[];
 }
 
 export interface GroupUpdate {
