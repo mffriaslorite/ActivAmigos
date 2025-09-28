@@ -38,14 +38,20 @@
           {{ showPassword ? '🙈' : '👁️' }}
         </button>
       </div>
-      <!-- Password Hint Button -->
-      <button
-        type="button"
-        class="mt-2 text-sm text-blue-600 hover:text-blue-800"
-        (click)="showPasswordHintModal()"
-      >
-        💡 ¿Cuál es tu animal favorito?
-      </button>
+      <!-- Password Hint Always Visible -->
+      <div *ngIf="animalsList.length > 0" class="mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <p class="text-sm text-blue-800 mb-3 font-medium">
+          💡 Pista: Tu contraseña puede ser tu animal favorito
+        </p>
+        <div class="grid grid-cols-2 gap-2">
+          <div 
+            *ngFor="let animal of animalsList" 
+            class="bg-white p-2 rounded text-center text-sm text-blue-700 border border-blue-100"
+          >
+            {{ animal }}
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Remember Me -->
@@ -73,44 +79,3 @@
   </div>
 </div>
 
-<!-- Password Hint Modal -->
-<div 
-  *ngIf="showPasswordHint" 
-  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-  (click)="closePasswordHint()"
->
-  <div 
-    class="bg-white rounded-xl p-6 max-w-sm w-full"
-    (click)="$event.stopPropagation()"
-  >
-    <h3 class="text-xl font-bold mb-4 text-center">🐾 Pista de Contraseña</h3>
-    
-    <div *ngIf="passwordHint?.hint_available; else noHint">
-      <p class="text-gray-700 mb-4 text-center">
-        Tu contraseña puede ser tu animal favorito de esta lista:
-      </p>
-      
-      <div class="grid grid-cols-2 gap-2 mb-6">
-        <div 
-          *ngFor="let animal of passwordHint?.animals" 
-          class="bg-blue-50 p-3 rounded-lg text-center text-sm font-medium text-blue-800"
-        >
-          {{ animal }}
-        </div>
-      </div>
-    </div>
-    
-    <ng-template #noHint>
-      <p class="text-gray-700 mb-6 text-center">
-        No hay pista disponible para este email.
-      </p>
-    </ng-template>
-    
-    <button 
-      class="w-full py-3 bg-blue-500 text-white rounded-lg font-semibold"
-      (click)="closePasswordHint()"
-    >
-      Cerrar
-    </button>
-  </div>
-</div>

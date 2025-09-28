@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from models.user.user import User, db
 from models.activity.activity import Activity
 from models.associations.activity_associations import activity_participants
+# RulesService import moved to avoid circular import
 from models.activity.activity_schema import (
     ActivityCreateSchema, 
     ActivityUpdateSchema, 
@@ -50,6 +51,17 @@ def create_activity(args):
         
         db.session.add(activity)
         db.session.flush()  # Get the activity ID
+        
+        # Attach rules if provided
+        rule_ids = args.get('rule_ids')
+        if rule_ids:
+            try:
+                # Import here to avoid circular import
+                from services.rules_service import RulesService
+                RulesService.attach_activity_rules(activity.id, rule_ids, current_user.id)
+            except Exception as e:
+                print(f"Warning: Could not attach rules to activity: {e}")
+                # Continue with activity creation even if rules fail
         
         # Add creator as a participant
         activity.add_participant(current_user)

@@ -15,7 +15,7 @@ import { PasswordHint } from '../../../../core/models/auth.model';
 export class LoginComponent implements OnInit {
   loginForm: FormGroup;
   showPassword = false;
-  showPasswordHint = false;
+  showPasswordHint = true; // Siempre mostrar la pista
   passwordHint: PasswordHint | null = null;
   animalsList: string[] = [];
 
@@ -37,6 +37,12 @@ export class LoginComponent implements OnInit {
     this.authService.getAnimalsList().subscribe({
       next: (response) => {
         this.animalsList = response.animals;
+        // Set up the password hint to show animals by default
+        this.passwordHint = {
+          hint_available: true,
+          hint_type: 'ANIMAL_LIST',
+          animals: response.animals
+        };
       },
       error: (err) => {
         console.error('Error loading animals list:', err);
@@ -48,29 +54,6 @@ export class LoginComponent implements OnInit {
     this.showPassword = !this.showPassword;
   }
 
-  showPasswordHintModal() {
-    const email = this.loginForm.get('username')?.value;
-    if (!email || !email.includes('@')) {
-      alert('Por favor, introduce tu email para ver la pista de contraseña');
-      return;
-    }
-
-    this.authService.getPasswordHint(email).subscribe({
-      next: (hint) => {
-        this.passwordHint = hint;
-        this.showPasswordHint = true;
-      },
-      error: (err) => {
-        console.error('Error getting password hint:', err);
-        alert('No se pudo obtener la pista de contraseña');
-      }
-    });
-  }
-
-  closePasswordHint() {
-    this.showPasswordHint = false;
-    this.passwordHint = null;
-  }
 
   onSubmit() {
     if (this.loginForm.invalid) return;

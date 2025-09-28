@@ -5,6 +5,7 @@ class GroupCreateSchema(Schema):
     name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
     description = fields.Str(validate=validate.Length(max=500), allow_none=True)
     rules = fields.Str(allow_none=True)
+    rule_ids = fields.List(fields.Int(), allow_none=True)
 
 class GroupUpdateSchema(Schema):
     name = fields.Str(validate=validate.Length(min=1, max=100))

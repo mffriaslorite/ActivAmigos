@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test ActivAmigos Fixes</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+        .test-result { margin: 10px 0; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        button { padding: 10px 15px; margin: 5px; border: none; background: #007bff; color: white; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        input, select { padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 4px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test ActivAmigos Fixes</h1>
+    
+    <div class="test-section">
+        <h3>1. Test Login con Pista de Animales</h3>
+        <input type="text" id="loginUsername" placeholder="Username or email" value="testuser">
+        <input type="password" id="loginPassword" placeholder="Password" value="perro">
+        <button onclick="testLogin()">Test Login</button>
+        <div id="loginResult" class="test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. Test Animals List</h3>
+        <button onclick="testAnimalsList()">Get Animals List</button>
+        <div id="animalsResult" class="test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Test Rules Templates</h3>
+        <select id="ruleType">
+            <option value="GROUP">GROUP</option>
+            <option value="ACTIVITY">ACTIVITY</option>
+            <option value="BOTH">BOTH</option>
+        </select>
+        <button onclick="testRulesTemplates()">Get Rules Templates</button>
+        <div id="rulesResult" class="test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. Test Create Group with Rules</h3>
+        <input type="text" id="groupName" placeholder="Group Name" value="Test Group">
+        <input type="text" id="groupDescription" placeholder="Description" value="Test description">
+        <button onclick="testCreateGroup()">Create Group with Rules</button>
+        <div id="createGroupResult" class="test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>5. Test Create Activity with Rules</h3>
+        <input type="text" id="activityTitle" placeholder="Activity Title" value="Test Activity">
+        <input type="text" id="activityDescription" placeholder="Description" value="Test activity">
+        <input type="datetime-local" id="activityDate" value="">
+        <button onclick="testCreateActivity()">Create Activity with Rules</button>
+        <div id="createActivityResult" class="test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>6. Test Chat WebSocket</h3>
+        <select id="chatContextType">
+            <option value="GROUP">GROUP</option>
+            <option value="ACTIVITY">ACTIVITY</option>
+        </select>
+        <input type="number" id="chatContextId" placeholder="Context ID" value="1">
+        <button onclick="testChatConnection()">Connect to Chat</button>
+        <button onclick="testSendMessage()">Send Test Message</button>
+        <div id="chatResult" class="test-result"></div>
+    </div>
+
+    <script>
+        let isLoggedIn = false;
+        let socket = null;
+
+        // Set default activity date to tomorrow
+        document.addEventListener('DOMContentLoaded', () => {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(10, 0);
+            document.getElementById('activityDate').value = tomorrow.toISOString().slice(0, 16);
+        });
+
+        function addResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'warning';
+            element.innerHTML += `<div class="${className}">[${new Date().toLocaleTimeString()}] ${message}</div>`;
+        }
+
+        function testLogin() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ username, password, remember_me: true })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.username || data.id) {
+                    addResult('loginResult', `✅ Login successful: ${data.username || data.email}`, 'success');
+                    isLoggedIn = true;
+                } else {
+                    addResult('loginResult', `❌ Login failed: ${JSON.stringify(data)}`, 'error');
+                }
+            })
+            .catch(error => {
+                addResult('loginResult', `❌ Login error: ${error.message}`, 'error');
+            });
+        }
+
+        function testAnimalsList() {
+            fetch('http://localhost:5000/api/auth/animals', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.animals) {
+                    addResult('animalsResult', `✅ Animals loaded: ${data.animals.join(', ')}`, 'success');
+                } else {
+                    addResult('animalsResult', `❌ No animals: ${JSON.stringify(data)}`, 'error');
+                }
+            })
+            .catch(error => {
+                addResult('animalsResult', `❌ Animals error: ${error.message}`, 'error');
+            });
+        }
+
+        function testRulesTemplates() {
+            const type = document.getElementById('ruleType').value;
+            
+            fetch(`http://localhost:5000/api/rules/templates?type=${type}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.templates) {
+                    addResult('rulesResult', `✅ Rules loaded: ${data.templates.length} templates`, 'success');
+                    addResult('rulesResult', `Templates: ${data.templates.map(r => r.title).join(', ')}`, 'info');
+                } else {
+                    addResult('rulesResult', `❌ No rules: ${JSON.stringify(data)}`, 'error');
+                }
+            })
+            .catch(error => {
+                addResult('rulesResult', `❌ Rules error: ${error.message}`, 'error');
+            });
+        }
+
+        function testCreateGroup() {
+            if (!isLoggedIn) {
+                addResult('createGroupResult', '❌ Please login first', 'error');
+                return;
+            }
+
+            const groupData = {
+                name: document.getElementById('groupName').value,
+                description: document.getElementById('groupDescription').value,
+                rule_ids: [1, 2, 3] // Test with first 3 rules
+            };
+
+            fetch('http://localhost:5000/api/groups', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(groupData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    addResult('createGroupResult', `✅ Group created: ID ${data.id}, Name: ${data.name}`, 'success');
+                } else {
+                    addResult('createGroupResult', `❌ Group creation failed: ${JSON.stringify(data)}`, 'error');
+                }
+            })
+            .catch(error => {
+                addResult('createGroupResult', `❌ Group creation error: ${error.message}`, 'error');
+            });
+        }
+
+        function testCreateActivity() {
+            if (!isLoggedIn) {
+                addResult('createActivityResult', '❌ Please login first', 'error');
+                return;
+            }
+
+            const activityData = {
+                title: document.getElementById('activityTitle').value,
+                description: document.getElementById('activityDescription').value,
+                date: document.getElementById('activityDate').value,
+                location: "Test Location",
+                rule_ids: [4, 5, 6] // Test with activity-specific rules
+            };
+
+            fetch('http://localhost:5000/api/activities', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(activityData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    addResult('createActivityResult', `✅ Activity created: ID ${data.id}, Title: ${data.title}`, 'success');
+                } else {
+                    addResult('createActivityResult', `❌ Activity creation failed: ${JSON.stringify(data)}`, 'error');
+                }
+            })
+            .catch(error => {
+                addResult('createActivityResult', `❌ Activity creation error: ${error.message}`, 'error');
+            });
+        }
+
+        function testChatConnection() {
+            if (!isLoggedIn) {
+                addResult('chatResult', '❌ Please login first', 'error');
+                return;
+            }
+
+            if (socket) {
+                socket.disconnect();
+            }
+
+            socket = io('http://localhost:5000', {
+                withCredentials: true,
+                transports: ['websocket', 'polling']
+            });
+
+            socket.on('connect', () => {
+                addResult('chatResult', '✅ Connected to chat server', 'success');
+                
+                // Auto join a room
+                const contextType = document.getElementById('chatContextType').value;
+                const contextId = parseInt(document.getElementById('chatContextId').value);
+                
+                socket.emit('join_chat', {
+                    context_type: contextType,
+                    context_id: contextId
+                });
+            });
+
+            socket.on('joined_chat', (data) => {
+                addResult('chatResult', `✅ Joined room: ${data.room}`, 'success');
+            });
+
+            socket.on('new_message', (message) => {
+                addResult('chatResult', `📨 New message: ${message.sender?.username}: ${message.content}`, 'info');
+            });
+
+            socket.on('error', (error) => {
+                addResult('chatResult', `❌ Chat error: ${error.message}`, 'error');
+            });
+
+            socket.on('disconnect', () => {
+                addResult('chatResult', '❌ Disconnected from chat server', 'warning');
+            });
+        }
+
+        function testSendMessage() {
+            if (!socket || !socket.connected) {
+                addResult('chatResult', '❌ Not connected to chat', 'error');
+                return;
+            }
+
+            const contextType = document.getElementById('chatContextType').value;
+            const contextId = parseInt(document.getElementById('chatContextId').value);
+
+            socket.emit('send_message', {
+                context_type: contextType,
+                context_id: contextId,
+                content: `Test message from browser at ${new Date().toLocaleTimeString()}`
+            });
+
+            addResult('chatResult', '📤 Test message sent', 'info');
+        }
+    </script>
+    
+    <!-- Include Socket.IO -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</body>
+</html>

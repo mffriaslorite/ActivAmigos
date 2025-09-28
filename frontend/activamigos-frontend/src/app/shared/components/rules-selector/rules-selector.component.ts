@@ -152,7 +152,7 @@ import { RulesService, RuleTemplate } from '../../../core/services/rules.service
 })
 export class RulesSelectorComponent implements OnInit {
   @Input() contextType: 'GROUP' | 'ACTIVITY' = 'GROUP';
-  @Input() contextId!: number;
+  @Input() contextId: number = 0; // Optional for creation mode
   @Input() preselectedRuleIds: number[] = [];
 
   @Output() cancel = new EventEmitter<void>();
