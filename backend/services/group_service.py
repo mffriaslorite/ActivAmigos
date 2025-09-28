@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from models.user.user import User, db
 from models.group.group import Group
 from models.associations.group_associations import group_members
+# RulesService import moved to avoid circular import
 from models.group.group_schema import (
     GroupCreateSchema, 
     GroupUpdateSchema, 
@@ -48,6 +49,17 @@ def create_group(args):
         
         db.session.add(group)
         db.session.flush()  # Get the group ID
+        
+        # Attach rules if provided
+        rule_ids = args.get('rule_ids')
+        if rule_ids:
+            try:
+                # Import here to avoid circular import
+                from services.rules_service import RulesService
+                RulesService.attach_group_rules(group.id, rule_ids, current_user.id)
+            except Exception as e:
+                print(f"Warning: Could not attach rules to group: {e}")
+                # Continue with group creation even if rules fail
         
         # Add creator as a member
         group.add_member(current_user)

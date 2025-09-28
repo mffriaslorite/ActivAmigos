@@ -1,0 +1,29 @@
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .border-gray-200 {
+    border-color: #374151 !important;
+    }
+    
+    .bg-blue-50 {
+    background-color: #dbeafe !important;
+    border-color: #2563eb !important;
+    }
+}
+
+/* Large text support */
+@media (min-width: 1024px) {
+    .text-sm {
+    font-size: 0.95rem;
+    }
+    
+    .text-xs {
+    font-size: 0.8rem;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .animate-spin {
+    animation: none;
+    }
+}

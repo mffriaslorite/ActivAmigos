@@ -8,18 +8,19 @@ export interface User {
 
 export interface Message {
   id: number;
+  context_type: 'GROUP' | 'ACTIVITY';
+  context_id: number;
   content: string;
-  timestamp: string;
+  created_at: string;
   sender_id: number;
   sender: User;
-  group_id?: number;
-  activity_id?: number;
+  is_system?: boolean;
 }
 
 export interface CreateMessage {
   content: string;
-  group_id?: number;
-  activity_id?: number;
+  context_type: 'GROUP' | 'ACTIVITY';
+  context_id: number;
 }
 
 export interface ChatRoom {

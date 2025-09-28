@@ -7,6 +7,7 @@ class ActivityCreateSchema(Schema):
     location = fields.Str(validate=validate.Length(max=255), allow_none=True)
     date = fields.DateTime(required=True)
     rules = fields.Str(allow_none=True)
+    rule_ids = fields.List(fields.Int(), allow_none=True)
 
 class ActivityUpdateSchema(Schema):
     title = fields.Str(validate=validate.Length(min=1, max=100))

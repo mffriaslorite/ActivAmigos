@@ -11,9 +11,19 @@
           <h1 class="text-2xl font-bold text-gray-900">
             ¡Hola, {{ currentUser?.first_name || currentUser?.username || 'Usuario' }}!
           </h1>
-          <div class="flex items-center space-x-2 bg-yellow-100 px-3 py-1 rounded-full">
-            <span class="text-lg">⭐</span>
-            <span class="font-semibold text-yellow-800">{{ currentPoints }} puntos</span>
+          <div class="flex items-center space-x-3">
+            <!-- User Overall Semaphore Status -->
+            <app-semaphore-badge
+              [color]="userSemaphoreColor"
+              [warningCount]="userWarningCount"
+              [showText]="true"
+            ></app-semaphore-badge>
+            
+            <!-- Points Badge -->
+            <div class="flex items-center space-x-2 bg-yellow-100 px-3 py-1 rounded-full">
+              <span class="text-lg">⭐</span>
+              <span class="font-semibold text-yellow-800">{{ currentPoints }} puntos</span>
+            </div>
           </div>
         </div>
         
@@ -67,8 +77,15 @@
                       <p class="text-sm text-gray-600">{{ formatActivityDate(activity.date) }}</p>
                     </div>
                   </div>
-                  <div class="text-green-600 font-semibold">
-                    ✓ Apuntado
+                  <div class="flex items-center space-x-2">
+                    <app-semaphore-badge
+                      [color]="'dark_green'"
+                      [warningCount]="0"
+                      [showText]="false"
+                    ></app-semaphore-badge>
+                    <div class="text-green-600 font-semibold">
+                      ✓ Apuntado
+                    </div>
                   </div>
                 </div>
               </div>
@@ -121,15 +138,15 @@
               <div 
                 *ngFor="let day of weekDays" 
                 class="bg-white rounded-lg p-4 border border-gray-200"
-                [class.bg-blue-50]="day.date.toDateString() === getCurrentDateString()"
-                [class.border-blue-400]="day.date.toDateString() === getCurrentDateString()"
+                [class.bg-blue-50]="isToday(day.date)"
+                [class.border-blue-400]="isToday(day.date)"
               >
                 <div class="flex items-center justify-between mb-3">
                   <div class="flex items-center space-x-3">
                     <div class="text-2xl font-bold text-gray-900">{{ day.dayNumber }}</div>
                     <div>
                       <div class="text-sm font-medium text-gray-700">{{ day.dayName }}</div>
-                      <div *ngIf="day.date.toDateString() === getCurrentDateString()" class="text-xs text-blue-600 font-medium">Hoy</div>
+                      <div *ngIf="isToday(day.date)" class="text-xs text-blue-600 font-medium">Hoy</div>
                     </div>
                   </div>
                   <div class="text-xs text-gray-500">
@@ -170,8 +187,8 @@
             <div 
               *ngFor="let day of weekDays" 
               class="bg-white rounded-lg p-3 text-center border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer min-h-[120px]"
-              [class.bg-blue-50]="day.date.toDateString() === getCurrentDateString()"
-              [class.border-blue-400]="day.date.toDateString() === getCurrentDateString()"
+              [class.bg-blue-50]="isToday(day.date)"
+              [class.border-blue-400]="isToday(day.date)"
             >
               <div class="text-xs text-gray-600 mb-1">{{ day.dayName }}</div>
               <div class="text-lg font-bold text-gray-900 mb-2">{{ day.dayNumber }}</div>

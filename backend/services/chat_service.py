@@ -104,35 +104,42 @@ def init_socketio(app, socketio_instance):
             return
         
         try:
-            room_type = data.get('type')  # 'group' or 'activity'
-            room_id = data.get('id')
+            # Support both old and new formats
+            context_type = data.get('context_type') or data.get('type')
+            context_id = data.get('context_id') or data.get('id')
             
-            if not room_type or not room_id:
+            if not context_type or not context_id:
                 emit('error', {'message': 'Invalid room data'})
                 return
             
+            # Normalize context_type
+            if context_type.lower() == 'group':
+                context_type = 'GROUP'
+            elif context_type.lower() == 'activity':
+                context_type = 'ACTIVITY'
+            
             # Verify user has access to the chat room
-            if room_type == 'group':
-                group = Group.query.get(room_id)
+            if context_type == 'GROUP':
+                group = Group.query.get(context_id)
                 if not group or not group.is_member(user_id):
                     emit('error', {'message': 'Access denied to group chat'})
                     return
-                room_name = f"group_{room_id}"
-            elif room_type == 'activity':
-                activity = Activity.query.get(room_id)
+                room_name = f"group:{context_id}"
+            elif context_type == 'ACTIVITY':
+                activity = Activity.query.get(context_id)
                 if not activity or not activity.is_participant(user_id):
                     emit('error', {'message': 'Access denied to activity chat'})
                     return
-                room_name = f"activity_{room_id}"
+                room_name = f"activity:{context_id}"
             else:
-                emit('error', {'message': 'Invalid room type'})
+                emit('error', {'message': 'Invalid context type'})
                 return
             
             join_room(room_name)
             emit('joined_chat', {
                 'room': room_name,
-                'type': room_type,
-                'id': room_id
+                'context_type': context_type,
+                'context_id': context_id
             })
             logger.info(f"User {user_id} joined {room_name}")
             
@@ -148,13 +155,18 @@ def init_socketio(app, socketio_instance):
             return
         
         try:
-            room_type = data.get('type')
-            room_id = data.get('id')
+            # Support both old and new formats
+            context_type = data.get('context_type') or data.get('type')
+            context_id = data.get('context_id') or data.get('id')
             
-            if room_type == 'group':
-                room_name = f"group_{room_id}"
-            elif room_type == 'activity':
-                room_name = f"activity_{room_id}"
+            if not context_type or not context_id:
+                return
+                
+            # Normalize context_type
+            if context_type.lower() == 'group':
+                room_name = f"group:{context_id}"
+            elif context_type.lower() == 'activity':
+                room_name = f"activity:{context_id}"
             else:
                 return
             
@@ -230,8 +242,7 @@ def init_socketio(app, socketio_instance):
             db.session.commit()
             
             # Serialize message for broadcast
-            message_schema = MessageSchema()
-            message_dict = message_schema.dump(message)
+            message_dict = message.to_dict()
             
             # Broadcast to all users in the room
             socketio.emit('new_message', message_dict, room=room_name)
@@ -286,41 +297,12 @@ def get_group_messages(query_args, group_id):
     per_page = query_args.get('per_page', 20)
     before = query_args.get('before')
     
-    query = Message.query.filter_by(
-        context_type=MessageContextType.GROUP,
-        context_id=group_id
-    )
+    query = Message.query.filter_by(group_id=group_id)
     
     if before:
-        query = query.filter(Message.created_at < before)
+        query = query.filter(Message.timestamp < before)
     
-    messages = query.order_by(Message.created_at.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
-    ).items
-    
-    # Reverse to show oldest first
-    return list(reversed(messages))
-
-@blp.route("/activities/<int:activity_id>/messages", methods=["GET"])
-@blp.arguments(MessageListQuerySchema, location="query")
-@blp.response(200, MessageSchema(many=True))
-@require_authentication
-@require_chat_access('activity', 'activity_id')
-def get_activity_messages(query_args, activity_id):
-    """Get messages for an activity chat with pagination"""
-    page = query_args.get('page', 1)
-    per_page = query_args.get('per_page', 20)
-    before = query_args.get('before')
-    
-    query = Message.query.filter_by(
-        context_type=MessageContextType.ACTIVITY,
-        context_id=activity_id
-    )
-    
-    if before:
-        query = query.filter(Message.created_at < before)
-    
-    messages = query.order_by(Message.created_at.desc()).paginate(
+    messages = query.order_by(Message.timestamp.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     ).items
     
@@ -336,11 +318,14 @@ def post_group_message(message_data, group_id):
     """Send a message to a group chat (REST fallback)"""
     user_id = session.get('user_id')
     
+    # Override group_id from URL
+    message_data['group_id'] = group_id
+    message_data.pop('activity_id', None)
+    
     message = Message(
         content=message_data['content'],
         sender_id=user_id,
-        context_type=MessageContextType.GROUP,
-        context_id=group_id
+        group_id=group_id
     )
     
     db.session.add(message)
@@ -354,6 +339,29 @@ def post_group_message(message_data, group_id):
     
     return message
 
+@blp.route("/activities/<int:activity_id>/messages", methods=["GET"])
+@blp.arguments(MessageListQuerySchema, location="query")
+@blp.response(200, MessageSchema(many=True))
+@require_authentication
+@require_chat_access('activity', 'activity_id')
+def get_activity_messages(query_args, activity_id):
+    """Get messages for an activity chat with pagination"""
+    page = query_args.get('page', 1)
+    per_page = query_args.get('per_page', 20)
+    before = query_args.get('before')
+    
+    query = Message.query.filter_by(activity_id=activity_id)
+    
+    if before:
+        query = query.filter(Message.timestamp < before)
+    
+    messages = query.order_by(Message.timestamp.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    ).items
+    
+    # Reverse to show oldest first
+    return list(reversed(messages))
+
 @blp.route("/activities/<int:activity_id>/messages", methods=["POST"])
 @blp.arguments(MessageCreateSchema)
 @blp.response(201, MessageSchema)
@@ -363,11 +371,14 @@ def post_activity_message(message_data, activity_id):
     """Send a message to an activity chat (REST fallback)"""
     user_id = session.get('user_id')
     
+    # Override activity_id from URL
+    message_data['activity_id'] = activity_id
+    message_data.pop('group_id', None)
+    
     message = Message(
         content=message_data['content'],
         sender_id=user_id,
-        context_type=MessageContextType.ACTIVITY,
-        context_id=activity_id
+        activity_id=activity_id
     )
     
     db.session.add(message)
@@ -381,6 +392,7 @@ def post_activity_message(message_data, activity_id):
     
     return message
 
+# New Sprint 2 endpoints with context_type/context_id format
 @blp.route("/history", methods=["GET"])
 @blp.arguments(MessageListQuerySchema, location="query")
 @require_authentication

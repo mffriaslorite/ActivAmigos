@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, A
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
+import { PasswordHint } from '../../../core/models/auth.model';
 
 @Component({
   selector: 'app-password-change-modal',
@@ -24,6 +25,9 @@ export class PasswordChangeModalComponent implements OnDestroy {
   showCurrentPassword = false;
   showNewPassword = false;
   showConfirmPassword = false;
+  showPasswordHint = true; // Siempre mostrar la pista
+  passwordHint: PasswordHint | null = null;
+  animalsList: string[] = [];
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -35,6 +39,24 @@ export class PasswordChangeModalComponent implements OnDestroy {
       new_password: ['', [Validators.required, Validators.minLength(8), this.passwordValidator]],
       confirm_password: ['', [Validators.required]]
     }, { validators: this.passwordMatchValidator });
+  }
+
+  ngOnInit() {
+    // Load animals list for password hints
+    this.authService.getAnimalsList().subscribe({
+      next: (response) => {
+        this.animalsList = response.animals;
+        // Set up the password hint to show animals by default
+        this.passwordHint = {
+          hint_available: true,
+          hint_type: 'ANIMAL_LIST',
+          animals: response.animals
+        };
+      },
+      error: (err) => {
+        console.error('Error loading animals list:', err);
+      }
+    });
   }
 
   ngOnDestroy() {

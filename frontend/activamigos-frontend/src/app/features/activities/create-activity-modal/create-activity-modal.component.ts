@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivitiesService } from '../../../core/services/activities.service';
 import { ActivityCreate } from '../../../core/models/activity.model';
+import { RulesSelectorComponent } from '../../../shared/components/rules-selector/rules-selector.component';
 
 @Component({
   selector: 'app-create-activity-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RulesSelectorComponent],
   templateUrl: './create-activity-modal.component.html',
   styleUrls: ['./create-activity-modal.component.scss']
 })
@@ -19,6 +20,8 @@ export class CreateActivityModalComponent implements OnInit {
   activityForm: FormGroup;
   isSubmitting = false;
   errorMessage = '';
+  selectedRuleIds: number[] = [];
+  showRulesStep = false;
 
   constructor(
     private fb: FormBuilder,
@@ -45,6 +48,13 @@ export class CreateActivityModalComponent implements OnInit {
 
   onSubmit() {
     if (this.activityForm.valid && !this.isSubmitting) {
+      if (!this.showRulesStep) {
+        // Go to rules step
+        this.showRulesStep = true;
+        return;
+      }
+
+      // Create activity with selected rules
       this.isSubmitting = true;
       this.errorMessage = '';
 
@@ -54,7 +64,8 @@ export class CreateActivityModalComponent implements OnInit {
         description: formValue.description || undefined,
         location: formValue.location || undefined,
         date: new Date(formValue.date).toISOString(),
-        rules: formValue.rules || undefined
+        rules: formValue.rules || undefined,
+        rule_ids: this.selectedRuleIds
       };
 
       this.activitiesService.createActivity(activityData).subscribe({
@@ -75,6 +86,14 @@ export class CreateActivityModalComponent implements OnInit {
     }
   }
 
+  goBackToBasicInfo() {
+    this.showRulesStep = false;
+  }
+
+  onRulesSelected(ruleIds: number[]) {
+    this.selectedRuleIds = ruleIds;
+  }
+
   onClose() {
     this.resetForm();
     this.errorMessage = '';
@@ -90,6 +109,8 @@ export class CreateActivityModalComponent implements OnInit {
       date: tomorrow.toISOString().slice(0, 16)
     });
     this.isSubmitting = false;
+    this.showRulesStep = false;
+    this.selectedRuleIds = [];
   }
 
   private markFormGroupTouched() {

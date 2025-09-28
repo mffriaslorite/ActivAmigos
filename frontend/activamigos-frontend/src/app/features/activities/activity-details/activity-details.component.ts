@@ -106,8 +106,8 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
           
           // Set up chat room
           this.chatRoom = {
-            type: 'activity',
-            id: details.id,
+            type: 'ACTIVITY',
+            id: activityId,
             name: details.title
           };
         },
@@ -120,7 +120,7 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
           
           // Set up chat room for fallback
           this.chatRoom = {
-            type: 'activity',
+            type: 'ACTIVITY',
             id: activityId,
             name: this.activityDetails.title
           };
