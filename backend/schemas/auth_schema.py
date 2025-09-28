@@ -10,7 +10,7 @@ class RegisterSchema(Schema):
 class LoginSchema(Schema):
     username = fields.Str(required=True)
     password = fields.Str(required=True)
-    remember_me = fields.Bool(required=False, default=False)
+    remember_me = fields.Bool(required=False, load_default=False)
 
 class ChangePasswordSchema(Schema):
     current_password = fields.Str(required=True)
