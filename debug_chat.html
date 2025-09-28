@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug ActivAmigos Chat</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .panel { background: white; margin: 15px 0; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .panel h3 { margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        #log { height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; font-family: monospace; font-size: 12px; }
+        #messages { height: 300px; overflow-y: auto; background: #f8f9fa; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; }
+        .message { margin: 5px 0; padding: 8px; border-radius: 4px; }
+        .message.sent { background: #007bff; color: white; text-align: right; }
+        .message.received { background: #e9ecef; }
+        .message.system { background: #fff3cd; border: 1px solid #ffeaa7; }
+        .message.error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; border: none; background: #007bff; color: white; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        input, select { padding: 8px; margin: 5px; border: 1px solid #ced4da; border-radius: 4px; width: 200px; }
+        .status { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status.connected { background: #d4edda; color: #155724; }
+        .status.disconnected { background: #f8d7da; color: #721c24; }
+        .status.authenticated { background: #d1ecf1; color: #0c5460; }
+        .flex { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐛 ActivAmigos Chat Debug Tool</h1>
+        
+        <div class="grid">
+            <!-- Authentication Panel -->
+            <div class="panel">
+                <h3>🔐 Authentication</h3>
+                <div class="flex">
+                    <input type="text" id="username" placeholder="Username/Email" value="testuser">
+                    <input type="password" id="password" placeholder="Password" value="perro">
+                    <button onclick="login()">Login</button>
+                    <button onclick="checkSession()">Check Session</button>
+                </div>
+                <div id="authStatus" class="status disconnected">Not authenticated</div>
+            </div>
+
+            <!-- WebSocket Panel -->
+            <div class="panel">
+                <h3>🔌 WebSocket Connection</h3>
+                <div class="flex">
+                    <button onclick="connectSocket()">Connect</button>
+                    <button onclick="disconnectSocket()" class="danger">Disconnect</button>
+                    <button onclick="checkConnection()">Check Status</button>
+                </div>
+                <div id="socketStatus" class="status disconnected">Disconnected</div>
+            </div>
+        </div>
+
+        <!-- Room Management -->
+        <div class="panel">
+            <h3>🏠 Room Management</h3>
+            <div class="flex">
+                <select id="contextType">
+                    <option value="GROUP">GROUP</option>
+                    <option value="ACTIVITY">ACTIVITY</option>
+                </select>
+                <input type="number" id="contextId" placeholder="Context ID" value="1">
+                <button onclick="joinRoom()">Join Room</button>
+                <button onclick="leaveRoom()" class="danger">Leave Room</button>
+                <button onclick="loadHistory()">Load History</button>
+            </div>
+            <div id="roomStatus"></div>
+        </div>
+
+        <!-- Message Sending -->
+        <div class="panel">
+            <h3>💬 Send Message</h3>
+            <div class="flex">
+                <input type="text" id="messageInput" placeholder="Type your message..." style="width: 300px;">
+                <button onclick="sendMessage()">Send Message</button>
+                <button onclick="sendTestMessage()">Send Test Message</button>
+            </div>
+        </div>
+
+        <!-- Messages Display -->
+        <div class="panel">
+            <h3>📨 Messages</h3>
+            <button onclick="clearMessages()" class="danger">Clear Messages</button>
+            <div id="messages"></div>
+        </div>
+
+        <!-- Debug Log -->
+        <div class="panel">
+            <h3>🐛 Debug Log</h3>
+            <button onclick="clearLog()" class="danger">Clear Log</button>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let isAuthenticated = false;
+        let currentRoom = null;
+
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'received' : 'system';
+            logElement.innerHTML += `<div class="message ${className}">[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function addMessage(content, type = 'system') {
+            const messagesElement = document.getElementById('messages');
+            const timestamp = new Date().toLocaleTimeString();
+            messagesElement.innerHTML += `<div class="message ${type}">[${timestamp}] ${content}</div>`;
+            messagesElement.scrollTop = messagesElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            log(`Attempting login with: ${username}`);
+
+            fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ username, password, remember_me: true })
+            })
+            .then(response => {
+                log(`Login response status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                if (data.username || data.id) {
+                    isAuthenticated = true;
+                    document.getElementById('authStatus').textContent = `Authenticated as ${data.username || data.email}`;
+                    document.getElementById('authStatus').className = 'status authenticated';
+                    log(`✅ Login successful: ${data.username}`, 'success');
+                } else {
+                    log(`❌ Login failed: ${JSON.stringify(data)}`, 'error');
+                }
+            })
+            .catch(error => {
+                log(`❌ Login error: ${error.message}`, 'error');
+            });
+        }
+
+        function checkSession() {
+            fetch('http://localhost:5000/api/auth/check-session', {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.authenticated) {
+                    isAuthenticated = true;
+                    document.getElementById('authStatus').textContent = `Session valid: ${data.user.username}`;
+                    document.getElementById('authStatus').className = 'status authenticated';
+                    log(`✅ Session valid: ${data.user.username}`, 'success');
+                } else {
+                    isAuthenticated = false;
+                    document.getElementById('authStatus').textContent = 'No valid session';
+                    document.getElementById('authStatus').className = 'status disconnected';
+                    log(`❌ No valid session`, 'error');
+                }
+            })
+            .catch(error => {
+                log(`❌ Session check error: ${error.message}`, 'error');
+            });
+        }
+
+        function connectSocket() {
+            if (!isAuthenticated) {
+                log('❌ Please login first', 'error');
+                return;
+            }
+
+            if (socket) {
+                socket.disconnect();
+            }
+
+            log('🔌 Connecting to WebSocket...');
+
+            socket = io('http://localhost:5000', {
+                withCredentials: true,
+                transports: ['websocket', 'polling'],
+                forceNew: true,
+                timeout: 10000
+            });
+
+            socket.on('connect', () => {
+                document.getElementById('socketStatus').textContent = 'Connected';
+                document.getElementById('socketStatus').className = 'status connected';
+                log('✅ Connected to WebSocket server', 'success');
+            });
+
+            socket.on('connected', (data) => {
+                log(`✅ Server confirmed connection: ${data.message}`, 'success');
+            });
+
+            socket.on('disconnect', (reason) => {
+                document.getElementById('socketStatus').textContent = `Disconnected: ${reason}`;
+                document.getElementById('socketStatus').className = 'status disconnected';
+                log(`❌ Disconnected: ${reason}`, 'error');
+            });
+
+            socket.on('new_message', (message) => {
+                log(`📨 New message from ${message.sender?.username}: ${message.content}`);
+                addMessage(`${message.sender?.username || 'Unknown'}: ${message.content}`, 'received');
+            });
+
+            socket.on('joined_chat', (data) => {
+                currentRoom = data.room;
+                document.getElementById('roomStatus').textContent = `Joined: ${data.room}`;
+                log(`✅ Joined room: ${data.room}`, 'success');
+            });
+
+            socket.on('left_chat', (data) => {
+                currentRoom = null;
+                document.getElementById('roomStatus').textContent = 'No room';
+                log(`👋 Left room: ${data.room}`);
+            });
+
+            socket.on('message_sent', (data) => {
+                log(`✅ Message sent confirmation: ${data.message_id}`, 'success');
+            });
+
+            socket.on('error', (error) => {
+                log(`❌ Socket error: ${error.message}`, 'error');
+                addMessage(`ERROR: ${error.message}`, 'error');
+            });
+
+            socket.on('connect_error', (error) => {
+                log(`❌ Connection error: ${error.message}`, 'error');
+            });
+        }
+
+        function disconnectSocket() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+        }
+
+        function checkConnection() {
+            if (socket) {
+                log(`Socket connected: ${socket.connected}`);
+                log(`Socket ID: ${socket.id}`);
+            } else {
+                log('No socket instance');
+            }
+        }
+
+        function joinRoom() {
+            if (!socket || !socket.connected) {
+                log('❌ Socket not connected', 'error');
+                return;
+            }
+
+            const contextType = document.getElementById('contextType').value;
+            const contextId = parseInt(document.getElementById('contextId').value);
+
+            log(`🏠 Joining room: ${contextType}:${contextId}`);
+
+            socket.emit('join_chat', {
+                context_type: contextType,
+                context_id: contextId
+            });
+        }
+
+        function leaveRoom() {
+            if (!socket || !socket.connected) {
+                log('❌ Socket not connected', 'error');
+                return;
+            }
+
+            const contextType = document.getElementById('contextType').value;
+            const contextId = parseInt(document.getElementById('contextId').value);
+
+            log(`👋 Leaving room: ${contextType}:${contextId}`);
+
+            socket.emit('leave_chat', {
+                context_type: contextType,
+                context_id: contextId
+            });
+        }
+
+        function sendMessage() {
+            const content = document.getElementById('messageInput').value.trim();
+            if (!content) return;
+
+            sendMessageContent(content);
+            document.getElementById('messageInput').value = '';
+        }
+
+        function sendTestMessage() {
+            const testContent = `Test message ${new Date().toLocaleTimeString()}`;
+            sendMessageContent(testContent);
+        }
+
+        function sendMessageContent(content) {
+            if (!socket || !socket.connected) {
+                log('❌ Socket not connected', 'error');
+                return;
+            }
+
+            const contextType = document.getElementById('contextType').value;
+            const contextId = parseInt(document.getElementById('contextId').value);
+
+            log(`📤 Sending message: "${content}" to ${contextType}:${contextId}`);
+            addMessage(`You: ${content}`, 'sent');
+
+            socket.emit('send_message', {
+                context_type: contextType,
+                context_id: contextId,
+                content: content
+            });
+        }
+
+        function loadHistory() {
+            if (!isAuthenticated) {
+                log('❌ Please login first', 'error');
+                return;
+            }
+
+            const contextType = document.getElementById('contextType').value;
+            const contextId = parseInt(document.getElementById('contextId').value);
+
+            log(`📚 Loading message history for ${contextType}:${contextId}`);
+
+            fetch(`http://localhost:5000/api/chat/history?context_type=${contextType}&context_id=${contextId}`, {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => {
+                log(`History response status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                if (data.messages) {
+                    log(`✅ Loaded ${data.messages.length} messages`, 'success');
+                    clearMessages();
+                    data.messages.forEach(msg => {
+                        addMessage(`${msg.sender?.username || 'Unknown'}: ${msg.content}`, 'received');
+                    });
+                } else {
+                    log(`❌ No messages in response: ${JSON.stringify(data)}`, 'error');
+                }
+            })
+            .catch(error => {
+                log(`❌ History load error: ${error.message}`, 'error');
+            });
+        }
+
+        // Allow sending message with Enter key
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('messageInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // Auto-check session on load
+            checkSession();
+        });
+
+        // Auto-scroll log
+        setInterval(() => {
+            const logElement = document.getElementById('log');
+            if (logElement.scrollHeight > logElement.clientHeight) {
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

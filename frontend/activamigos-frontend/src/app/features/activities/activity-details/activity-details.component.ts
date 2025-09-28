@@ -7,6 +7,7 @@ import { ActivityDetails, ActivityParticipant } from '../../../core/models/activ
 import { ChatRoomComponent } from '../../../shared/components/chat/chat-room.component';
 import { SemaphoreBadgeComponent } from '../../../shared/components/semaphore-badge/semaphore-badge.component';
 import { RulesSelectorComponent } from '../../../shared/components/rules-selector/rules-selector.component';
+import { ModerationModalComponent, UserToWarn } from '../../../shared/components/moderation-modal/moderation-modal.component';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { RulesService } from '../../../core/services/rules.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -14,7 +15,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-activity-details',
   standalone: true,
-  imports: [CommonModule, ChatRoomComponent, SemaphoreBadgeComponent, RulesSelectorComponent],
+  imports: [CommonModule, ChatRoomComponent, SemaphoreBadgeComponent, RulesSelectorComponent, ModerationModalComponent],
   templateUrl: './activity-details.component.html',
   styleUrls: ['./activity-details.component.scss']
 })
@@ -37,6 +38,10 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
   // Attendance management
   showAttendanceMarking = false;
   attendanceRecords: any[] = [];
+  
+  // Moderation
+  showModerationModal = false;
+  selectedUserToWarn: UserToWarn | null = null;
 
   // Mock chat messages for preview
   chatMessages = [
@@ -389,5 +394,30 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
 
   closeAttendanceMarking() {
     this.showAttendanceMarking = false;
+  }
+
+  openModerationModal(participant: ActivityParticipant) {
+    this.selectedUserToWarn = {
+      id: participant.id,
+      username: participant.username,
+      first_name: participant.first_name,
+      last_name: participant.last_name,
+      warning_count: 0 // We'd need to fetch this from the API
+    };
+    this.showModerationModal = true;
+  }
+
+  closeModerationModal() {
+    this.showModerationModal = false;
+    this.selectedUserToWarn = null;
+  }
+
+  onWarningIssued(response: any) {
+    console.log('Warning issued:', response);
+    // Refresh activity data or show success message
+    if (this.activityDetails) {
+      this.loadActivityDetails(this.activityDetails.id);
+    }
+    alert(response.message || 'Advertencia emitida correctamente');
   }
 }

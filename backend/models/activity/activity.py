@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from models.user.user import db
 from models.associations.activity_associations import activity_participants
 
@@ -12,7 +12,7 @@ class Activity(db.Model):
     date = db.Column(db.DateTime, nullable=False)
     rules = db.Column(db.Text, nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_activities')
