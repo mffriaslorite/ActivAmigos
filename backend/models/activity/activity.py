@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from models.user.user import db
 from models.associations.activity_associations import activity_participants
 
@@ -12,7 +12,7 @@ class Activity(db.Model):
     date = db.Column(db.DateTime, nullable=False)
     rules = db.Column(db.Text, nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_activities')
@@ -44,5 +44,30 @@ class Activity(db.Model):
         """Remove a user from this activity"""
         if self.is_participant(user.id):
             self.participants.remove(user)
+            return True
+        return False
+    
+    def is_organizer(self, user_id):
+        """Check if a user is an organizer of this activity"""
+        result = db.session.execute(
+            activity_participants.select().where(
+                (activity_participants.c.user_id == user_id) & 
+                (activity_participants.c.activity_id == self.id) &
+                (activity_participants.c.role == 'organizer')
+            )
+        ).first()
+        return result is not None
+
+    def add_organizer(self, user):
+        """Add a user as organizer to this activity"""
+        if not self.is_participant(user.id):
+            db.session.execute(
+                activity_participants.insert().values(
+                    user_id=user.id,
+                    activity_id=self.id,
+                    joined_at=datetime.now(timezone.utc),
+                    role='organizer'
+                )
+            )
             return True
         return False

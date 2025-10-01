@@ -61,9 +61,9 @@ def create_activity(args):
             except Exception as e:
                 print(f"Warning: Could not attach rules to activity: {e}")
                 # Continue with activity creation even if rules fail
-        
-        # Add creator as a participant
-        activity.add_participant(current_user)
+
+        # Add creator as an organizer
+        activity.add_organizer(current_user)
         
         db.session.commit()
         
@@ -305,7 +305,7 @@ def get_activity_details(activity_id):
             'first_name': user.first_name,
             'last_name': user.last_name,
             'profile_image': user.profile_image,
-            'is_organizer': user.id == activity.created_by,
+            'is_organizer': link.role == 'organizer' if link else False,
             'joined_at': link.joined_at if link else None
         })
 

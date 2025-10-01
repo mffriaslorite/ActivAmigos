@@ -175,8 +175,8 @@ export class ChatRoomComponent implements OnInit, OnDestroy {
   currentUserId: number | null = null;
   
   // Semaphore system
-  userSemaphoreColor: 'grey' | 'light_green' | 'dark_green' | 'yellow' | 'red' | null = null;
-  userWarningCount = 0;
+  userSemaphoreColor: string | null = null;
+  userWarningCount: number = 0;
   
   // Moderation
   canModerate = false;
@@ -200,25 +200,41 @@ export class ChatRoomComponent implements OnInit, OnDestroy {
     this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.currentUserId = user?.id || null;
       this.canModerate = user?.role === 'ORGANIZER' || user?.role === 'SUPERADMIN';
-      if (user) {
+      if (user && this.contextId) {
         this.loadUserModerationStatus();
+        this.initializeChat();
       }
     });
+  }
 
+  private initializeChat() {
     // Connect to chat room
     this.connectToRoom();
     
     // Load message history
     this.loadMessages();
 
-    // Listen for new messages
-    this.chatService.messages$.pipe(takeUntil(this.destroy$)).subscribe(messages => {
-      const filteredMessages = messages.filter(message => 
-        message.context_type === this.contextType && message.context_id === this.contextId
-      );
-      if (filteredMessages.length > 0) {
-        this.messages.push(...filteredMessages);
-        this.scrollToBottom();
+    // Listen for new messages from the service
+    this.chatService.messages$.pipe(takeUntil(this.destroy$)).subscribe(newMessages => {
+      // newMessages now contains only the latest message(s)
+      newMessages.forEach(message => {
+        // Only add messages for this specific context
+        if (message.context_type === this.contextType && message.context_id === this.contextId) {
+          // Check if message already exists to avoid duplicates
+          const exists = this.messages.some(existing => existing.id === message.id);
+          if (!exists) {
+            this.messages.push(message);
+            this.scrollToBottom();
+          }
+        }
+      });
+    });
+
+    // Listen for connection status
+    this.chatService.connectionStatus$.pipe(takeUntil(this.destroy$)).subscribe(connected => {
+      if (connected && this.currentUserId) {
+        // Reconnect to room when connection is restored
+        setTimeout(() => this.connectToRoom(), 500);
       }
     });
   }
@@ -309,7 +325,8 @@ export class ChatRoomComponent implements OnInit, OnDestroy {
   }
 
   formatTimestamp(timestamp: string): string {
-    const date = new Date(timestamp);
+    // Crear la fecha asegurando que se interprete como UTC
+    const date = new Date(timestamp + (timestamp.endsWith('Z') ? '' : 'Z'));
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -321,11 +338,13 @@ export class ChatRoomComponent implements OnInit, OnDestroy {
     if (diffHours < 24) return `${diffHours}h`;
     if (diffDays < 7) return `${diffDays}d`;
     
-    return date.toLocaleDateString('es-ES', { 
+    // Mostrar hora local correcta
+    return date.toLocaleString('es-ES', { 
       month: 'short', 
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Europe/Madrid' // Forzar zona horaria española
     });
   }
 
@@ -359,15 +378,31 @@ export class ChatRoomComponent implements OnInit, OnDestroy {
   }
 
   onMessageClick(message: ChatMessage) {
-    // Allow moderators to select users for moderation
     if (this.canModerate && message.sender_id !== this.currentUserId && !message.is_system) {
-      this.selectedUserToWarn = {
-        id: message.sender.id,
-        username: message.sender.username,
-        first_name: message.sender.first_name,
-        last_name: message.sender.last_name,
-        warning_count: 0 // We'd need to fetch this
-      };
+      this.chatService.getUserModerationStatus(this.contextType, this.contextId, message.sender.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (status) => {
+            this.selectedUserToWarn = {
+              id: message.sender.id,
+              username: message.sender.username,
+              first_name: message.sender.first_name,
+              last_name: message.sender.last_name,
+              warning_count: status.warning_count
+            };
+          },
+          error: (error) => {
+            console.error('Error fetching user moderation status:', error);
+            // Fallback: show user with 0 warnings
+            this.selectedUserToWarn = {
+              id: message.sender.id,
+              username: message.sender.username,
+              first_name: message.sender.first_name,
+              last_name: message.sender.last_name,
+              warning_count: 0
+            };
+          }
+        });
     }
   }
 }

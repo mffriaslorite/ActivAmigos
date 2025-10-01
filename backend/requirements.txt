@@ -31,10 +31,12 @@ jsonschema-specifications==2025.4.1
 Mako==1.3.10
 MarkupSafe==3.0.2
 marshmallow==4.0.0
+marshmallow-enum==1.5.1
 minio==7.2.16
 mistune==3.1.3
 msgspec==0.19.0
 mypy_extensions==1.1.0
+netifaces==0.10.6
 packaging==25.0
 pathspec==0.12.1
 pillow==11.3.0

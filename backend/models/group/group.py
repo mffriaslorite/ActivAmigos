@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timezone
 from models.user.user import db
 from models.associations.group_associations import group_members
 
@@ -11,7 +11,7 @@ class Group(db.Model):
     description = db.Column(db.String(500), nullable=True)
     rules = db.Column(db.Text, nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_groups')

@@ -1,5 +1,7 @@
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, post_dump
+from marshmallow_enum import EnumField
 from werkzeug.datastructures import FileStorage
+from .user import UserRole
 
 class UserSchema(Schema):
     id = fields.Int(dump_only=True)
@@ -9,11 +11,12 @@ class UserSchema(Schema):
     last_name = fields.Str()
     profile_image = fields.Str()
     bio = fields.Str()
-    role = fields.Str(dump_only=True)  # Don't allow role changes via API
+    role = EnumField(UserRole, dump_only=True, by_value=True)
     is_active = fields.Bool()
     created_at = fields.DateTime()
     last_login = fields.DateTime()
 
+    
 class UpdateProfileSchema(Schema):
     email = fields.Email()
     first_name = fields.Str()

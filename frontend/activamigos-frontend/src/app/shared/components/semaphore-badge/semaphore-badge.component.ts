@@ -92,7 +92,7 @@ import { CommonModule } from '@angular/common';
   `]
 })
 export class SemaphoreBadgeComponent {
-  @Input() color: 'grey' | 'light_green' | 'dark_green' | 'yellow' | 'red' = 'grey';
+  @Input() color: string = 'grey';
   @Input() warningCount: number = 0;
   @Input() showText: boolean = false;
 

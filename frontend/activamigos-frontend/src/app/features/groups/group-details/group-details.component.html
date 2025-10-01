@@ -107,6 +107,16 @@
               [warningCount]="0"
               [showText]="true"
             ></app-semaphore-badge>
+
+            <!-- Moderation Button (for organizers/admins) -->
+            <button
+              *ngIf="canModerate && currentUserId !== member.id"
+              class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200 transition-colors"
+              (click)="openModerationModal(member)"
+              title="Moderar usuario"
+            >
+              ⚠️
+            </button>
           </div>
         </div>
       </section>
@@ -201,3 +211,13 @@
     </div>
   </div>
 </div>
+
+<!-- Moderation Modal -->
+<app-moderation-modal
+  [isOpen]="showModerationModal"
+  [user]="selectedUserToWarn"
+  [contextType]="'GROUP'"
+  [contextId]="groupDetails?.id || 0"
+  (close)="closeModerationModal()"
+  (warningIssued)="onWarningIssued($event)"
+></app-moderation-modal>

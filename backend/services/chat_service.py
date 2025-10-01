@@ -66,17 +66,19 @@ def init_socketio(app, socketio_instance):
         user_id = session.get('user_id')
         if not user_id:
             logger.warning("Unauthorized connection attempt - no user_id in session")
-            disconnect()
+            logger.warning(f"Session data: {dict(session)}")
+            emit('error', {'message': 'Not authenticated - please login first'})
             return False
         
         # Verify user exists in database
         user = User.query.get(user_id)
         if not user:
             logger.warning(f"Invalid user_id {user_id} in session")
-            disconnect()
+            emit('error', {'message': 'Invalid user - please login again'})
             return False
         
-        logger.info(f"User {user_id} ({user.username}) connected to WebSocket")
+        logger.info(f"✅ User {user_id} ({user.username}) connected to WebSocket")
+        emit('connected', {'message': 'Successfully connected to chat'})
         return True
     
     @socketio.on('disconnect')
@@ -246,7 +248,13 @@ def init_socketio(app, socketio_instance):
             
             # Broadcast to all users in the room
             socketio.emit('new_message', message_dict, room=room_name)
-            logger.info(f"Message {message.id} sent to {room_name}")
+            logger.info(f"✅ Message {message.id} sent to {room_name}")
+            
+            # Confirm to sender
+            emit('message_sent', {
+                'message_id': message.id,
+                'status': 'success'
+            })
             
         except ValidationError as e:
             emit('error', {'message': f'Invalid message data: {e.messages}'})

@@ -48,36 +48,60 @@ export class ChatService {
   private initializeSocket() {
     this.socket = io('http://localhost:5000', {
       withCredentials: true,
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      forceNew: true,
+      timeout: 10000
     });
 
     this.socket.on('connect', () => {
-      console.log('Connected to chat server');
+      console.log('✅ Connected to chat server');
       this.connectionStatusSubject.next(true);
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('Disconnected from chat server');
+    this.socket.on('disconnect', (reason) => {
+      console.log('❌ Disconnected from chat server:', reason);
       this.connectionStatusSubject.next(false);
+      
+      // Auto-reconnect after delay unless intentional disconnect
+      if (reason !== 'io client disconnect') {
+        setTimeout(() => {
+          console.log('🔄 Attempting to reconnect...');
+          this.socket?.connect();
+        }, 2000);
+      }
     });
 
     this.socket.on('new_message', (message: ChatMessage) => {
-      console.log('New message received:', message);
-      const currentMessages = this.messagesSubject.value;
-      this.messagesSubject.next([...currentMessages, message]);
+      console.log('📨 New message received:', message);
+      // Instead of appending, emit the single new message
+      // Components will handle adding it to their own lists
+      this.messagesSubject.next([message]);
+    });
+
+    this.socket.on('joined_chat', (data: any) => {
+      console.log('✅ Joined room:', data);
+    });
+
+    this.socket.on('left_chat', (data: any) => {
+      console.log('👋 Left room:', data);
     });
 
     this.socket.on('error', (error: any) => {
-      console.error('Socket error:', error);
+      console.error('❌ Socket error:', error);
+    });
+
+    this.socket.on('connect_error', (error: any) => {
+      console.error('❌ Connection error:', error);
+      this.connectionStatusSubject.next(false);
     });
 
     this.socket.on('warning_issued', (data: any) => {
-      console.log('Warning issued:', data);
+      console.log('⚠️ Warning issued:', data);
       // Handle warning notification
     });
 
     this.socket.on('user_banned', (data: any) => {
-      console.log('User banned:', data);
+      console.log('🚫 User banned:', data);
       // Handle ban notification
     });
   }

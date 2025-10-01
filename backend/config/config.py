@@ -20,6 +20,10 @@ class Config:
     SESSION_COOKIE_SECURE = False  # False para HTTP en desarrollo
     SESSION_COOKIE_SAMESITE = "Lax"  # Lax para desarrollo local
 
+    # Mejorar configuración de sesiones para WebSocket
+    PERMANENT_SESSION_LIFETIME = 3600  # 1 hora
+    SESSION_REFRESH_EACH_REQUEST = True
+
     # MinIO Configuration
     MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
     MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")

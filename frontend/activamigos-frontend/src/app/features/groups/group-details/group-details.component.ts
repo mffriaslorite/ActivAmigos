@@ -6,6 +6,7 @@ import { GroupsService } from '../../../core/services/groups.service';
 import { GroupDetails, GroupMember } from '../../../core/models/group.model';
 import { ChatRoomComponent } from '../../../shared/components/chat/chat-room.component';
 import { SemaphoreBadgeComponent } from '../../../shared/components/semaphore-badge/semaphore-badge.component';
+import { ModerationModalComponent, UserToWarn } from '../../../shared/components/moderation-modal/moderation-modal.component';
 import { RulesSelectorComponent } from '../../../shared/components/rules-selector/rules-selector.component';
 import { RulesService } from '../../../core/services/rules.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -13,7 +14,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-group-details',
   standalone: true,
-  imports: [CommonModule, ChatRoomComponent, SemaphoreBadgeComponent, RulesSelectorComponent],
+  imports: [CommonModule, ChatRoomComponent, SemaphoreBadgeComponent, RulesSelectorComponent, ModerationModalComponent],
   templateUrl: './group-details.component.html',
   styleUrls: ['./group-details.component.scss']
 })
@@ -36,6 +37,13 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   // Chat room configuration
   chatRoom: any = null;
   newMessage = '';
+
+  // Moderation permissions
+  canModerate = false;
+
+   // Moderation
+  showModerationModal = false;
+  selectedUserToWarn: UserToWarn | null = null;
 
   // Mock chat messages for preview
   chatMessages = [
@@ -78,7 +86,12 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
         if (user) {
           this.currentUserId = user.id;
           this.canManageRules = user.role === 'ORGANIZER' || user.role === 'SUPERADMIN';
+          this.canModerate = user.role === 'ORGANIZER' || user.role === 'SUPERADMIN';
         }
+        console.log('User data loaded:', user?.role);
+        console.log('Current user ID:', this.currentUserId);
+        console.log('Can manage rules:', this.canManageRules);
+        console.log('Can moderate:', this.canModerate);
       });
   }
 
@@ -329,5 +342,28 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     return this.groupRules.map(rule => rule.id);
   }
 
+  openModerationModal(member: GroupMember) {
+    this.selectedUserToWarn = {
+      id: member.id,
+      username: member.username,
+      first_name: member.first_name,
+      last_name: member.last_name,
+      warning_count: 0 // We'd need to fetch this from the API
+    };
+    this.showModerationModal = true;
+  }
 
+  closeModerationModal() {
+    this.showModerationModal = false;
+    this.selectedUserToWarn = null;
+  }
+
+  onWarningIssued(response: any) {
+    console.log('Warning issued:', response);
+    // Refresh group data or show success message
+    if (this.groupDetails) {
+      this.loadGroupDetails(this.groupDetails.id);
+    }
+    alert(response.message || 'Advertencia emitida correctamente');
+  }
 }
