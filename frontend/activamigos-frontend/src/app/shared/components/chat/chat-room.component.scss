@@ -12,6 +12,20 @@
   hyphens: auto;
 }
 
+/* Send button animations */
+.send-button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.send-button:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.send-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   .bg-blue-500 {

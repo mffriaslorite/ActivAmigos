@@ -83,9 +83,19 @@
                       [warningCount]="0"
                       [showText]="false"
                     ></app-semaphore-badge>
-                    <div class="text-green-600 font-semibold">
+                    
+                    <!-- Status based on confirmation -->
+                    <div *ngIf="getActivityStatus(activity) === 'confirmed'" class="text-green-600 font-semibold">
                       ✓ Apuntado
                     </div>
+                    
+                    <button 
+                      *ngIf="getActivityStatus(activity) === 'pending'"
+                      class="bg-yellow-300 text-white px-3 py-1 rounded-full text-sm font-semibold hover:bg-yellow-600 transition-colors"
+                      (click)="openAttendanceModal(activity); $event.stopPropagation()"
+                    >
+                      ⏳ Pendiente de confirmar
+                    </button>
                   </div>
                 </div>
               </div>
@@ -236,10 +246,20 @@
                   </div>
                 </div>
                 <div class="text-right">
-                  <div *ngIf="activity.is_participant" class="text-green-600 text-sm font-semibold">
+                  <div *ngIf="activity.is_participant && getActivityStatus(activity) === 'confirmed'" class="text-green-600 text-sm font-semibold">
                     ✓ Apuntado
                   </div>
-                  <button *ngIf="!activity.is_participant" class="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-semibold hover:bg-blue-600 transition-colors">
+                  <button 
+                    *ngIf="activity.is_participant && getActivityStatus(activity) === 'pending'"
+                    class="bg-yellow-300 text-white px-3 py-1 rounded-full text-sm font-semibold hover:bg-yellow-600 transition-colors"
+                    (click)="openAttendanceModal(activity); $event.stopPropagation()"
+                  >
+                    ⏳ Confirmar
+                  </button>
+                  <button 
+                    *ngIf="!activity.is_participant" 
+                    class="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold hover:bg-green-600 transition-colors"
+                  >
                     Apuntarse
                   </button>
                 </div>
@@ -266,7 +286,7 @@
                 <span class="text-sm text-gray-500">{{ group.member_count }} miembros</span>
               </div>
               <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ group.description }}</p>
-              <button class="w-full bg-green-500 text-white py-2 rounded-lg text-sm font-semibold hover:bg-green-600 transition-colors">
+              <button class="w-full bg-blue-500 text-white py-2 rounded-lg text-sm font-semibold hover:bg-blue-600 transition-colors">
                 Unirse al grupo
               </button>
             </div>
@@ -276,7 +296,7 @@
         <!-- Quick Actions -->
         <div class="grid grid-cols-2 gap-4 mb-8">
           <button 
-            class="bg-blue-500 text-white p-4 rounded-lg font-semibold text-lg hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2"
+            class="bg-green-500 text-white p-4 rounded-lg font-semibold text-lg hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2"
             (click)="navigateTo('/activities')"
           >
             <span class="text-xl">📅</span>
@@ -284,7 +304,7 @@
           </button>
           
           <button 
-            class="bg-green-500 text-white p-4 rounded-lg font-semibold text-lg hover:bg-green-600 transition-colors flex items-center justify-center space-x-2"
+            class="bg-blue-500 text-white p-4 rounded-lg font-semibold text-lg hover:bg-green-600 transition-colors flex items-center justify-center space-x-2"
             (click)="navigateTo('/groups')"
           >
             <span class="text-xl">👥</span>

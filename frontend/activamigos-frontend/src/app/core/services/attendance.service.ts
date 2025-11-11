@@ -57,21 +57,84 @@ export class AttendanceService {
   
   private pendingActivitiesSubject = new BehaviorSubject<PendingActivity[]>([]);
   public pendingActivities$ = this.pendingActivitiesSubject.asObservable();
+  
+  // Cooldown management
+  private readonly COOLDOWN_KEY = 'attendance_modal_cooldowns';
+  private readonly DEFAULT_COOLDOWN_HOURS = 1;
+  private readonly URGENT_THRESHOLD_MINUTES = 30;
 
-  constructor(private http: HttpClient) {
-    this.loadPendingActivities();
+  constructor(private http: HttpClient) {}
+
+  /**
+   * Check if we should show the attendance modal for an activity
+   */
+  shouldShowAttendanceModal(activityId: number, activityDate: string): boolean {
+    const cooldowns = this.getCooldowns();
+    const now = new Date().getTime();
+    const activityTime = new Date(activityDate).getTime();
+    
+    // Check if there's an active cooldown
+    if (cooldowns[activityId] && cooldowns[activityId] > now) {
+      // If activity is starting in less than 30 minutes, override cooldown
+      const minutesUntilActivity = (activityTime - now) / (1000 * 60);
+      return minutesUntilActivity <= this.URGENT_THRESHOLD_MINUTES;
+    }
+    
+    return true;
   }
 
   /**
-   * Confirm attendance for an activity
+   * Set cooldown for an activity modal
    */
-  confirmAttendance(activityId: number): Observable<any> {
-    return this.http.post(`${this.API_BASE_URL}/attendance/confirm`, {
-      activity_id: activityId
-    }, { withCredentials: true }).pipe(
-      tap(() => this.loadPendingActivities()), // Refresh pending activities
-      catchError(this.handleError)
-    );
+  setCooldown(activityId: number, activityDate: string): void {
+    const cooldowns = this.getCooldowns();
+    const now = new Date().getTime();
+    const activityTime = new Date(activityDate).getTime();
+    const minutesUntilActivity = (activityTime - now) / (1000 * 60);
+    
+    // Shorter cooldown as activity approaches
+    let cooldownHours = this.DEFAULT_COOLDOWN_HOURS;
+    if (minutesUntilActivity <= 120) { // 2 hours or less
+      cooldownHours = 0.5; // 30 minutes
+    } else if (minutesUntilActivity <= 360) { // 6 hours or less
+      cooldownHours = 1; // 1 hour
+    }
+    
+    cooldowns[activityId] = now + (cooldownHours * 60 * 60 * 1000);
+    localStorage.setItem(this.COOLDOWN_KEY, JSON.stringify(cooldowns));
+  }
+
+  /**
+   * Clear cooldown for an activity (when confirmed)
+   */
+  clearCooldown(activityId: number): void {
+    const cooldowns = this.getCooldowns();
+    delete cooldowns[activityId];
+    localStorage.setItem(this.COOLDOWN_KEY, JSON.stringify(cooldowns));
+  }
+
+  private getCooldowns(): { [activityId: number]: number } {
+    try {
+      const stored = localStorage.getItem(this.COOLDOWN_KEY);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  confirmAttendance(activityId: number, willAttend: boolean = true): Observable<any> {
+    return this.http.post<any>(`${this.API_BASE_URL}/attendance/confirm`, { 
+      activity_id: activityId,
+      will_attend: willAttend
+    })
+      .pipe(
+        tap(() => {
+          // Clear cooldown when attendance is confirmed (regardless of yes/no)
+          this.clearCooldown(activityId);
+          // Refresh pending activities
+          this.refreshPendingActivities();
+        })
+      );
   }
 
   /**

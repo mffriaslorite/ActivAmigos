@@ -40,6 +40,8 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
   // Attendance management
   showAttendanceMarking = false;
   attendanceRecords: any[] = [];
+  showAttendanceConfirmationModal = false;
+  needsAttendanceConfirmation = false;
 
   // Moderation
   showModerationModal = false;
@@ -93,11 +95,9 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
           this.currentUserId = user.id;
           this.canManageRules = user.role === 'ORGANIZER' || user.role === 'SUPERADMIN';
           this.canModerate = user.role === 'ORGANIZER' || user.role === 'SUPERADMIN';
-          console.log('User data loaded:', user);
-          console.log('Current user ID:', this.currentUserId);
-          console.log('Can manage rules:', this.canManageRules);
-          console.log('Can moderate:', this.canModerate);
-
+          
+          // Check attendance confirmation after user is loaded
+          this.checkAttendanceConfirmation();
         }
       });
   }
@@ -124,6 +124,9 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
             id: activityId,
             name: details.title
           };
+          
+          // Check attendance confirmation after details are loaded
+          this.checkAttendanceConfirmation();
         },
         error: (error) => {
           console.error('Error loading activity details:', error);
@@ -165,7 +168,10 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
           last_name: '',
           profile_image: '',
           is_organizer: true,
-          joined_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+          joined_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          attendance_status: 'confirmed',
+          warning_count: 1,
+          semaphore_color: 'yellow'
         },
         {
           id: 2,
@@ -174,7 +180,10 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
           last_name: '',
           profile_image: '',
           is_organizer: false,
-          joined_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+          joined_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          attendance_status: 'pending',
+          warning_count: 0,
+          semaphore_color: 'light_green'
         },
         {
           id: 3,
@@ -183,7 +192,10 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
           last_name: '',
           profile_image: '',
           is_organizer: false,
-          joined_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+          joined_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          attendance_status: 'pending',
+          warning_count: 2,
+          semaphore_color: 'red'
         }
       ]
     };
@@ -283,11 +295,21 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
   }
 
   formatDate(dateString: string): string {
-    const date = new Date(dateString);
+    // Asegurar que la fecha se interprete correctamente
+    let date: Date;
+    
+    if (dateString.endsWith('Z') || dateString.includes('+')) {
+      // Ya tiene información de zona horaria
+      date = new Date(dateString);
+    } else {
+      // Asumir que es UTC y añadir 'Z'
+      date = new Date(dateString + (dateString.includes('T') ? 'Z' : 'T00:00:00Z'));
+    }
+    
     return date.toLocaleDateString('es-ES', {
-      weekday: 'long',
+      weekday: 'short',
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -319,12 +341,24 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
     
     return timestamp.toLocaleDateString('es-ES', { 
       day: 'numeric', 
-      month: 'short' 
+      month: 'short',
+      timeZone: 'UTC'
     });
   }
 
   formatJoinedDate(joinedAt: string): string {
-    return this.formatChatTime(new Date(joinedAt));
+    // Crear la fecha asegurándose de que se interprete como UTC
+    let joinedDate: Date;
+    
+    if (joinedAt.endsWith('Z') || joinedAt.includes('+')) {
+      // Ya tiene información de zona horaria
+      joinedDate = new Date(joinedAt);
+    } else {
+      // Asumir que es UTC y añadir 'Z'
+      joinedDate = new Date(joinedAt + (joinedAt.includes('T') ? 'Z' : 'T00:00:00Z'));
+    }
+    
+    return this.formatChatTime(joinedDate);
   }
 
   onMessageInput(event: Event) {
@@ -434,4 +468,54 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
     }
     alert(response.message || 'Advertencia emitida correctamente');
   }
+
+  private checkAttendanceConfirmation() {
+    if (!this.activityDetails || !this.currentUserId) {
+      return;
+    }
+    
+    // Check if user is participant and hasn't confirmed attendance
+    this.needsAttendanceConfirmation = this.activityDetails.is_participant && 
+                                       !this.activityDetails.attendance_confirmed;
+  }
+
+  openAttendanceConfirmation() {
+    this.showAttendanceConfirmationModal = true;
+  }
+
+  closeAttendanceConfirmation() {
+    this.showAttendanceConfirmationModal = false;
+  }
+
+  onAttendanceConfirmed(response: any) {
+    console.log('Attendance confirmed:', response);
+    this.needsAttendanceConfirmation = false;
+    this.showAttendanceConfirmationModal = false;
+    
+    // Update the activity details to reflect confirmation
+    if (this.activityDetails) {
+      this.activityDetails.attendance_confirmed = true;
+    }
+    
+    // Show success message
+    alert('¡Asistencia confirmada correctamente!');
+  }
+
+  getAttendanceStatusText(status: string): string {
+    switch (status) {
+      case 'pending':
+        return '⏳ Pendiente';
+      case 'confirmed':
+        return '✅ Confirmado';
+      case 'declined':
+        return '❌ No asiste';
+      case 'attended':
+        return '✅ Asistió';
+      case 'absent':
+        return '❌ No asistió';
+      default:
+        return '❓ Desconocido';
+    }
+  }
+
 }

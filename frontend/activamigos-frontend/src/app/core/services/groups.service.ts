@@ -228,7 +228,9 @@ export class GroupsService {
         last_name: '',
         profile_image: '',
         is_admin: true,
-        joined_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // 1 week ago
+        joined_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
+        warning_count: 0,
+        semaphore_color: 'light_green' as const
       },
       {
         id: 2,
@@ -237,7 +239,9 @@ export class GroupsService {
         last_name: '',
         profile_image: '',
         is_admin: false,
-        joined_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
+        joined_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+        warning_count: 0,
+        semaphore_color: 'light_green' as const
       },
       {
         id: 3,
@@ -246,7 +250,9 @@ export class GroupsService {
         last_name: '',
         profile_image: '',
         is_admin: false,
-        joined_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
+        joined_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+        warning_count: 0,
+        semaphore_color: 'light_green' as const
       },
       {
         id: 4,
@@ -255,7 +261,9 @@ export class GroupsService {
         last_name: '',
         profile_image: '',
         is_admin: false,
-        joined_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
+        joined_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+        warning_count: 0,
+        semaphore_color: 'light_green' as const
       },
       {
         id: 5,
@@ -264,7 +272,9 @@ export class GroupsService {
         last_name: '',
         profile_image: '',
         is_admin: false,
-        joined_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+        joined_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+        warning_count: 0,
+        semaphore_color: 'light_green' as const
       }
     ];
 

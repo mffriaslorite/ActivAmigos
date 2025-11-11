@@ -101,10 +101,10 @@
               <p class="text-sm text-gray-500">{{ member.username }}</p>
             </div>
             
-            <!-- Semaphore Badge -->
+            <!-- Dynamic Semaphore Badge -->
             <app-semaphore-badge
-              [color]="'light_green'"
-              [warningCount]="0"
+              [color]="member.semaphore_color"
+              [warningCount]="member.warning_count"
               [showText]="true"
             ></app-semaphore-badge>
 

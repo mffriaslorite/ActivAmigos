@@ -51,7 +51,7 @@ class ActivityAttendance(db.Model):
         }
 
     @classmethod
-    def confirm_attendance(cls, activity_id, user_id):
+    def confirm_attendance(cls, activity_id, user_id, will_attend=True):
         """Confirm user attendance for an activity"""
         attendance = cls.query.filter_by(activity_id=activity_id, user_id=user_id).first()
         
@@ -60,6 +60,11 @@ class ActivityAttendance(db.Model):
             db.session.add(attendance)
         
         attendance.confirmed_at = datetime.now(timezone.utc)
+        
+        # If user explicitly declines, mark as not present
+        if not will_attend:
+            attendance.present = False
+        
         db.session.commit()
         return attendance
 

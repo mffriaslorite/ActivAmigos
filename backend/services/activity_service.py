@@ -4,6 +4,8 @@ from sqlalchemy.exc import IntegrityError
 from models.user.user import User, db
 from models.activity.activity import Activity
 from models.associations.activity_associations import activity_participants
+from models.attendance.attendance import ActivityAttendance
+from services.user_service import get_user_status_for_context
 from models.activity.activity_schema import (
     ActivityCreateSchema, 
     ActivityUpdateSchema, 
@@ -108,6 +110,15 @@ def list_activities():
     
     activities_data = []
     for activity in activities:
+        # Check if user has confirmed attendance
+        attendance_confirmed = False
+        if activity.is_participant(current_user.id):
+            attendance = ActivityAttendance.query.filter_by(
+                activity_id=activity.id,
+                user_id=current_user.id
+            ).first()
+            attendance_confirmed = attendance is not None and attendance.is_confirmed
+        
         activities_data.append({
             'id': activity.id,
             'title': activity.title,
@@ -116,6 +127,7 @@ def list_activities():
             'date': activity.date,
             'participant_count': activity.participant_count,
             'is_participant': activity.is_participant(current_user.id),
+            'attendance_confirmed': attendance_confirmed,
             'created_at': activity.created_at
         })
     
@@ -129,6 +141,15 @@ def get_activity(activity_id):
     
     activity = Activity.query.get_or_404(activity_id)
     
+    # Check if user has confirmed attendance
+    attendance_confirmed = False
+    if activity.is_participant(current_user.id):
+        attendance = ActivityAttendance.query.filter_by(
+            activity_id=activity.id,
+            user_id=current_user.id
+        ).first()
+        attendance_confirmed = attendance is not None and attendance.is_confirmed
+    
     response_data = {
         'id': activity.id,
         'title': activity.title,
@@ -139,10 +160,89 @@ def get_activity(activity_id):
         'created_by': activity.created_by,
         'created_at': activity.created_at,
         'participant_count': activity.participant_count,
-        'is_participant': activity.is_participant(current_user.id)
+        'is_participant': activity.is_participant(current_user.id),
+        'attendance_confirmed': attendance_confirmed
     }
     
     return response_data
+
+@blp.route("/<int:activity_id>/details", methods=["GET"])
+@blp.response(200, ActivityDetailsResponseSchema)
+def get_activity_details(activity_id):
+    """
+    Get full activity details including participants with attendance status and semaphore info
+    """
+    current_user = get_current_user()
+    activity = Activity.query.get_or_404(activity_id)
+
+    # Check if current user has confirmed attendance
+    current_user_attendance_confirmed = False
+    if activity.is_participant(current_user.id):
+        attendance = ActivityAttendance.query.filter_by(
+            activity_id=activity.id,
+            user_id=current_user.id
+        ).first()
+        current_user_attendance_confirmed = attendance is not None and attendance.is_confirmed
+
+    # Load participants with extended information including attendance status and semaphore
+    participants = []
+    for user in activity.participants:
+        link = db.session.execute(
+            activity_participants.select().where(
+                (activity_participants.c.user_id == user.id) & 
+                (activity_participants.c.activity_id == activity.id)
+            )
+        ).first()
+
+        # Get attendance information for this participant
+        attendance = ActivityAttendance.query.filter_by(
+            activity_id=activity.id,
+            user_id=user.id
+        ).first()
+
+        # Determine attendance status
+        attendance_status = 'pending'  # Default
+        if attendance:
+            if attendance.confirmed_at and attendance.present is None:
+                attendance_status = 'confirmed'  # Confirmed but not yet marked by organizer
+            elif attendance.confirmed_at and attendance.present is True:
+                attendance_status = 'attended'  # Confirmed and marked as present
+            elif attendance.confirmed_at and attendance.present is False:
+                attendance_status = 'absent'  # Confirmed but marked as absent
+            elif attendance.confirmed_at is None and attendance.present is False:
+                attendance_status = 'declined'  # Explicitly declined
+        
+        # Get user semaphore status
+        user_status = get_user_status_for_context(user.id, activity_id, 'ACTIVITY')
+        
+        participants.append({
+            'id': user.id,
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'profile_image': user.profile_image,
+            'is_organizer': link.role == 'organizer' if link else False,
+            'joined_at': link.joined_at if link else None,
+            'attendance_status': attendance_status,
+            'attendance_confirmed_at': attendance.confirmed_at.isoformat() if attendance and attendance.confirmed_at else None,
+            'semaphore_color': user_status['overall_semaphore_color'],
+            'warning_count': user_status['total_warnings']
+        })
+
+    return {
+        'id': activity.id,
+        'title': activity.title,
+        'description': activity.description,
+        'location': activity.location,
+        'date': activity.date,
+        'rules': activity.rules,
+        'created_by': activity.created_by,
+        'created_at': activity.created_at,
+        'participant_count': activity.participant_count,
+        'is_participant': activity.is_participant(current_user.id),
+        'attendance_confirmed': current_user_attendance_confirmed,
+        'participants': participants
+    }
 
 @blp.route("/<int:activity_id>", methods=["PUT"])
 @blp.arguments(ActivityUpdateSchema)
@@ -280,45 +380,20 @@ def leave_activity(activity_id):
         db.session.rollback()
         abort(400, message="Error leaving activity")
 
-@blp.route("/<int:activity_id>/details", methods=["GET"])
-@blp.response(200, ActivityDetailsResponseSchema)
-def get_activity_details(activity_id):
-    """
-    Get full activity details including participants
-    """
+@blp.route("/<int:activity_id>/user-role", methods=["GET"])
+def get_user_activity_role(activity_id):
+    """Get current user's role in the activity"""
     current_user = get_current_user()
-    activity = Activity.query.get_or_404(activity_id)
-
-    # Load participants with extended information
-    participants = []
-    for user in activity.participants:
-        link = db.session.execute(
-            activity_participants.select().where(
-                (activity_participants.c.user_id == user.id) & 
-                (activity_participants.c.activity_id == activity.id)
-            )
-        ).first()
-
-        participants.append({
-            'id': user.id,
-            'username': user.username,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'profile_image': user.profile_image,
-            'is_organizer': link.role == 'organizer' if link else False,
-            'joined_at': link.joined_at if link else None
-        })
-
-    return {
-        'id': activity.id,
-        'title': activity.title,
-        'description': activity.description,
-        'location': activity.location,
-        'date': activity.date,
-        'rules': activity.rules,
-        'created_by': activity.created_by,
-        'created_at': activity.created_at,
-        'participant_count': activity.participant_count,
-        'is_participant': activity.is_participant(current_user.id),
-        'participants': participants
-    }
+    
+    # Check if user participates in the activity
+    link = db.session.execute(
+        activity_participants.select().where(
+            (activity_participants.c.user_id == current_user.id) & 
+            (activity_participants.c.activity_id == activity_id)
+        )
+    ).first()
+    
+    if link:
+        return {'role': link.role}, 200
+    else:
+        return {'role': None}, 200

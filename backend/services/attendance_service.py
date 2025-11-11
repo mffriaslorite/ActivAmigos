@@ -14,6 +14,7 @@ blp = Blueprint("Attendance", "attendance", url_prefix="/api/attendance", descri
 
 class ConfirmAttendanceSchema(Schema):
     activity_id = fields.Int(required=True)
+    will_attend = fields.Bool(required=True)  # True for "yes", False for "no"
 
 class MarkAttendanceSchema(Schema):
     attendees = fields.List(fields.Dict(keys=fields.Str(), values=fields.Raw()), required=True)
@@ -23,7 +24,7 @@ class AttendanceService:
     """Service for managing activity attendance"""
     
     @staticmethod
-    def confirm_attendance(activity_id, user_id):
+    def confirm_attendance(activity_id, user_id, will_attend=True):
         """Confirm user attendance for an activity"""
         # Check if activity exists
         activity = Activity.query.get(activity_id)
@@ -35,7 +36,7 @@ class AttendanceService:
             raise ValueError("User is not a participant of this activity")
         
         # Confirm attendance
-        attendance = ActivityAttendance.confirm_attendance(activity_id, user_id)
+        attendance = ActivityAttendance.confirm_attendance(activity_id, user_id, will_attend)
         return attendance
     
     @staticmethod
@@ -95,7 +96,6 @@ class AttendanceService:
     @staticmethod
     def get_activities_needing_confirmation(user_id):
         """Get activities that need confirmation from user"""
-        # Get user's activities that are coming up and need confirmation
         user = User.query.get(user_id)
         if not user:
             return []
@@ -103,12 +103,10 @@ class AttendanceService:
         now = datetime.now(timezone.utc)
         upcoming_activities = []
         
-        # Get user's activities
         for activity in user.joined_activities:
-            # Check if activity is in the future and needs confirmation
-            activity_date = activity.date
+            # Use the date_aware property to ensure timezone consistency
+            activity_date = activity.date_aware
             if activity_date > now:
-                # Check if user has confirmed attendance
                 attendance = ActivityAttendance.query.filter_by(
                     activity_id=activity.id,
                     user_id=user_id
@@ -131,11 +129,14 @@ def confirm_attendance(args):
     """Confirm attendance for an activity"""
     user_id = session.get('user_id')
     activity_id = args['activity_id']
+    will_attend = args['will_attend']
     
     try:
-        attendance = AttendanceService.confirm_attendance(activity_id, user_id)
+        attendance = AttendanceService.confirm_attendance(activity_id, user_id, will_attend)
+        message = 'Attendance confirmed successfully' if will_attend else 'Declined attendance successfully'
         return {
-            'message': 'Attendance confirmed successfully',
+            'message': message,
+            'will_attend': will_attend,
             'attendance': attendance.to_dict()
         }
     except ValueError as e:

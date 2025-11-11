@@ -231,7 +231,10 @@ export class ActivitiesService {
         last_name: '',
         profile_image: '',
         is_organizer: true,
-        joined_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // 1 week ago
+        joined_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
+        attendance_status: 'confirmed' as const,
+        warning_count: 1,
+        semaphore_color: 'yellow' as const
       },
       {
         id: 2,
@@ -240,7 +243,10 @@ export class ActivitiesService {
         last_name: '',
         profile_image: '',
         is_organizer: false,
-        joined_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
+        joined_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+        attendance_status: 'pending' as const,
+        warning_count: 0,
+        semaphore_color: 'light_green' as const
       },
       {
         id: 3,
@@ -249,7 +255,10 @@ export class ActivitiesService {
         last_name: '',
         profile_image: '',
         is_organizer: false,
-        joined_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
+        joined_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+        attendance_status: 'pending' as const,
+        warning_count: 2,
+        semaphore_color: 'red' as const
       },
       {
         id: 4,
@@ -258,7 +267,10 @@ export class ActivitiesService {
         last_name: '',
         profile_image: '',
         is_organizer: false,
-        joined_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
+        joined_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+        attendance_status: 'pending' as const,
+        warning_count: 2,
+        semaphore_color: 'red' as const
       },
       {
         id: 5,
@@ -267,7 +279,10 @@ export class ActivitiesService {
         last_name: '',
         profile_image: '',
         is_organizer: false,
-        joined_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+        joined_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+        attendance_status: 'pending' as const,
+        warning_count: 0,
+        semaphore_color: 'light_green' as const
       }
     ];
 
@@ -317,4 +332,17 @@ export class ActivitiesService {
       })
     );
   }
+
+  /**
+   * Get user's role in a specific activity
+   */
+  getUserRoleInActivity(activityId: number): Observable<{ role: string | null }> {
+    return this.http.get<{ role: string | null }>(
+      `${this.API_BASE_URL}/activities/${activityId}/user-role`,
+      { withCredentials: true }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
 }

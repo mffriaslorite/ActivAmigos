@@ -42,7 +42,9 @@ class GroupMemberSchema(Schema):
     last_name = fields.Str(allow_none=True)
     profile_image = fields.Str(allow_none=True)
     is_admin = fields.Bool()
-    joined_at = fields.DateTime()
+    joined_at = fields.Str(allow_none=True)
+    semaphore_color = fields.Str()
+    warning_count = fields.Int()
 
 class GroupDetailsResponseSchema(Schema):
     id = fields.Int()

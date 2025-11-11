@@ -80,11 +80,24 @@ export class GroupCardComponent {
   }
 
   formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', { 
-      day: 'numeric', 
+    // Asegurar que la fecha se interprete correctamente
+    let date: Date;
+    
+    if (dateString.endsWith('Z') || dateString.includes('+')) {
+      // Ya tiene información de zona horaria
+      date = new Date(dateString);
+    } else {
+      // Asumir que es UTC y añadir 'Z'
+      date = new Date(dateString + (dateString.includes('T') ? 'Z' : 'T00:00:00Z'));
+    }
+    
+    return date.toLocaleDateString('es-ES', {
+      weekday: 'short',
+      year: 'numeric',
       month: 'short',
-      year: 'numeric'
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   }
 }

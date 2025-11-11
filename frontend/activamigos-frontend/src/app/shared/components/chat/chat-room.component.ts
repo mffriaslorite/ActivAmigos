@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ChatService } from '../../../core/services/chat.service';
+import { ActivitiesService } from '../../../core/services/activities.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { SemaphoreBadgeComponent } from '../semaphore-badge/semaphore-badge.component';
 import { ModerationModalComponent, UserToWarn } from '../moderation-modal/moderation-modal.component';
@@ -29,137 +30,7 @@ export interface ChatMessage {
   selector: 'app-chat-room',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, SemaphoreBadgeComponent, ModerationModalComponent],
-  template: `
-    <div class="flex flex-col h-full bg-white rounded-lg border border-gray-200">
-      <!-- Chat Header -->
-      <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-        <h3 class="text-lg font-semibold text-gray-900">
-          {{ contextType === 'GROUP' ? 'Grupo' : 'Actividad' }} Chat
-        </h3>
-        <div class="flex items-center space-x-2">
-          <!-- Semaphore Badge -->
-          <app-semaphore-badge
-            *ngIf="userSemaphoreColor"
-            [color]="userSemaphoreColor"
-            [warningCount]="userWarningCount"
-            [showText]="false"
-          ></app-semaphore-badge>
-          
-          <!-- Moderation button for organizers -->
-          <button
-            *ngIf="canModerate && selectedUserToWarn"
-            class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200 transition-colors"
-            (click)="openModerationModal()"
-          >
-            ⚠️ Moderar
-          </button>
-        </div>
-      </div>
-
-      <!-- Messages Area -->
-      <div 
-        #messagesContainer 
-        class="flex-1 overflow-y-auto p-4 space-y-3 min-h-0"
-        style="max-height: 400px;"
-      >
-        <div 
-          *ngFor="let message of messages; trackBy: trackByMessageId" 
-          class="flex"
-          [class.justify-end]="message.sender_id === currentUserId"
-        >
-          <div 
-            class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg break-words cursor-pointer"
-            (click)="onMessageClick(message)"
-            [class.bg-blue-500]="message.sender_id === currentUserId && !message.is_system"
-            [class.text-white]="message.sender_id === currentUserId && !message.is_system"
-            [class.bg-gray-200]="message.sender_id !== currentUserId && !message.is_system"
-            [class.text-gray-900]="message.sender_id !== currentUserId && !message.is_system"
-            [class.bg-yellow-100]="message.is_system"
-            [class.text-yellow-800]="message.is_system"
-            [class.border]="message.is_system"
-            [class.border-yellow-300]="message.is_system"
-          >
-            <!-- Sender name (only for others' messages and system messages) -->
-            <div 
-              *ngIf="message.sender_id !== currentUserId || message.is_system" 
-              class="text-xs font-semibold mb-1"
-              [class.text-gray-600]="!message.is_system"
-              [class.text-yellow-700]="message.is_system"
-            >
-              {{ message.is_system ? '⚠️ Sistema' : getSenderName(message.sender) }}
-            </div>
-            
-            <!-- Message content -->
-            <div class="text-sm">{{ message.content }}</div>
-            
-            <!-- Timestamp -->
-            <div 
-              class="text-xs mt-1 opacity-75"
-              [class.text-gray-300]="message.sender_id === currentUserId && !message.is_system"
-              [class.text-gray-500]="message.sender_id !== currentUserId && !message.is_system"
-              [class.text-yellow-600]="message.is_system"
-            >
-              {{ formatTimestamp(message.created_at) }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Loading indicator -->
-        <div *ngIf="isLoading" class="text-center py-4">
-          <div class="inline-flex items-center space-x-2">
-            <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-gray-500">Cargando mensajes...</span>
-          </div>
-        </div>
-
-        <!-- Empty state -->
-        <div *ngIf="messages.length === 0 && !isLoading" class="text-center py-8">
-          <div class="text-gray-500">
-            <div class="text-4xl mb-2">💬</div>
-            <p>No hay mensajes aún</p>
-            <p class="text-sm">¡Sé el primero en escribir algo!</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Message Input -->
-      <div class="p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
-        <form [formGroup]="messageForm" (ngSubmit)="sendMessage()" class="flex space-x-2">
-          <input
-            type="text"
-            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Escribe tu mensaje..."
-            formControlName="content"
-            [disabled]="isBanned || isSending"
-            maxlength="500"
-          />
-          <button
-            type="submit"
-            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-            [disabled]="messageForm.invalid || isBanned || isSending"
-          >
-            <span *ngIf="!isSending">Enviar</span>
-            <span *ngIf="isSending">...</span>
-          </button>
-        </form>
-        
-        <!-- Ban message -->
-        <div *ngIf="isBanned" class="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">
-          ⛔ No puedes enviar mensajes porque has sido suspendido de este chat.
-        </div>
-      </div>
-    </div>
-
-    <!-- Moderation Modal -->
-    <app-moderation-modal
-      [isOpen]="showModerationModal"
-      [user]="selectedUserToWarn"
-      [contextType]="contextType"
-      [contextId]="contextId"
-      (close)="closeModerationModal()"
-      (warningIssued)="onWarningIssued($event)"
-    ></app-moderation-modal>
-  `,
+  templateUrl: `./chat-room.component.html`,
   styleUrls: ['./chat-room.component.scss']
 })
 export class ChatRoomComponent implements OnInit, OnDestroy {
@@ -188,7 +59,8 @@ export class ChatRoomComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private chatService: ChatService,
-    private authService: AuthService
+    private authService: AuthService,
+    private activitiesService: ActivitiesService
   ) {
     this.messageForm = this.fb.group({
       content: ['', [Validators.required, Validators.maxLength(500)]]
@@ -199,10 +71,28 @@ export class ChatRoomComponent implements OnInit, OnDestroy {
     // Get current user
     this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.currentUserId = user?.id || null;
+      // Primero, por rol global
       this.canModerate = user?.role === 'ORGANIZER' || user?.role === 'SUPERADMIN';
+      
       if (user && this.contextId) {
         this.loadUserModerationStatus();
         this.initializeChat();
+
+        // Si es chat de actividad, comprobar también el rol en la actividad
+        if (this.contextType === 'ACTIVITY') {
+          this.activitiesService.getUserRoleInActivity(this.contextId)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: (response) => {
+                if (response.role === 'organizer') {
+                  this.canModerate = true;
+                }
+              },
+              error: (error) => {
+                console.error('Error loading user activity role:', error);
+              }
+            });
+        }
       }
     });
   }

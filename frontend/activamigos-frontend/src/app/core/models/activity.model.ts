@@ -9,6 +9,7 @@ export interface Activity {
   created_at: string;
   participant_count: number;
   is_participant: boolean;
+  attendance_confirmed?: boolean;
 }
 
 export interface ActivityParticipant {
@@ -19,6 +20,10 @@ export interface ActivityParticipant {
   profile_image?: string;
   is_organizer: boolean;
   joined_at: string;
+  attendance_status: 'pending' | 'confirmed' | 'declined' | 'attended' | 'absent';
+  attendance_confirmed_at?: string;
+  semaphore_color: 'grey' | 'light_green' | 'dark_green' | 'yellow' | 'red';
+  warning_count: number;
 }
 
 export interface ActivityDetails extends Activity {

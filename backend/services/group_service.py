@@ -4,7 +4,8 @@ from sqlalchemy.exc import IntegrityError
 from models.user.user import User, db
 from models.group.group import Group
 from models.associations.group_associations import group_members
-# RulesService import moved to avoid circular import
+from services.user_service import get_user_status_for_context
+
 from models.group.group_schema import (
     GroupCreateSchema, 
     GroupUpdateSchema, 
@@ -268,14 +269,12 @@ def leave_group(group_id):
 @blp.route("/<int:group_id>/details", methods=["GET"])
 @blp.response(200, GroupDetailsResponseSchema)
 def get_group_details(group_id):
-    """
-    Get full group details including members
-    """
+    """Get group details with members including semaphore status"""
     current_user = get_current_user()
     group = Group.query.get_or_404(group_id)
-
-    # Cargar miembros con información extendida
-    members = []
+    
+    # Load members with semaphore information
+    members_data = []
     for user in group.members:
         link = db.session.execute(
             group_members.select().where(
@@ -283,25 +282,30 @@ def get_group_details(group_id):
                 (group_members.c.group_id == group.id)
             )
         ).first()
-
-        members.append({
+        
+        # Get user semaphore status for this group
+        user_status = get_user_status_for_context(user.id, group_id, 'GROUP')
+        
+        members_data.append({
             'id': user.id,
             'username': user.username,
             'first_name': user.first_name,
             'last_name': user.last_name,
             'profile_image': user.profile_image,
             'is_admin': user.id == group.created_by,
-            'joined_at': link.joined_at if link else None
+            'joined_at': link.joined_at.isoformat() if link and link.joined_at else None,
+            'semaphore_color': user_status['overall_semaphore_color'],
+            'warning_count': user_status['total_warnings']
         })
-
+    
     return {
         'id': group.id,
         'name': group.name,
         'description': group.description,
         'rules': group.rules,
         'created_by': group.created_by,
-        'created_at': group.created_at,
+        'created_at': group.created_at.isoformat(),
         'member_count': group.member_count,
         'is_member': group.is_member(current_user.id),
-        'members': members
+        'members': members_data
     }

@@ -152,7 +152,9 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
           last_name: '',
           profile_image: '',
           is_admin: true,
-          joined_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+          joined_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          warning_count: 0,
+          semaphore_color: 'light_green'
         },
         {
           id: 2,
@@ -161,7 +163,9 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
           last_name: '',
           profile_image: '',
           is_admin: false,
-          joined_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+          joined_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          warning_count: 0,
+          semaphore_color: 'light_green'
         },
         {
           id: 3,
@@ -170,7 +174,9 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
           last_name: '',
           profile_image: '',
           is_admin: false,
-          joined_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+          joined_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          warning_count: 1,
+          semaphore_color: 'yellow'
         },
         {
           id: 4,
@@ -179,7 +185,9 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
           last_name: '',
           profile_image: '',
           is_admin: false,
-          joined_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+          joined_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          warning_count: 2,
+          semaphore_color: 'red'
         },
         {
           id: 5,
@@ -188,7 +196,9 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
           last_name: '',
           profile_image: '',
           is_admin: false,
-          joined_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+          joined_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          warning_count: 0,
+          semaphore_color: 'light_green'
         }
       ]
     };

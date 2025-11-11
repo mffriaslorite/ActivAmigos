@@ -21,6 +21,22 @@ class Activity(db.Model):
                                  backref=db.backref('joined_activities', lazy='dynamic'),
                                  lazy='dynamic')
 
+    def __init__(self, **kwargs):
+        # Ensure date is timezone-aware when creating the activity
+        if 'date' in kwargs and kwargs['date'] is not None:
+            activity_date = kwargs['date']
+            if activity_date.tzinfo is None:
+                # If naive datetime, assume it's in UTC
+                kwargs['date'] = activity_date.replace(tzinfo=timezone.utc)
+        super().__init__(**kwargs)
+
+    @property
+    def date_aware(self):
+        """Get the date as timezone-aware datetime"""
+        if self.date.tzinfo is None:
+            return self.date.replace(tzinfo=timezone.utc)
+        return self.date
+
     def __repr__(self):
         return f'<Activity {self.title}>'
     

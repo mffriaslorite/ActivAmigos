@@ -17,6 +17,8 @@ export interface GroupMember {
   profile_image?: string;
   is_admin: boolean;
   joined_at: string;
+  semaphore_color: 'grey' | 'light_green' | 'dark_green' | 'yellow' | 'red';
+  warning_count: number;
 }
 
 export interface GroupDetails extends Group {

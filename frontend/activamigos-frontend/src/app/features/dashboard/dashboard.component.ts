@@ -204,9 +204,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   formatActivityDate(dateString: string): string {
-    const date = new Date(dateString);
+    // Asegurar que la fecha se interprete correctamente
+    let date: Date;
+    
+    if (dateString.endsWith('Z') || dateString.includes('+')) {
+      // Ya tiene información de zona horaria
+      date = new Date(dateString);
+    } else {
+      // Asumir que es UTC y añadir 'Z'
+      date = new Date(dateString + (dateString.includes('T') ? 'Z' : 'T00:00:00Z'));
+    }
+    
     return date.toLocaleDateString('es-ES', {
       weekday: 'short',
+      year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -236,15 +247,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          // Show modal for the first pending activity
-          if (response.activities.length > 0) {
-            const firstPending = response.activities[0];
+          // Find first activity that should show modal
+          const activityToShow = response.activities.find(item => 
+            this.attendanceService.shouldShowAttendanceModal(
+              item.activity.id, 
+              item.activity.date
+            )
+          );
+          
+          if (activityToShow) {
             this.activityToConfirm = {
-              id: firstPending.activity.id,
-              title: firstPending.activity.title,
-              description: firstPending.activity.description,
-              date: firstPending.activity.date,
-              location: firstPending.activity.location
+              id: activityToShow.activity.id,
+              title: activityToShow.activity.title,
+              description: activityToShow.activity.description,
+              date: activityToShow.activity.date,
+              location: activityToShow.activity.location
             };
             this.showAttendanceModal = true;
           }
@@ -256,14 +273,47 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onAttendanceModalClose() {
+    // Set cooldown when user postpones decision
+    if (this.activityToConfirm) {
+      this.attendanceService.setCooldown(
+        this.activityToConfirm.id, 
+        this.activityToConfirm.date
+      );
+    }
+    
     this.showAttendanceModal = false;
     this.activityToConfirm = null;
   }
 
+  // Update method to get activity confirmation status
+  getActivityStatus(activity: Activity): 'confirmed' | 'pending' | 'not_participant' {
+    if (!activity.is_participant) {
+      return 'not_participant';
+    }
+    
+    // Use the actual attendance_confirmed field from the backend
+    return activity.attendance_confirmed ? 'confirmed' : 'pending';
+  }
+
   onAttendanceConfirmed(response: any) {
     console.log('Attendance confirmed:', response);
-    // Refresh pending activities
-    this.attendanceService.refreshPendingActivities();
-    // You might want to show a success message here
+    // Refresh activities to update status
+    this.loadTodaysActivities();
+    this.loadUserData();
+    
+    this.showAttendanceModal = false;
+    this.activityToConfirm = null;
+  }
+
+  // New method to open attendance modal for a specific activity
+  openAttendanceModal(activity: Activity) {
+    this.activityToConfirm = {
+      id: activity.id,
+      title: activity.title,
+      description: activity.description,
+      date: activity.date,
+      location: activity.location
+    };
+    this.showAttendanceModal = true;
   }
 }
