@@ -27,6 +27,7 @@ export interface ActivityParticipant {
 }
 
 export interface ActivityDetails extends Activity {
+  attendance_status?: 'confirmed' | 'declined' | 'pending' | 'attended' | 'absent' | 'not_participant';
   participants: ActivityParticipant[];
 }
 

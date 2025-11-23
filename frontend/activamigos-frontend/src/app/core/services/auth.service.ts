@@ -192,17 +192,38 @@ export class AuthService {
   }
 
   /**
-   * ✅ Handle HTTP errors
+   * ✅ Handle HTTP errors con mensajes amigables para el usuario
    */
   private handleError(error: HttpErrorResponse): Observable<never> {
-    let errorMessage = 'Ha ocurrido un error inesperado';
+    let errorMessage = 'Algo no ha ido bien, inténtalo de nuevo'; // Mensaje por defecto suave
+    
     if (error.error instanceof ErrorEvent) {
-      errorMessage = `Error: ${error.error.message}`;
-    } else if (error.error && error.error.message) {
-      errorMessage = error.error.message;
+      // Error del lado del cliente
+      console.error('Error del cliente:', error.error.message);
     } else {
-      errorMessage = `Error del servidor: ${error.status}`;
+      // Error del backend
+      switch (error.status) {
+        case 400: // Bad Request
+          errorMessage = 'Faltan datos o no son correctos';
+          break;
+        case 401: // Unauthorized
+          errorMessage = 'El nombre o la contraseña no coinciden';
+          break;
+        case 403: // Forbidden
+          errorMessage = 'No tienes permiso para entrar aquí';
+          break;
+        case 404: // Not Found
+          errorMessage = 'No hemos encontrado lo que buscas';
+          break;
+        case 409: // Conflict
+          errorMessage = 'Este nombre de usuario ya está cogido';
+          break;
+        case 500:
+          errorMessage = 'Tenemos un problema técnico, avisa a un monitor';
+          break;
+      }
     }
+    
     return throwError(() => new Error(errorMessage));
   }
 

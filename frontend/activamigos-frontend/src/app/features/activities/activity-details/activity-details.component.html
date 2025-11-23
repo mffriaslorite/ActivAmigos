@@ -1,240 +1,222 @@
 <div class="min-h-screen bg-gray-50 flex flex-col">
-  <!-- Header -->
-  <header class="bg-white flex items-center justify-between px-6 py-4 border-b border-gray-200 shadow-sm">
-    <div class="flex items-center space-x-4">
-      <button 
-        class="text-2xl p-2 hover:bg-gray-100 rounded-full transition-colors"
-        (click)="goBack()"
-        aria-label="Volver a actividades"
-      >
-        ←
+  
+  <div class="relative bg-blue-600 text-white pb-6 pt-4 px-4 shadow-md">
+    <div class="max-w-4xl mx-auto">
+      <button (click)="goBack()" class="mb-4 flex items-center gap-2 hover:bg-white/20 px-3 py-1 rounded-full transition-colors w-fit">
+        <span>←</span> <span>Volver</span>
       </button>
-      <h1 class="text-xl font-bold text-gray-900">
-        {{ activityDetails ? activityDetails.title : 'Actividad' }}
-      </h1>
-    </div>
-  </header>
 
-  <!-- Main Content -->
-  <main class="flex-1 px-6 py-6 pb-24 overflow-y-auto">
-    <!-- Loading State -->
-    <div *ngIf="isLoading" class="text-center py-12">
-      <div class="animate-spin inline-block w-8 h-8 border-[3px] border-current border-t-transparent text-blue-600 rounded-full" role="status" aria-label="Cargando">
-        <span class="sr-only">Cargando...</span>
+      <div *ngIf="isLoading" class="animate-pulse space-y-3">
+        <div class="h-8 bg-white/30 rounded w-2/3"></div>
+        <div class="h-4 bg-white/30 rounded w-1/3"></div>
       </div>
-      <p class="mt-4 text-gray-600">Cargando detalles de la actividad...</p>
-    </div>
 
-    <!-- Error Message -->
-    <div *ngIf="errorMessage && !isLoading" class="mb-6">
-      <div class="bg-red-50 border border-red-200 rounded-xl p-4">
-        <div class="flex items-center">
-          <span class="text-red-500 mr-2">⚠️</span>
-          <p class="text-red-700 text-sm">{{ errorMessage }}</p>
-          <button 
-            (click)="loadActivityDetails(activityDetails?.id || 0)" 
-            class="ml-auto text-red-600 text-sm underline hover:text-red-800"
-          >
-            Reintentar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Activity Details Content -->
-    <div *ngIf="activityDetails && !isLoading" class="space-y-6">
-      <!-- Activity Header -->
-      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <div class="flex items-start space-x-4">
-          <!-- Activity Icon -->
-          <div [class]="'w-16 h-16 rounded-xl flex items-center justify-center ' + getIconBackground()">
-            <span class="text-3xl" role="img" [attr.aria-label]="'Icono de la actividad ' + activityDetails.title">
-              {{ getActivityIcon() }}
-            </span>
-          </div>
-          
-          <!-- Activity Info -->
-          <div class="flex-1 min-w-0">
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">
-              {{ activityDetails.title }}
-            </h2>
-            
-            <div class="flex items-center space-x-4 text-sm text-gray-600 mb-3">
-              <span class="flex items-center">
-                <span class="mr-1" role="img" aria-label="Participantes">👥</span>
-                {{ activityDetails.participant_count }} {{ activityDetails.participant_count === 1 ? 'participante' : 'participantes' }}
-              </span>
-              <span class="flex items-center" *ngIf="activityDetails.location">
-                <span class="mr-1" role="img" aria-label="Ubicación">📍</span>
-                {{ activityDetails.location }}
-              </span>
-            </div>
-
-            <div class="flex items-center space-x-2 text-sm text-gray-600 mb-3">
-              <span class="mr-1" role="img" aria-label="Fecha">🕐</span>
-              <span class="font-medium">{{ formatDate(activityDetails.date) }}</span>
-            </div>
-            
-            <p *ngIf="activityDetails.description" class="text-gray-700 leading-relaxed">
-              {{ activityDetails.description }}
-            </p>
+      <div *ngIf="!isLoading && activityDetails" class="animate-fade-in">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+             <div class="flex items-center gap-2 mb-2">
+                <span class="text-3xl bg-white/20 p-2 rounded-xl">{{ getActivityIcon() }}</span>
+             </div>
+             <h1 class="text-2xl font-bold leading-tight">{{ activityDetails.title }}</h1>
+             <p class="text-blue-100 mt-1 flex items-center gap-2">
+               📅 {{ formatDate(activityDetails.date) }}
+             </p>
+             <p *ngIf="activityDetails.location" class="text-blue-100 flex items-center gap-2 text-sm mt-1">
+               📍 {{ activityDetails.location }}
+             </p>
           </div>
         </div>
-
-        <!-- Join/Leave Button -->
-        <div class="mt-6 pt-4 border-t border-gray-200 space-y-3">
-          <!-- Attendance Confirmation Button (if needed) -->
-          <button 
-            *ngIf="needsAttendanceConfirmation"
-            class="w-full py-3 px-4 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
-            (click)="openAttendanceConfirmation()"
-          >
-            <span>⏳</span>
-            <span>Confirmar Asistencia</span>
-          </button>
-          
-          <!-- Regular Join/Leave Button -->
-          <button 
-            [class]="activityDetails.is_participant 
-              ? 'w-full py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors'
-              : 'w-full py-3 px-4 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors'"
-            (click)="joinActivity()"
-          >
-            {{ activityDetails.is_participant ? 'Salir de la Actividad' : 'Participar en la Actividad' }}
-          </button>
-        </div>
       </div>
+    </div>
+  </div>
 
-      <!-- Participants Section -->
-      <section class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <span class="mr-2" role="img" aria-label="Participantes">👥</span>
-          Participantes
-        </h3>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div 
-            *ngFor="let participant of activityDetails.participants" 
-            class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <!-- Participant Avatar -->
-            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
-              {{ getParticipantInitials(participant) }}
-            </div>
-            
-            <!-- Participant Info -->
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center space-x-2">
-                <p class="font-medium text-gray-900 truncate">
-                  {{ getParticipantDisplayName(participant) }}
-                </p>
-                <span *ngIf="participant.is_organizer" class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                  Organizador
-                </span>
-              </div>
-              <p class="text-xs text-gray-500 truncate">
-                Se unió {{ formatJoinedDate(participant.joined_at) }}
-              </p>
+  <div *ngIf="feedbackMessage" 
+       class="mx-4 mt-4 p-4 rounded-xl flex items-center gap-3 shadow-sm animate-fade-in max-w-4xl lg:mx-auto w-full"
+       [ngClass]="feedbackType === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+    <span class="text-xl">{{ feedbackType === 'success' ? '✅' : '⚠️' }}</span>
+    <p class="font-medium">{{ feedbackMessage }}</p>
+  </div>
+
+  <main class="flex-1 px-4 py-6 max-w-4xl w-full mx-auto space-y-6" *ngIf="!isLoading && activityDetails">
+
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+       <div *ngIf="!activityDetails.is_participant" class="text-center">
+          <p class="text-gray-600 mb-3">¿Te apetece ir a esta actividad?</p>
+          <button (click)="joinActivity()" 
+                  [disabled]="isActionLoading"
+                  class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all flex justify-center items-center gap-2">
+             <span *ngIf="isActionLoading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+             <span>¡Me apunto! 🙋‍♂️</span>
+          </button>
+       </div>
+
+       <div *ngIf="activityDetails.is_participant" class="flex flex-col gap-3">
+          
+          <div class="flex items-center justify-between p-3 rounded-lg border transition-colors"
+            [ngClass]="{
+              'bg-green-50 border-green-200': activityDetails.attendance_status === 'confirmed',
+              'bg-gray-50 border-gray-200': activityDetails.attendance_status === 'declined',
+              'bg-yellow-50 border-yellow-200': activityDetails.attendance_status === 'pending'
+            }">
+             
+             <div class="flex items-center gap-2">
+               <span *ngIf="activityDetails.attendance_status === 'confirmed'" class="text-green-700 font-bold">
+                 ✅ Todo listo, ¡nos vemos!
+               </span>
+               <span *ngIf="activityDetails.attendance_status === 'declined' || activityDetails.attendance_status === 'absent'" class="text-gray-600 font-bold">
+                 ❌ Has dicho que no asistirás
+               </span>
+               <span *ngIf="activityDetails.attendance_status === 'pending'" class="text-yellow-700 font-bold">
+                 ⏳ Tienes que confirmar
+               </span>
+             </div>
+             
+             <button *ngIf="activityDetails.attendance_status === 'pending'"
+                     (click)="openAttendanceConfirmation()"
+                     class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-lg text-sm font-bold border border-yellow-200 animate-pulse hover:bg-yellow-200 transition-colors">
+                ❓ Responder
+             </button>
+
+             <button *ngIf="activityDetails.attendance_status === 'confirmed' || activityDetails.attendance_status === 'declined' || activityDetails.attendance_status === 'absent'"
+                     (click)="openAttendanceConfirmation()"
+                     class="text-xs text-blue-600 hover:text-blue-800 underline font-medium ml-2">
+                Cambiar respuesta
+             </button>
+
+          </div>
+          
+          <button (click)="leaveActivity()" 
+                  [disabled]="isActionLoading"
+                  class="text-red-500 text-sm font-medium hover:text-red-700 py-2 text-center w-full hover:bg-red-50 rounded-lg transition-colors">
+              {{ isActionLoading ? 'Procesando...' : 'Darme de baja de la actividad' }}
+          </button>
+       </div>
+    </div>
+
+    <div class="flex border-b border-gray-200 mb-4 sticky top-0 bg-gray-50 z-10 pt-2">
+      <button (click)="setTab('info')" 
+              class="flex-1 pb-3 font-medium text-sm transition-colors border-b-2"
+              [ngClass]="activeTab === 'info' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'">
+        Información y Participantes
+      </button>
+      <button (click)="setTab('chat')" 
+              class="flex-1 pb-3 font-medium text-sm transition-colors border-b-2"
+              [ngClass]="activeTab === 'chat' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'">
+        Chat
+      </button>
+    </div>
+
+    <div *ngIf="activeTab === 'info'" class="space-y-6 animate-fade-in">
+       
+       <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+         <h3 class="font-bold text-gray-800 mb-2 text-lg">📝 Descripción</h3>
+         <p class="text-gray-600 leading-relaxed">{{ activityDetails.description || 'Sin descripción detallada.' }}</p>
+       </div>
+
+       <div *ngIf="activityRules.length > 0 || parseRules().length > 0" class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
+         <h3 class="font-bold text-blue-900 mb-4 text-lg flex items-center gap-2">
+            <span>📋</span> Normas de convivencia
+         </h3>
+         
+         <ul class="space-y-3">
+           <li *ngFor="let rule of activityRules" class="flex items-start gap-3 bg-white/60 p-3 rounded-xl border border-blue-100">
+             <span class="text-xl">{{ rule.icon || '🔹' }}</span>
+             <div>
+                <p class="font-bold text-blue-900 text-sm">{{ rule.title }}</p>
+                <p class="text-blue-700 text-xs mt-1">{{ rule.description }}</p>
+             </div>
+           </li>
+
+           <ng-container *ngIf="activityRules.length === 0">
+               <li *ngFor="let rule of parseRules()" class="flex items-start gap-2 text-blue-800 px-2">
+                 <span class="mt-1 text-blue-500 font-bold">•</span>
+                 <span>{{ rule }}</span>
+               </li>
+           </ng-container>
+         </ul>
+       </div>
+       
+       <!-- <button *ngIf="canManageRules" (click)="showRulesSelector = true" class="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-medium hover:border-blue-300 hover:text-blue-500 transition-colors flex items-center justify-center gap-2">
+         <span>⚙️</span> Editar Normas (Solo Admin)
+       </button> -->
+
+       <div>
+         <h3 class="font-bold text-gray-800 mb-3 text-lg flex items-center justify-between">
+            <span>👥 Participantes</span>
+            <span class="text-sm bg-gray-100 px-2 py-1 rounded-full">{{ activityDetails.participant_count }} personas</span>
+         </h3>
+         
+         <div class="space-y-3">
+            <div *ngFor="let participant of activityDetails.participants" 
+                 class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
               
-              <!-- Attendance Status -->
-              <div class="mt-1">
-                <span 
-                  class="text-xs px-2 py-1 rounded-full font-medium"
-                  [ngClass]="{
-                    'bg-yellow-100 text-yellow-800': participant.attendance_status === 'pending',
-                    'bg-green-100 text-green-800': participant.attendance_status === 'confirmed',
-                    'bg-red-100 text-red-800': participant.attendance_status === 'declined',
-                    'bg-blue-100 text-blue-800': participant.attendance_status === 'attended',
-                    'bg-gray-100 text-gray-800': participant.attendance_status === 'absent'
-                  }"
-                >
-                  {{ getAttendanceStatusText(participant.attendance_status) }}
-                </span>
+              <div class="flex items-center gap-3">
+                 <app-semaphore-badge [color]="participant.semaphore_color" [warningCount]="participant.warning_count" [showText]="false"></app-semaphore-badge>
+                 
+                 <div>
+                   <p class="font-bold text-gray-800">{{ participant.first_name || participant.username }}</p>
+                   <p class="text-xs text-gray-500" *ngIf="participant.is_organizer">👑 Organizador</p>
+                 </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                 <span class="px-2 py-1 rounded text-xs font-bold flex items-center gap-1"
+                       [ngClass]="getParticipantStatusLabel(participant.attendance_status).class">
+                   {{ getParticipantStatusLabel(participant.attendance_status).icon }}
+                   {{ getParticipantStatusLabel(participant.attendance_status).text }}
+                 </span>
+                 
+                 <button *ngIf="canModerate && participant.id !== currentUserId" 
+                         (click)="openModerationModal(participant)"
+                         class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                         aria-label="Reportar usuario">
+                    ⚠️
+                 </button>
               </div>
             </div>
             
-            <!-- Dynamic Semaphore Badge -->
-            <app-semaphore-badge
-              [color]="participant.semaphore_color"
-              [warningCount]="participant.warning_count"
-              [showText]="false"
-            ></app-semaphore-badge>
-            
-            <!-- Moderation Button (for organizers/admins) -->
-            <button
-              *ngIf="canModerate && currentUserId !== participant.id"
-              class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200 transition-colors"
-              (click)="openModerationModal(participant)"
-              title="Moderar usuario"
-            >
-              ⚠️
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- Rules Section -->
-      <section *ngIf="activityDetails.rules" class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <span class="mr-2" role="img" aria-label="Reglas">📋</span>
-          Reglas de la Actividad
-        </h3>
-        
-        <div class="space-y-2">
-          <div *ngFor="let rule of parseRules(); let i = index" class="flex items-start space-x-3">
-            <span class="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">
-              {{ i + 1 }}
-            </span>
-            <p class="text-gray-700 leading-relaxed">{{ rule }}</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Chat Section -->
-      <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <!-- Chat Component -->
-        <div *ngIf="showChat && activityDetails && currentUserId" class="h-96">
-          <app-chat-room 
-            [contextType]="'ACTIVITY'"
-            [contextId]="activityDetails.id">
-          </app-chat-room>
-        </div>
-        
-        <!-- Loading/Error States -->
-        <div *ngIf="showChat && (!activityDetails || !currentUserId)" class="p-8 text-center text-gray-500">
-          <div class="text-4xl mb-2">💬</div>
-          <p>Preparando el chat...</p>
-        </div>
-        
-        <!-- Collapsed State -->
-        <div *ngIf="!showChat" class="p-4 text-center text-gray-500">
-          <p class="text-sm">Chat minimizado - Haz clic en la flecha para expandir</p>
-        </div>
-      </section>
+            <div *ngIf="activityDetails.participants.length === 0" class="text-center text-gray-500 py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+              Aún no hay nadie apuntado. ¡Sé el primero!
+            </div>
+         </div>
+       </div>
     </div>
+
+    <div *ngIf="activeTab === 'chat'" class="h-[600px] animate-fade-in flex flex-col">
+       <app-chat-room 
+          *ngIf="chatRoom" 
+          [contextType]="'ACTIVITY'" 
+          [contextId]="chatRoom.id"
+          class="flex-1">
+       </app-chat-room>
+    </div>
+
   </main>
 </div>
 
-<!-- Moderation Modal -->
-<app-moderation-modal
-  [isOpen]="showModerationModal"
-  [user]="selectedUserToWarn"
-  [contextType]="'ACTIVITY'"
-  [contextId]="activityDetails?.id || 0"
-  (close)="closeModerationModal()"
-  (warningIssued)="onWarningIssued($event)"
-></app-moderation-modal>
-
-<!-- Attendance Confirmation Modal -->
 <app-attendance-modal
   [isOpen]="showAttendanceConfirmationModal"
-  [activity]="activityDetails ? {
-    id: activityDetails.id,
-    title: activityDetails.title,
-    description: activityDetails.description,
-    date: activityDetails.date,
-    location: activityDetails.location
-  } : null"
+  [activity]="activityDetails"
   (close)="closeAttendanceConfirmation()"
-  (confirmed)="onAttendanceConfirmed($event)"
-></app-attendance-modal>
+  (confirmed)="onAttendanceConfirmed($event)">
+</app-attendance-modal>
+
+<app-moderation-modal
+  *ngIf="showModerationModal"
+  [isOpen]="showModerationModal"
+  [user]="selectedUserToWarn"
+  (close)="closeModerationModal()"
+  (warningIssued)="onWarningIssued($event)">
+</app-moderation-modal>
+
+<!-- <div *ngIf="showRulesSelector" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <app-rules-selector
+          [contextType]="'ACTIVITY'"
+          [contextId]="activityDetails ? activityDetails.id : 0"
+          [preselectedRuleIds]="getRuleIds()"
+          (cancel)="showRulesSelector = false"
+          (save)="onRulesSaved($event)">
+        </app-rules-selector>
+    </div>
+</div> -->

@@ -1,26 +1,48 @@
 .nav-item {
-    min-width: 60px;
-    color: #6b7280;
-    transition: color 0.2s ease-in-out;
+    min-width: 64px; /* Un poco más ancho para facilitar el toque */
+    color: #9CA3AF; /* Gris medio */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 16px; /* Bordes muy redondeados */
+    margin: 0 4px;
+    
+    /* Estado normal */
+    span:first-child {
+        transition: transform 0.2s;
+    }
 }
+
 .nav-item:hover {
-    color: #3b82f6;
-    background-color: #eff6ff;
+    color: #3B82F6;
+    background-color: #F3F4F6;
 }
+
+/* Estado ACTIVO: Más visual y evidente */
 .nav-item.active {
-    color: #3b82f6;
-    background-color: #eff6ff;
+    color: #2563EB; /* Azul más fuerte */
+    background-color: #DBEAFE; /* Fondo azul muy claro */
+    font-weight: 700;
+    
+    /* Pequeño rebote al activarse para feedback visual */
+    animation: activateItem 0.3s ease-out;
+
+    span:first-child {
+        transform: scale(1.1);
+    }
 }
-.nav-item.active span:first-child {
-    transform: scale(1.1);
+
+@keyframes activateItem {
+    0% { transform: scale(0.95); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
-/* Safe area for devices with home indicators */
+
+/* Safe area & Desktop override */
 .safe-area-bottom {
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.05); /* Sombra suave para separar del contenido */
 }
-/* Desktop responsive behavior */
+
 @media (min-width: 1024px) {
-    /* Hide mobile navigation on desktop */
     nav {
         display: none;
     }

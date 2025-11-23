@@ -56,6 +56,7 @@ class ActivityResponseSchema(Schema):
     participant_count = fields.Int(dump_only=True)
     is_participant = fields.Bool(dump_only=True)
     attendance_confirmed = fields.Bool(dump_only=True)
+    attendance_status = fields.Str(dump_only=True, allow_none=True)
 
 class ActivityListSchema(Schema):
     id = fields.Int()
@@ -67,6 +68,7 @@ class ActivityListSchema(Schema):
     is_participant = fields.Bool()
     attendance_confirmed = fields.Bool()
     created_at = fields.DateTime()
+    attendance_status = fields.Str(allow_none=True)
 
 class JoinLeaveActivityResponseSchema(Schema):
     message = fields.Str()
@@ -99,3 +101,4 @@ class ActivityDetailsResponseSchema(Schema):
     is_participant = fields.Bool()
     attendance_confirmed = fields.Bool()
     participants = fields.List(fields.Nested(ActivityParticipantSchema))
+    attendance_status = fields.Str(allow_none=True)

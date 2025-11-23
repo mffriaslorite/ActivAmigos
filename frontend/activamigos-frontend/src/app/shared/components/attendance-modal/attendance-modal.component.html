@@ -1,108 +1,89 @@
 <div 
   *ngIf="isOpen"
-  class="fixed inset-0 bg-gray-300 bg-opacity-50 flex items-center justify-center z-50 p-4"
+  class="fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-50 p-4 transition-opacity animate-fade-in"
   (click)="onBackdropClick($event)"
 >
   <div 
-    class="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto"
+    class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden transform transition-all"
     (click)="$event.stopPropagation()"
   >
-    <!-- Header -->
-    <div class="flex items-center justify-between p-6 border-b border-gray-200">
-      <h3 class="text-lg font-semibold text-gray-900">
-        📅 Confirmar Asistencia
-      </h3>
-      <button
-        type="button"
-        class="text-gray-400 hover:text-gray-600 transition-colors"
-        (click)="closeModal()"
-        aria-label="Cerrar"
-      >
-        <span class="text-2xl">×</span>
-      </button>
+    
+    <div *ngIf="showSuccess" class="p-10 text-center animate-scale-in">
+      <div class="text-6xl mb-4 animate-bounce">{{ successIcon }}</div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">¡Confirmado!</h3>
+      <p class="text-lg font-medium" [ngClass]="successColor">
+        {{ successMessage }}
+      </p>
     </div>
 
-    <!-- Content -->
-    <div class="p-6">
-      <!-- Activity Info -->
-      <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <h4 class="font-semibold text-blue-900 mb-2">{{ activity?.title }}</h4>
-        <div class="space-y-2 text-sm text-blue-800">
-          <div class="flex items-center space-x-2">
-            <span>📅</span>
-            <span>{{ formatActivityDate(activity?.date) }}</span>
-          </div>
-          <div *ngIf="activity?.location" class="flex items-center space-x-2">
-            <span>📍</span>
-            <span>{{ activity?.location }}</span>
-          </div>
-        </div>
-        <p *ngIf="activity?.description" class="text-sm text-blue-700 mt-3">
-          {{ activity?.description }}
-        </p>
+    <div *ngIf="!showSuccess">
+      
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <h3 class="text-lg font-bold text-gray-800">Confirmar asistencia</h3>
+        <button
+          type="button"
+          class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+          (click)="closeModal()"
+          [disabled]="isSubmitting"
+        >
+          ✕
+        </button>
       </div>
 
-      <!-- Confirmation Question -->
-      <div class="mb-6 text-center">
-        <div class="text-4xl mb-4">🤔</div>
-        <h4 class="text-lg font-semibold text-gray-900 mb-2">
-          ¿Vas a asistir a esta actividad?
-        </h4>
-        <p class="text-sm text-gray-600">
-          Confirmar tu asistencia nos ayuda a planificar mejor la actividad.
-        </p>
-      </div>
-
-      <!-- Warning about not confirming -->
-      <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <div class="flex items-start space-x-3">
-          <span class="text-yellow-600 text-lg">⚠️</span>
-          <div class="text-sm">
-            <p class="text-yellow-800 font-medium mb-1">Importante:</p>
-            <p class="text-yellow-700">
-              Si no confirmas tu asistencia antes del plazo límite, perderás 50 puntos automáticamente.
+      <div class="p-6 space-y-6">
+        
+        <div class="bg-blue-50 rounded-xl p-4 border border-blue-100 flex gap-4 items-start">
+          <div class="bg-white p-2 rounded-lg text-2xl shadow-sm">📅</div>
+          <div>
+            <h4 class="font-bold text-blue-900 text-lg leading-tight">{{ activity?.title }}</h4>
+            <p class="text-blue-700 font-medium text-sm mt-1 first-letter:capitalize">
+              {{ formatActivityDate(activity?.date) }}
+            </p>
+            <p *ngIf="activity?.location" class="text-blue-600 text-xs mt-1 flex items-center gap-1">
+              📍 {{ activity?.location }}
             </p>
           </div>
         </div>
-      </div>
 
-      <!-- Action Buttons -->
-      <div class="space-y-3">
+        <div class="text-center">
+          <h4 class="text-xl font-bold text-gray-900">¿Vas a venir?</h4>
+          <p class="text-gray-500 text-sm mt-1">Ayuda a los organizadores confirmando.</p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3">
+          <button
+            type="button"
+            class="relative w-full p-4 bg-green-500 text-white rounded-xl font-bold text-lg shadow-md hover:bg-green-600 active:scale-95 transition-all flex items-center justify-center gap-3"
+            (click)="confirmWillAttend()"
+            [disabled]="isSubmitting"
+          >
+            <span *ngIf="!isSubmitting">✅ ¡Sí, allí estaré!</span>
+            <span *ngIf="isSubmitting" class="flex items-center gap-2">
+              <span class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              Guardando...
+            </span>
+          </button>
+          
+          <button
+            type="button"
+            class="w-full p-4 bg-white text-gray-700 border-2 border-gray-200 rounded-xl font-bold text-lg hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition-all"
+            (click)="confirmWillNotAttend()"
+            [disabled]="isSubmitting"
+          >
+            ❌ No podré ir
+          </button>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-3 text-xs text-gray-500 text-center">
+          💡 Recuerda confirmar antes del evento para mantener tus puntos.
+        </div>
+
+      </div>
+      
+      <div class="px-6 pb-6 text-center">
         <button
           type="button"
-          class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold"
-          (click)="confirmWillAttend()"
-          [disabled]="isSubmitting"
-        >
-          <span *ngIf="!isSubmitting" class="flex items-center justify-center space-x-2">
-            <span>✅</span>
-            <span>Sí, voy a asistir</span>
-          </span>
-          <span *ngIf="isSubmitting" class="flex items-center justify-center">
-            <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-            Confirmando...
-          </span>
-        </button>
-        
-        <button
-          type="button"
-          class="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold"
-          (click)="confirmWillNotAttend()"
-          [disabled]="isSubmitting"
-        >
-          <span *ngIf="!isSubmitting" class="flex items-center justify-center space-x-2">
-            <span>❌</span>
-            <span>No puedo asistir</span>
-          </span>
-          <span *ngIf="isSubmitting" class="flex items-center justify-center">
-            <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-            Procesando...
-          </span>
-        </button>
-        
-        <button
-          type="button"
-          class="w-full px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+          class="text-gray-400 font-medium text-sm hover:text-gray-600 underline decoration-dotted"
           (click)="postponeDecision()"
           [disabled]="isSubmitting"
         >
@@ -110,12 +91,6 @@
         </button>
       </div>
 
-      <!-- Additional Info -->
-      <div class="mt-6 text-center">
-        <p class="text-xs text-gray-500">
-          Puedes cambiar tu confirmación más tarde si es necesario.
-        </p>
-      </div>
     </div>
   </div>
 </div>

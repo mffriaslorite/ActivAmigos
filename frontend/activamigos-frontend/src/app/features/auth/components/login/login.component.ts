@@ -15,8 +15,11 @@ import { PasswordHint } from '../../../../core/models/auth.model';
 export class LoginComponent implements OnInit {
   loginForm: FormGroup;
   showPassword = false;
-  showPasswordHint = true; // Siempre mostrar la pista
-  passwordHint: PasswordHint | null = null;
+  
+  errorMessage: string = ''; 
+  isLoading: boolean = false;
+
+  // Variables para pistas
   animalsList: string[] = [];
 
   constructor(
@@ -33,20 +36,17 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit() {
-    // Load animals list for password hints
+    this.route.queryParams.subscribe(params => {
+      if (params['sessionExpired']) {
+        this.errorMessage = 'Tu sesión ha terminado. Por favor, entra otra vez.';
+      }
+    });
+
     this.authService.getAnimalsList().subscribe({
       next: (response) => {
         this.animalsList = response.animals;
-        // Set up the password hint to show animals by default
-        this.passwordHint = {
-          hint_available: true,
-          hint_type: 'ANIMAL_LIST',
-          animals: response.animals
-        };
       },
-      error: (err) => {
-        console.error('Error loading animals list:', err);
-      }
+      error: (err) => console.warn('No se pudieron cargar las pistas de animales', err)
     });
   }
 
@@ -54,24 +54,28 @@ export class LoginComponent implements OnInit {
     this.showPassword = !this.showPassword;
   }
 
-
   onSubmit() {
     if (this.loginForm.invalid) return;
 
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.loginForm.disable();
+
     const credentials = this.loginForm.value;
+
     this.authService.login(credentials).subscribe({
-      next: (res) => {
+      next: () => {
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
-        console.error('Error en login:', err.message);
+        this.isLoading = false;
+        this.loginForm.enable();
+        this.errorMessage = err.message;
       }
     });
   }
 
-
   goBack() {
     this.router.navigate(['/']);
   }
-
 }

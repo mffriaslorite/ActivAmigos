@@ -103,21 +103,37 @@ def create_activity(args):
 @blp.route("", methods=["GET"])
 @blp.response(200, ActivityListSchema(many=True))
 def list_activities():
-    """List all activities"""
+    """List all activities with user specific status"""
     current_user = get_current_user()
     
     activities = Activity.query.order_by(Activity.date.asc()).all()
     
     activities_data = []
     for activity in activities:
-        # Check if user has confirmed attendance
+        is_participant = activity.is_participant(current_user.id)
         attendance_confirmed = False
-        if activity.is_participant(current_user.id):
+        attendance_status = 'not_participant' # Estado por defecto si no participa
+
+        if is_participant:
             attendance = ActivityAttendance.query.filter_by(
                 activity_id=activity.id,
                 user_id=current_user.id
             ).first()
+            
             attendance_confirmed = attendance is not None and attendance.is_confirmed
+            
+            attendance_status = 'pending'  # Default
+            if attendance:
+                if attendance.confirmed_at and attendance.present is None:
+                    attendance_status = 'confirmed'  # Confirmed but not yet marked by organizer
+                elif attendance.confirmed_at and attendance.present is True:
+                    attendance_status = 'attended'  # Confirmed and marked as present
+                elif attendance.confirmed_at and attendance.present is False:
+                # Declined if confirmed before activity date and present is False
+                    if attendance.confirmed_at < activity.date:
+                        attendance_status = 'declined'
+                    else:
+                        attendance_status = 'absent'  # Marked absent by organizer after activity date
         
         activities_data.append({
             'id': activity.id,
@@ -128,6 +144,7 @@ def list_activities():
             'participant_count': activity.participant_count,
             'is_participant': activity.is_participant(current_user.id),
             'attendance_confirmed': attendance_confirmed,
+            'attendance_status': attendance_status,
             'created_at': activity.created_at
         })
     
@@ -148,7 +165,22 @@ def get_activity(activity_id):
             activity_id=activity.id,
             user_id=current_user.id
         ).first()
+        
+
         attendance_confirmed = attendance is not None and attendance.is_confirmed
+        
+        attendance_status = 'pending'  # Default
+        if attendance:
+            if attendance.confirmed_at and attendance.present is None:
+                attendance_status = 'confirmed'  # Confirmed but not yet marked by organizer
+            elif attendance.confirmed_at and attendance.present is True:
+                attendance_status = 'attended'  # Confirmed and marked as present
+            elif attendance.confirmed_at and attendance.present is False:
+            # Declined if confirmed before activity date and present is False
+                if attendance.confirmed_at < activity.date:
+                    attendance_status = 'declined'
+                else:
+                    attendance_status = 'absent'  # Marked absent by organizer after activity date
     
     response_data = {
         'id': activity.id,
@@ -161,7 +193,8 @@ def get_activity(activity_id):
         'created_at': activity.created_at,
         'participant_count': activity.participant_count,
         'is_participant': activity.is_participant(current_user.id),
-        'attendance_confirmed': attendance_confirmed
+        'attendance_confirmed': attendance_confirmed,
+        'attendance_status': attendance_status
     }
     
     return response_data
@@ -208,9 +241,11 @@ def get_activity_details(activity_id):
             elif attendance.confirmed_at and attendance.present is True:
                 attendance_status = 'attended'  # Confirmed and marked as present
             elif attendance.confirmed_at and attendance.present is False:
-                attendance_status = 'absent'  # Confirmed but marked as absent
-            elif attendance.confirmed_at is None and attendance.present is False:
-                attendance_status = 'declined'  # Explicitly declined
+            # Declined if confirmed before activity date and present is False
+                if attendance.confirmed_at < activity.date:
+                    attendance_status = 'declined'
+                else:
+                    attendance_status = 'absent'  # Marked absent by organizer after activity date
         
         # Get user semaphore status
         user_status = get_user_status_for_context(user.id, activity_id, 'ACTIVITY')
@@ -241,7 +276,8 @@ def get_activity_details(activity_id):
         'participant_count': activity.participant_count,
         'is_participant': activity.is_participant(current_user.id),
         'attendance_confirmed': current_user_attendance_confirmed,
-        'participants': participants
+        'participants': participants,
+        'attendance_status': attendance_status
     }
 
 @blp.route("/<int:activity_id>", methods=["PUT"])

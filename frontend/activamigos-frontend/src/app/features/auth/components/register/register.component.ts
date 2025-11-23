@@ -19,8 +19,9 @@ export class RegisterComponent implements OnInit, OnDestroy {
   errorMessage = '';
   isLoading = false;
   showPassword = false;
-  showPasswordHint = true; // Show hint by default on registration
+  
   animalsList: string[] = [];
+  
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -29,8 +30,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
     private router: Router
   ) {
     this.registerForm = this.formBuilder.group({
-      fullName: ['', [Validators.required, Validators.minLength(3)]],
-      username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(20)]],
+      fullName: ['', [Validators.required, Validators.minLength(2)]],
+      username: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(2)]],
       confirmPassword: ['', [Validators.required]]
@@ -38,19 +39,12 @@ export class RegisterComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.authService.isLoading$
+    this.authService.getAnimalsList()
       .pipe(takeUntil(this.destroy$))
-      .subscribe(loading => this.isLoading = loading);
-    
-    // Load animals list for password hints
-    this.authService.getAnimalsList().subscribe({
-      next: (response) => {
-        this.animalsList = response.animals;
-      },
-      error: (err) => {
-        console.error('Error loading animals list:', err);
-      }
-    });
+      .subscribe({
+        next: (response) => this.animalsList = response.animals,
+        error: () => console.warn('No se pudieron cargar las sugerencias de animales')
+      });
   }
 
   ngOnDestroy() {
@@ -59,8 +53,9 @@ export class RegisterComponent implements OnInit, OnDestroy {
   }
 
   passwordMatchValidator(form: FormGroup) {
-    return form.get('password')?.value === form.get('confirmPassword')?.value
-      ? null : { mismatch: true };
+    const password = form.get('password')?.value;
+    const confirm = form.get('confirmPassword')?.value;
+    return password && confirm && password === confirm ? null : { mismatch: true };
   }
 
   togglePasswordVisibility() {
@@ -69,17 +64,27 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
   onSubmit() {
     if (this.registerForm.invalid) {
-      this.errorMessage = 'Por favor, completa correctamente todos los campos.';
+      this.errorMessage = 'Por favor, rellena todos los campos marcados en rojo.';
+      this.registerForm.markAllAsTouched();
       return;
     }
 
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.registerForm.disable();
+
     const formValues = this.registerForm.value;
+    
+    const nameParts = formValues.fullName.trim().split(' ');
+    const firstName = nameParts.shift() || '';
+    const lastName = nameParts.join(' ');
+
     const registerData: RegisterRequest = {
       username: formValues.username.trim(),
       email: formValues.email.trim().toLowerCase(),
       password: formValues.password,
-      first_name: formValues.fullName.split(' ')[0],
-      last_name: formValues.fullName.split(' ')[1] || ''
+      first_name: firstName,
+      last_name: lastName
     };
 
     this.authService.register(registerData)
@@ -89,7 +94,9 @@ export class RegisterComponent implements OnInit, OnDestroy {
           this.router.navigate(['/dashboard']);
         },
         error: (error) => {
-          this.errorMessage = error.message || 'Error al registrar el usuario';
+          this.isLoading = false;
+          this.registerForm.enable();
+          this.errorMessage = error.message;
         }
       });
   }

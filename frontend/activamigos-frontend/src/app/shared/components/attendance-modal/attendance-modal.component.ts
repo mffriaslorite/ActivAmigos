@@ -22,55 +22,64 @@ export class AttendanceModalComponent implements OnInit {
   @Input() activity: ActivityToConfirm | null = null;
 
   @Output() close = new EventEmitter<void>();
-  @Output() confirmed = new EventEmitter<any>();
+  @Output() confirmed = new EventEmitter<boolean>();
 
   isSubmitting = false;
+  
+  // Estado para feedback visual interno
+  showSuccess = false;
+  successMessage = '';
+  successIcon = '';
+  successColor = '';
 
   constructor(private attendanceService: AttendanceService) {}
 
   ngOnInit() {}
 
   onBackdropClick(event: Event) {
+    if (this.isSubmitting || this.showSuccess) return;
+    
     if (event.target === event.currentTarget) {
       this.closeModal();
     }
   }
 
   closeModal() {
-    this.close.emit();
+    this.showSuccess = false;
     this.isSubmitting = false;
+    this.close.emit();
   }
 
   postponeDecision() {
     this.closeModal();
   }
 
-  confirmAttendance(willAttend: boolean = true) {
+  confirmAttendance(willAttend: boolean) {
     if (!this.activity || this.isSubmitting) return;
 
     this.isSubmitting = true;
 
-    // Update the service call to include will_attend parameter
-    const requestBody = {
-      activity_id: this.activity.id,
-      will_attend: willAttend
-    };
-
     this.attendanceService.confirmAttendance(this.activity.id, willAttend).subscribe({
-      next: (response) => {
-        console.log('Attendance response:', response);
-        this.confirmed.emit(response);
-        this.closeModal();
+      next: () => {
+        this.showSuccess = true;
         
-        // Show appropriate success message
-        const message = willAttend 
-          ? '¡Asistencia confirmada! Gracias por confirmar tu participación.'
-          : '¡Gracias por avisar! Has indicado que no podrás asistir.';
-        alert(message);
+        if (willAttend) {
+          this.successIcon = '🎉';
+          this.successMessage = '¡Genial! Contamos contigo.';
+          this.successColor = 'text-green-600';
+        } else {
+          this.successIcon = '👍';
+          this.successMessage = 'Gracias por avisar. ¡A la próxima!';
+          this.successColor = 'text-blue-600';
+        }
+
+        setTimeout(() => {
+          this.confirmed.emit(willAttend);
+          this.closeModal();
+        }, 2000);
       },
       error: (error) => {
         console.error('Error confirming attendance:', error);
-        alert('Error al procesar la respuesta: ' + error.message);
         this.isSubmitting = false;
       }
     });
@@ -87,12 +96,13 @@ export class AttendanceModalComponent implements OnInit {
   formatActivityDate(dateString?: string): string {
     if (!dateString) return '';
     
-    const date = new Date(dateString);
+    const targetDate = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+    const date = new Date(targetDate);
+    
     return date.toLocaleDateString('es-ES', {
       weekday: 'long',
-      year: 'numeric',
-      month: 'long',
       day: 'numeric',
+      month: 'long',
       hour: '2-digit',
       minute: '2-digit'
     });

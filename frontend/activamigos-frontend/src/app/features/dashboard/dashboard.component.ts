@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, forkJoin, of } from 'rxjs';
+import { takeUntil, catchError, finalize } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { PointsService } from '../../core/services/points.service';
 import { AttendanceService } from '../../core/services/attendance.service';
@@ -26,30 +26,32 @@ import { SemaphoreBadgeComponent } from '../../shared/components/semaphore-badge
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
-  isLoading = false;
+  
+  // Estado de carga específico para el contenido (para mostrar skeletons)
+  isLoadingContent = true;
+  
   currentPoints = 0;
   private destroy$ = new Subject<void>();
   
-  // Today's activities
+  // Actividades
   todaysActivitiesNotJoined: Activity[] = [];
   todaysActivitiesJoined: Activity[] = [];
-  
-  // Upcoming content
   upcomingActivities: Activity[] = [];
+  
+  // Grupos
   availableGroups: Group[] = [];
   
-  // Calendar view
+  // Calendario
   weekDays: { date: Date; dayName: string; dayNumber: number; activities: Activity[] }[] = [];
   
-  // Attendance confirmation
+  // Modales
   showAttendanceModal = false;
   activityToConfirm: ActivityToConfirm | null = null;
   
-  // User status
+  // Status
   userSemaphoreColor: 'grey' | 'light_green' | 'dark_green' | 'yellow' | 'red' = 'light_green';
   userWarningCount = 0;
 
-  // Add today property for template comparisons
   today = new Date();
 
   constructor(
@@ -63,30 +65,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // Subscribe to user changes
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
         this.currentUser = user;
         if (user) {
-          this.loadUserData();
+          this.loadAllDashboardData();
         }
       });
 
-    this.authService.isLoading$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(loading => {
-        this.isLoading = loading;
-      });
-
-    // Subscribe to points changes
     this.pointsService.currentPoints$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(points => {
-        this.currentPoints = points;
-      });
+      .subscribe(points => this.currentPoints = points);
     
-    // Subscribe to user status changes
     this.userStatusService.userStatus$
       .pipe(takeUntil(this.destroy$))
       .subscribe(status => {
@@ -95,53 +86,56 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
 
     this.generateWeekCalendar();
-    
-    // Check for pending attendance confirmations
-    this.checkPendingAttendanceConfirmations();
   }
 
-  private loadUserData() {
-    // Load today's activities
-    this.loadTodaysActivities();
-    
-    // Load upcoming activities
-    this.activitiesService.getUpcomingActivities()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(activities => {
-        this.upcomingActivities = activities;
-        this.updateWeekCalendar();
-      });
-
-    // Load available groups
-    this.groupsService.getAvailableGroups()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(groups => this.availableGroups = groups);
-  }
-
-  private loadTodaysActivities() {
+  /**
+   * Carga todos los datos en paralelo y maneja errores individualmente
+   * para que una fallo no deje el dashboard vacío.
+   */
+  private loadAllDashboardData() {
+    this.isLoadingContent = true;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    this.activitiesService.getActivitiesByDate(today)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(activities => {
-        // Separate joined and not joined activities
-        this.todaysActivitiesJoined = activities.filter(a => a.is_participant);
-        this.todaysActivitiesNotJoined = activities.filter(a => !a.is_participant);
-      });
+
+    forkJoin({
+      todaysActivities: this.activitiesService.getActivitiesByDate(today).pipe(catchError(() => of([]))),
+      upcoming: this.activitiesService.getUpcomingActivities().pipe(catchError(() => of([]))),
+      groups: this.groupsService.getAvailableGroups().pipe(catchError(() => of([]))),
+      pendingConfirmations: this.attendanceService.getPendingConfirmations().pipe(catchError(() => of(null)))
+    })
+    .pipe(
+      takeUntil(this.destroy$),
+      finalize(() => this.isLoadingContent = false) // Siempre apagar el loading al final
+    )
+    .subscribe(({ todaysActivities, upcoming, groups, pendingConfirmations }) => {
+      this.todaysActivitiesJoined = todaysActivities.filter(a => a.is_participant);
+      this.todaysActivitiesNotJoined = todaysActivities.filter(a => !a.is_participant);
+
+      this.upcomingActivities = upcoming;
+      this.updateWeekCalendar();
+
+      this.availableGroups = groups;
+
+      if (pendingConfirmations) {
+        this.checkAttendance(pendingConfirmations);
+      }
+    });
   }
 
+  // --- Helpers de Calendario ---
   private generateWeekCalendar() {
     const today = new Date();
     this.weekDays = [];
     
+    const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
     for (let i = 0; i < 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       
       this.weekDays.push({
         date: date,
-        dayName: date.toLocaleDateString('es-ES', { weekday: 'short' }),
+        dayName: dayNames[date.getDay()],
         dayNumber: date.getDate(),
         activities: []
       });
@@ -161,151 +155,50 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return date.toDateString() === this.today.toDateString();
   }
 
-  ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
-
+  // --- Navegación y Acciones ---
   navigateTo(path: string) {
     this.router.navigate([path]);
   }
 
-  showCreateOptions() {
-    // For now, show a simple alert with options
-    // In future sprints, this could open a modal or action sheet
-    const action = confirm('¿Qué te gustaría crear?\n\nOK = Nuevo Grupo\nCancelar = Nueva Actividad');
-    if (action) {
-      alert('Crear Nuevo Grupo - Funcionalidad próximamente');
-    } else {
-      alert('Crear Nueva Actividad - Funcionalidad próximamente');
-    }
-  }
-
-  logout() {
-    this.authService.logout()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.router.navigate(['/auth/login']));
+  goToActivities(id: number | null = null) {
+    this.router.navigate(id ? ['/activities', id] : ['/activities']);
   }
 
   goToGroups(id: number | null = null) {
-    if (id) {
-      this.router.navigate(['/groups', id]);
-    } else {
-      this.router.navigate(['/groups']);
-    }
+    this.router.navigate(id ? ['/groups', id] : ['/groups']);
   }
 
-  goToActivities(id: number | null = null) {
-    if (id) {
-      this.router.navigate(['/activities', id]);
-    } else {
-      this.router.navigate(['/activities']);
-    }
-  }
-
+  // --- Helpers Visuales ---
   formatActivityDate(dateString: string): string {
-    // Asegurar que la fecha se interprete correctamente
-    let date: Date;
-    
-    if (dateString.endsWith('Z') || dateString.includes('+')) {
-      // Ya tiene información de zona horaria
-      date = new Date(dateString);
-    } else {
-      // Asumir que es UTC y añadir 'Z'
-      date = new Date(dateString + (dateString.includes('T') ? 'Z' : 'T00:00:00Z'));
-    }
-    
-    return date.toLocaleDateString('es-ES', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (!dateString) return '';
+    const targetDate = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+    const date = new Date(targetDate);
+    return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  formatFullDate(dateString: string): string {
+    if (!dateString) return '';
+    const targetDate = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+    const date = new Date(targetDate);
+    return date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
   }
 
   getActivityEmoji(title: string): string {
-    const titleLower = title.toLowerCase();
-    if (titleLower.includes('deporte') || titleLower.includes('fútbol') || titleLower.includes('correr')) return '⚽';
-    if (titleLower.includes('cocina') || titleLower.includes('cocinar') || titleLower.includes('comida')) return '🍳';
-    if (titleLower.includes('arte') || titleLower.includes('pintar') || titleLower.includes('dibujo')) return '🎨';
-    if (titleLower.includes('música') || titleLower.includes('cantar') || titleLower.includes('baile')) return '🎵';
-    if (titleLower.includes('juego') || titleLower.includes('jugar')) return '🎮';
-    if (titleLower.includes('lectura') || titleLower.includes('leer') || titleLower.includes('libro')) return '📚';
-    if (titleLower.includes('cine') || titleLower.includes('película')) return '🎬';
-    if (titleLower.includes('parque') || titleLower.includes('naturaleza') || titleLower.includes('jardín')) return '🌳';
-    return '🎯';
+    const t = title.toLowerCase();
+    if (t.includes('fútbol') || t.includes('deporte')) return '⚽';
+    if (t.includes('cocina') || t.includes('pastel')) return '🍳';
+    if (t.includes('pintura') || t.includes('arte')) return '🎨';
+    if (t.includes('música') || t.includes('baile')) return '🎵';
+    if (t.includes('cine')) return '🎬';
+    if (t.includes('lectura')) return '📚';
+    return '🌟';
   }
 
   getProfileImageUrl(): string | null {
     return this.authService.getProfileImageSrc ? this.authService.getProfileImageSrc() : null;
   }
 
-  private checkPendingAttendanceConfirmations() {
-    this.attendanceService.getPendingConfirmations()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          // Find first activity that should show modal
-          const activityToShow = response.activities.find(item => 
-            this.attendanceService.shouldShowAttendanceModal(
-              item.activity.id, 
-              item.activity.date
-            )
-          );
-          
-          if (activityToShow) {
-            this.activityToConfirm = {
-              id: activityToShow.activity.id,
-              title: activityToShow.activity.title,
-              description: activityToShow.activity.description,
-              date: activityToShow.activity.date,
-              location: activityToShow.activity.location
-            };
-            this.showAttendanceModal = true;
-          }
-        },
-        error: (error) => {
-          console.error('Error checking pending confirmations:', error);
-        }
-      });
-  }
-
-  onAttendanceModalClose() {
-    // Set cooldown when user postpones decision
-    if (this.activityToConfirm) {
-      this.attendanceService.setCooldown(
-        this.activityToConfirm.id, 
-        this.activityToConfirm.date
-      );
-    }
-    
-    this.showAttendanceModal = false;
-    this.activityToConfirm = null;
-  }
-
-  // Update method to get activity confirmation status
-  getActivityStatus(activity: Activity): 'confirmed' | 'pending' | 'not_participant' {
-    if (!activity.is_participant) {
-      return 'not_participant';
-    }
-    
-    // Use the actual attendance_confirmed field from the backend
-    return activity.attendance_confirmed ? 'confirmed' : 'pending';
-  }
-
-  onAttendanceConfirmed(response: any) {
-    console.log('Attendance confirmed:', response);
-    // Refresh activities to update status
-    this.loadTodaysActivities();
-    this.loadUserData();
-    
-    this.showAttendanceModal = false;
-    this.activityToConfirm = null;
-  }
-
-  // New method to open attendance modal for a specific activity
+  // --- Lógica de Asistencia ---
   openAttendanceModal(activity: Activity) {
     this.activityToConfirm = {
       id: activity.id,
@@ -315,5 +208,63 @@ export class DashboardComponent implements OnInit, OnDestroy {
       location: activity.location
     };
     this.showAttendanceModal = true;
+  }
+
+  onAttendanceModalClose() {
+    if (this.activityToConfirm) {
+      this.attendanceService.setCooldown(this.activityToConfirm.id, this.activityToConfirm.date);
+    }
+    this.showAttendanceModal = false;
+    this.activityToConfirm = null;
+  }
+
+  private checkAttendance(response: any) {
+    const activityToShow = response.activities.find((item: any) => 
+      this.attendanceService.shouldShowAttendanceModal(item.activity.id, item.activity.date)
+    );
+    
+    if (activityToShow) {
+      const activityId = activityToShow.activity.id;
+      const hasSeenModal = sessionStorage.getItem(`seen_attendance_${activityId}`);
+
+      if (!hasSeenModal) {
+        this.openAttendanceModal(activityToShow.activity);
+        sessionStorage.setItem(`seen_attendance_${activityId}`, 'true');
+      }
+    }
+  }
+
+  getActivityStatus(activity: any): string {
+    if (!activity.is_participant) return 'not_participant';
+    
+    if (activity.attendance_status) {
+      return activity.attendance_status;
+    }
+    
+    return 'pending';
+  }
+
+  onAttendanceConfirmed(willAttend: boolean) {
+    this.showAttendanceModal = false;
+    const activityId = this.activityToConfirm?.id;
+    this.activityToConfirm = null;
+
+    if (activityId) {
+      const activity = this.todaysActivitiesJoined.find(a => a.id === activityId);
+      
+      if (activity) {
+        activity.attendance_confirmed = true;
+        (activity as any).attendance_status = willAttend ? 'confirmed' : 'declined';
+      }
+    }
+    
+    setTimeout(() => {
+      this.loadAllDashboardData();
+    }, 1000);
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

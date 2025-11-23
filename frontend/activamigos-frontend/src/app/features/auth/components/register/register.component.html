@@ -1,118 +1,112 @@
 <div class="min-h-screen flex flex-col px-6 py-10 bg-white">
-  <!-- Header -->
-  <div class="mb-8">
-    <button class="text-2xl mb-6" (click)="goBack()">←</button>
-    <h1 class="text-2xl font-bold mb-6">Registrarse</h1>
+  <div class="mb-6">
+    <button class="text-2xl mb-4 p-2 rounded-full hover:bg-gray-100" (click)="goBack()" aria-label="Volver atrás">←</button>
+    <h1 class="text-2xl font-bold text-gray-900">Crear una cuenta</h1>
   </div>
 
-  <!-- Form -->
-  <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-6">
-    <!-- Nombre completo -->
+  <div *ngIf="errorMessage" class="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-xl flex items-start gap-3 animate-fade-in">
+    <span class="text-xl">⚠️</span>
+    <p class="text-orange-800 text-sm font-medium leading-relaxed pt-1">
+      {{ errorMessage }}
+    </p>
+  </div>
+
+  <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-5">
+    
     <div>
-      <label class="block mb-2 text-gray-700 text-sm font-medium">Nombre completo</label>
+      <label class="block mb-2 text-gray-700 text-sm font-bold">Nombre completo</label>
       <input
         type="text"
         class="input-field"
-        placeholder="Ingresa tu nombre completo"
+        [class.error-border]="registerForm.get('fullName')?.invalid && registerForm.get('fullName')?.touched"
+        placeholder="Ej: Juan Pérez"
         formControlName="fullName"
       />
     </div>
 
-    <!-- Nombre de usuario -->
     <div>
-      <label class="block mb-2 text-gray-700 text-sm font-medium">Nombre de usuario</label>
+      <label class="block mb-2 text-gray-700 text-sm font-bold">Nombre de usuario (Apodo)</label>
       <input
         type="text"
         class="input-field"
-        placeholder="Ingresa tu nombre de usuario"
+        [class.error-border]="registerForm.get('username')?.invalid && registerForm.get('username')?.touched"
+        placeholder="Ej: juan_perez"
         formControlName="username"
       />
     </div>
 
-    <!-- Correo electrónico -->
     <div>
-      <label class="block mb-2 text-gray-700 text-sm font-medium">Correo electrónico</label>
+      <label class="block mb-2 text-gray-700 text-sm font-bold">Correo electrónico</label>
       <input
         type="email"
         class="input-field"
-        placeholder="Ingresa tu correo electrónico"
+        [class.error-border]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
+        placeholder="correo@ejemplo.com"
         formControlName="email"
       />
     </div>
 
-    <!-- Contraseña -->
     <div>
-      <label class="block mb-2 text-gray-700 text-sm font-medium">Contraseña</label>
+      <label class="block mb-2 text-gray-700 text-sm font-bold">Contraseña</label>
       <div class="relative">
         <input
           [type]="showPassword ? 'text' : 'password'"
           class="input-field pr-12"
-          placeholder="Ingresa tu contraseña"
+          [class.error-border]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
+          placeholder="Elige una palabra secreta"
           formControlName="password"
         />
         <button
           type="button"
-          class="absolute inset-y-0 right-3 flex items-center text-gray-500"
+          class="absolute inset-y-0 right-3 flex items-center text-gray-500 px-2"
           (click)="togglePasswordVisibility()"
+          aria-label="Mostrar u ocultar contraseña"
         >
           {{ showPassword ? '🙈' : '👁️' }}
         </button>
       </div>
       
-      <!-- Password Hint -->
-      <div *ngIf="showPasswordHint && animalsList.length > 0" class="mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <p class="text-sm text-blue-800 mb-3 font-medium">
-          💡 Pista: Tu contraseña puede ser tu animal favorito
-        </p>
-        <div class="grid grid-cols-2 gap-2">
-          <div 
+      <div *ngIf="animalsList.length > 0" class="mt-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
+        <p class="text-sm text-blue-800 mb-2 font-bold">💡 Idea: Usa tu animal favorito</p>
+        <div class="flex flex-wrap gap-2">
+          <span 
             *ngFor="let animal of animalsList" 
-            class="bg-white p-2 rounded text-center text-sm text-blue-700 border border-blue-100"
+            class="bg-white px-3 py-1 rounded-full text-sm text-blue-700 border border-blue-100 shadow-sm"
           >
             {{ animal }}
-          </div>
+          </span>
         </div>
-        <button 
-          type="button" 
-          class="mt-2 text-xs text-blue-600 hover:text-blue-800"
-          (click)="showPasswordHint = false"
-        >
-          Ocultar pista
-        </button>
       </div>
     </div>
 
-    <!-- Confirmar contraseña -->
     <div>
-      <label class="block mb-2 text-gray-700 text-sm font-medium">Confirmar contraseña</label>
+      <label class="block mb-2 text-gray-700 text-sm font-bold">Repite la contraseña</label>
       <input
         [type]="showPassword ? 'text' : 'password'"
         class="input-field"
-        placeholder="Confirma tu contraseña"
+        [class.error-border]="registerForm.errors?.['mismatch'] && registerForm.get('confirmPassword')?.touched"
+        placeholder="Escribe lo mismo otra vez"
         formControlName="confirmPassword"
       />
+      <p *ngIf="registerForm.errors?.['mismatch'] && registerForm.get('confirmPassword')?.touched" class="mt-2 text-sm text-orange-600 font-medium">
+        Las contraseñas no son iguales
+      </p>
     </div>
 
-    <!-- Error -->
-    <div *ngIf="errorMessage" class="text-red-500 text-sm">
-      {{ errorMessage }}
-    </div>
-
-    <!-- Botón -->
     <button
       type="submit"
       [disabled]="isLoading"
-      class="w-full py-4 rounded-full bg-blue-400 text-white font-semibold text-lg hover:bg-blue-500 transition"
+      class="w-full mt-4 py-4 rounded-full bg-blue-500 text-white font-bold text-lg shadow-lg active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed flex justify-center items-center gap-2"
     >
-      {{ isLoading ? 'Registrando...' : 'Registrarse' }}
+      <span *ngIf="isLoading" class="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+      <span>{{ isLoading ? 'Creando cuenta...' : 'Crear cuenta' }}</span>
     </button>
   </form>
 
-  <!-- Link -->
-  <div class="text-center mt-6">
-    <p class="text-sm">
-      ¿Ya tienes una cuenta?
-      <a routerLink="/auth/login" class="text-blue-600 font-semibold">Inicia sesión</a>
+  <div class="text-center mt-8 pb-4">
+    <p class="text-base text-gray-600">
+      ¿Ya tienes cuenta?
+      <a routerLink="/auth/login" class="text-blue-600 font-bold hover:underline ml-1">Entrar ahora</a>
     </p>
   </div>
 </div>
