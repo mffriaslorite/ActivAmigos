@@ -1,0 +1,48 @@
+<div *ngIf="isOpen" 
+     class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
+     (click)="onBackdropClick($event)">
+  
+  <div class="bg-white rounded-2xl w-full max-w-sm shadow-xl overflow-hidden transform transition-all scale-100"
+       (click)="$event.stopPropagation()">
+    
+    <div class="p-6 text-center">
+      <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full mb-4"
+           [ngClass]="{
+             'bg-red-100 text-red-600': type === 'danger',
+             'bg-yellow-100 text-yellow-600': type === 'warning',
+             'bg-blue-100 text-blue-600': type === 'info'
+           }">
+        <span class="text-2xl" *ngIf="type === 'danger'">⚠️</span>
+        <span class="text-2xl" *ngIf="type === 'warning'">🤔</span>
+        <span class="text-2xl" *ngIf="type === 'info'">ℹ️</span>
+      </div>
+
+      <h3 class="text-lg font-bold text-gray-900 mb-2">{{ title }}</h3>
+      <p class="text-sm text-gray-500 mb-6 leading-relaxed">{{ message }}</p>
+
+      <div class="flex gap-3">
+        <button *ngIf="type === 'info'"
+                (click)="cancel.emit()"
+                class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
+          Entendido
+        </button>
+
+        <ng-container *ngIf="type !== 'info'">
+          <button (click)="cancel.emit()"
+                  [disabled]="isLoading"
+                  class="flex-1 py-2.5 px-4 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50">
+            {{ cancelText }}
+          </button>
+          
+          <button (click)="confirm.emit()"
+                  [disabled]="isLoading"
+                  class="flex-1 py-2.5 px-4 text-white font-semibold rounded-xl shadow-sm transition-all flex justify-center items-center gap-2"
+                  [ngClass]="type === 'danger' ? 'bg-red-500 hover:bg-red-600' : 'bg-yellow-500 hover:bg-yellow-600'">
+            <span *ngIf="isLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <span *ngIf="!isLoading">{{ confirmText }}</span>
+          </button>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>

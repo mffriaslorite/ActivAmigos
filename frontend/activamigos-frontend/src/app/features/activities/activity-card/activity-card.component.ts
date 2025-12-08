@@ -13,70 +13,71 @@ import { Activity } from '../../../core/models/activity.model';
 export class ActivityCardComponent {
   @Input() activity!: Activity;
   @Input() isLoading = false;
+  
+  // Emitimos eventos para que el padre gestione la lógica
   @Output() joinActivity = new EventEmitter<number>();
   @Output() leaveActivity = new EventEmitter<number>();
 
   constructor(private router: Router) {}
 
-  onJoinLeave() {
-    if (this.isLoading) return;
-    
-    if (this.activity.is_participant) {
-      this.leaveActivity.emit(this.activity.id);
-    } else {
-      this.joinActivity.emit(this.activity.id);
-    }
-  }
-
   onCardClick() {
     this.router.navigate(['/activities', this.activity.id]);
   }
 
+  // Acciones de botones (con stopPropagation para no abrir el detalle)
+  onJoin(event: Event) {
+    event.stopPropagation();
+    if (!this.isLoading) this.joinActivity.emit(this.activity.id);
+  }
+
+  onLeave(event: Event) {
+    event.stopPropagation();
+    // Podríamos añadir un confirm() simple aquí si quisiéramos seguridad extra
+    if (!this.isLoading) this.leaveActivity.emit(this.activity.id);
+  }
+
+  // --- Helpers Visuales ---
+
   getActivityIcon(): string {
-    const title = this.activity.title.toLowerCase();
-    if (title.includes('deporte') || title.includes('fútbol') || title.includes('correr')) return '⚽';
-    if (title.includes('cocina') || title.includes('cocinar') || title.includes('comida')) return '🍳';
-    if (title.includes('arte') || title.includes('pintar') || title.includes('dibujo')) return '🎨';
-    if (title.includes('música') || title.includes('cantar') || title.includes('baile')) return '🎵';
-    if (title.includes('juego') || title.includes('jugar')) return '🎮';
-    if (title.includes('lectura') || title.includes('leer') || title.includes('libro')) return '📚';
-    if (title.includes('cine') || title.includes('película')) return '🎬';
-    if (title.includes('parque') || title.includes('naturaleza') || title.includes('jardín')) return '🌳';
-    return '🎯';
+    const t = this.activity.title.toLowerCase();
+    if (t.includes('fútbol') || t.includes('deporte')) return '⚽';
+    if (t.includes('cocina')) return '🍳';
+    if (t.includes('arte') || t.includes('pintar')) return '🎨';
+    if (t.includes('música')) return '🎵';
+    if (t.includes('cine')) return '🎬';
+    return '🌟';
   }
 
   getIconBackground(): string {
-    const title = this.activity.title.toLowerCase();
-    if (title.includes('deporte') || title.includes('fútbol') || title.includes('correr')) return 'bg-green-100';
-    if (title.includes('cocina') || title.includes('cocinar') || title.includes('comida')) return 'bg-orange-100';
-    if (title.includes('arte') || title.includes('pintar') || title.includes('dibujo')) return 'bg-pink-100';
-    if (title.includes('música') || title.includes('cantar') || title.includes('baile')) return 'bg-yellow-100';
-    if (title.includes('juego') || title.includes('jugar')) return 'bg-red-100';
-    if (title.includes('lectura') || title.includes('leer') || title.includes('libro')) return 'bg-purple-100';
-    if (title.includes('cine') || title.includes('película')) return 'bg-indigo-100';
-    if (title.includes('parque') || title.includes('naturaleza') || title.includes('jardín')) return 'bg-green-100';
-    return 'bg-blue-100';
+    const t = this.activity.title.toLowerCase();
+    if (t.includes('deporte')) return 'bg-green-100 text-green-600';
+    if (t.includes('cocina')) return 'bg-orange-100 text-orange-600';
+    if (t.includes('arte')) return 'bg-pink-100 text-pink-600';
+    if (t.includes('música')) return 'bg-yellow-100 text-yellow-600';
+    return 'bg-blue-100 text-blue-600';
   }
 
   formatDate(dateString: string): string {
-    // Asegurar que la fecha se interprete correctamente
-    let date: Date;
-    
-    if (dateString.endsWith('Z') || dateString.includes('+')) {
-      // Ya tiene información de zona horaria
-      date = new Date(dateString);
-    } else {
-      // Asumir que es UTC y añadir 'Z'
-      date = new Date(dateString + (dateString.includes('T') ? 'Z' : 'T00:00:00Z'));
-    }
-    
+    const date = new Date(dateString.endsWith('Z') ? dateString : dateString + 'Z');
     return date.toLocaleDateString('es-ES', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
     });
+  }
+
+  // Lógica de estado idéntica al Dashboard
+  getStatusInfo() {
+    if (!this.activity.is_participant) return null;
+
+    // Usamos el campo attendance_status que añadimos al backend
+    // Si no viene, usamos attendance_confirmed como fallback
+    const status = this.activity.attendance_status || (this.activity.attendance_confirmed ? 'confirmed' : 'pending');
+
+    switch (status) {
+      case 'confirmed': return { text: 'Vas a ir', icon: '✅', class: 'bg-green-100 text-green-700 border-green-200' };
+      case 'declined': return { text: 'No vas', icon: '❌', class: 'bg-gray-100 text-gray-600 border-gray-200' };
+      case 'attended': return { text: 'Asististe', icon: '🏆', class: 'bg-blue-100 text-blue-700 border-blue-200' };
+      case 'absent': return { text: 'Faltaste', icon: '⚠️', class: 'bg-red-100 text-red-700 border-red-200' };
+      default: return { text: 'Pendiente', icon: '⏳', class: 'bg-yellow-100 text-yellow-800 border-yellow-200 animate-pulse' };
+    }
   }
 }

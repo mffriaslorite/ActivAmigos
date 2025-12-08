@@ -1,11 +1,12 @@
-import { Component, Input, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, Subscription } from 'rxjs';
+import { takeUntil, finalize } from 'rxjs/operators';
 import { ChatService } from '../../../core/services/chat.service';
 import { ActivitiesService } from '../../../core/services/activities.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ModerationService } from '../../../core/services/moderation.service';
 import { SemaphoreBadgeComponent } from '../semaphore-badge/semaphore-badge.component';
 import { ModerationModalComponent, UserToWarn } from '../moderation-modal/moderation-modal.component';
 
@@ -33,23 +34,28 @@ export interface ChatMessage {
   templateUrl: `./chat-room.component.html`,
   styleUrls: ['./chat-room.component.scss']
 })
-export class ChatRoomComponent implements OnInit, OnDestroy {
+export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
   @Input() contextType: 'GROUP' | 'ACTIVITY' = 'GROUP';
   @Input() contextId!: number;
   @ViewChild('messagesContainer') messagesContainer!: ElementRef;
 
   messageForm: FormGroup;
   messages: ChatMessage[] = [];
-  isLoading = false;
+  
+  // Estados
+  isLoading = true;
   isSending = false;
   isBanned = false;
+  isConnected = true; // Asumimos conectado al inicio
+  needsScrollToBottom = false;
+
   currentUserId: number | null = null;
   
-  // Semaphore system
+  // Semáforo personal en este chat
   userSemaphoreColor: string | null = null;
   userWarningCount: number = 0;
   
-  // Moderation
+  // Moderación
   canModerate = false;
   selectedUserToWarn: UserToWarn | null = null;
   showModerationModal = false;
@@ -60,7 +66,8 @@ export class ChatRoomComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private chatService: ChatService,
     private authService: AuthService,
-    private activitiesService: ActivitiesService
+    private activitiesService: ActivitiesService,
+    private moderationService: ModerationService
   ) {
     this.messageForm = this.fb.group({
       content: ['', [Validators.required, Validators.maxLength(500)]]
@@ -68,71 +75,62 @@ export class ChatRoomComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // Get current user
     this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.currentUserId = user?.id || null;
-      // Primero, por rol global
+      
+      // Permisos básicos globales
       this.canModerate = user?.role === 'ORGANIZER' || user?.role === 'SUPERADMIN';
       
       if (user && this.contextId) {
         this.loadUserModerationStatus();
         this.initializeChat();
 
-        // Si es chat de actividad, comprobar también el rol en la actividad
+        // Si es actividad, verificar si es el organizador específico
         if (this.contextType === 'ACTIVITY') {
           this.activitiesService.getUserRoleInActivity(this.contextId)
             .pipe(takeUntil(this.destroy$))
             .subscribe({
               next: (response) => {
-                if (response.role === 'organizer') {
-                  this.canModerate = true;
-                }
+                if (response.role === 'organizer') this.canModerate = true;
               },
-              error: (error) => {
-                console.error('Error loading user activity role:', error);
-              }
+              error: (e) => console.warn('Role check failed', e)
             });
         }
       }
     });
   }
 
+  ngAfterViewChecked() {
+    if (this.needsScrollToBottom) {
+      this.scrollToBottom();
+      this.needsScrollToBottom = false;
+    }
+  }
+
   private initializeChat() {
-    // Connect to chat room
     this.connectToRoom();
-    
-    // Load message history
     this.loadMessages();
 
-    // Listen for new messages from the service
+    // Suscribirse a mensajes en tiempo real
     this.chatService.messages$.pipe(takeUntil(this.destroy$)).subscribe(newMessages => {
-      // newMessages now contains only the latest message(s)
       newMessages.forEach(message => {
-        // Only add messages for this specific context
         if (message.context_type === this.contextType && message.context_id === this.contextId) {
-          // Check if message already exists to avoid duplicates
-          const exists = this.messages.some(existing => existing.id === message.id);
-          if (!exists) {
+          if (!this.messages.some(existing => existing.id === message.id)) {
             this.messages.push(message);
-            this.scrollToBottom();
+            this.needsScrollToBottom = true; // Marcar para scroll
           }
         }
       });
     });
 
-    // Listen for connection status
+    // Monitorizar conexión para mostrar aviso visual
     this.chatService.connectionStatus$.pipe(takeUntil(this.destroy$)).subscribe(connected => {
+      this.isConnected = connected;
       if (connected && this.currentUserId) {
-        // Reconnect to room when connection is restored
+        // Reconexión silenciosa
         setTimeout(() => this.connectToRoom(), 500);
       }
     });
-  }
-
-  ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
-    this.chatService.leaveRoom(this.contextType, this.contextId);
   }
 
   private connectToRoom() {
@@ -142,157 +140,130 @@ export class ChatRoomComponent implements OnInit, OnDestroy {
   private loadMessages() {
     this.isLoading = true;
     this.chatService.getMessageHistory(this.contextType, this.contextId)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isLoading = false)
+      )
       .subscribe({
         next: (messages) => {
           this.messages = messages;
-          this.isLoading = false;
-          this.scrollToBottom();
+          this.needsScrollToBottom = true;
         },
-        error: (error) => {
-          console.error('Error loading messages:', error);
-          this.isLoading = false;
-        }
+        error: (error) => console.error('Error history:', error)
       });
   }
 
   private loadUserModerationStatus() {
     if (!this.currentUserId) return;
     
-    this.chatService.getUserModerationStatus(this.contextType, this.contextId, this.currentUserId)
+    // Usamos ModerationService en lugar de ChatService
+    this.moderationService.getMyStatus(this.contextType, this.contextId, this.currentUserId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (status) => {
           this.userSemaphoreColor = status.semaphore_color;
           this.userWarningCount = status.warning_count;
           this.isBanned = status.status === 'BANNED';
+          
+          if (this.isBanned) {
+            this.messageForm.disable(); // Desactivar input si está baneado
+          }
         },
-        error: (error) => {
-          console.error('Error loading moderation status:', error);
-        }
+        error: (err) => console.warn('No se pudo cargar estado moderación', err)
       });
   }
 
   sendMessage() {
-    if (this.messageForm.invalid || this.isBanned || this.isSending) return;
+    const content = this.messageForm.get('content')?.value?.trim();
+    if (!content || this.isBanned || this.isSending) return;
 
     this.isSending = true;
-    const content = this.messageForm.get('content')?.value;
-
+    
     this.chatService.sendMessage(this.contextType, this.contextId, content)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isSending = false)
+      )
       .subscribe({
         next: () => {
           this.messageForm.reset();
-          this.isSending = false;
+          this.needsScrollToBottom = true;
         },
-        error: (error) => {
-          console.error('Error sending message:', error);
-          this.isSending = false;
-          // Show error to user
+        error: () => {
+          // Feedback visual sutil en el input (podría ser un borde rojo temporal)
+          console.error('Failed to send'); 
         }
       });
   }
 
   private scrollToBottom() {
-    setTimeout(() => {
-      if (this.messagesContainer) {
+    if (this.messagesContainer) {
+      try {
         const element = this.messagesContainer.nativeElement;
         element.scrollTop = element.scrollHeight;
-      }
-    }, 100);
+      } catch(err) { }
+    }
   }
 
-  trackByMessageId(index: number, message: ChatMessage): number {
-    return message.id;
-  }
+  // --- Visual Helpers ---
 
   getSenderName(sender: any): string {
-    if (sender.first_name) {
-      return sender.first_name + (sender.last_name ? ` ${sender.last_name}` : '');
-    }
-    return sender.username;
+    return sender.first_name || sender.username;
+  }
+
+  getAvatarInitial(sender: any): string {
+    const name = this.getSenderName(sender);
+    return name.charAt(0).toUpperCase();
   }
 
   formatTimestamp(timestamp: string): string {
-    // Crear la fecha asegurando que se interprete como UTC
     const date = new Date(timestamp + (timestamp.endsWith('Z') ? '' : 'Z'));
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return 'Ahora';
-    if (diffMins < 60) return `${diffMins}m`;
-    if (diffHours < 24) return `${diffHours}h`;
-    if (diffDays < 7) return `${diffDays}d`;
     
-    // Mostrar hora local correcta
-    return date.toLocaleString('es-ES', { 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Europe/Madrid' // Forzar zona horaria española
-    });
-  }
-
-  getSemaphoreTooltip(): string {
-    switch (this.userSemaphoreColor) {
-      case 'grey': return 'No participando';
-      case 'light_green': return 'Miembro pero nunca ha chateado';
-      case 'dark_green': return 'Miembro activo';
-      case 'yellow': return `${this.userWarningCount} advertencia(s)`;
-      case 'red': return 'Suspendido';
-      default: return '';
+    // Si es hoy, solo hora
+    if (date.toDateString() === now.toDateString()) {
+      return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     }
+    
+    // Si no, fecha corta
+    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   }
 
-  openModerationModal() {
-    if (this.selectedUserToWarn) {
+  isMyMessage(message: ChatMessage): boolean {
+    return message.sender_id === this.currentUserId;
+  }
+
+  // --- Moderation ---
+
+  onMessageClick(message: ChatMessage) {
+    // Solo permitir moderar si tienes permisos Y no es tu mensaje Y no es del sistema
+    if (this.canModerate && !this.isMyMessage(message) && !message.is_system) {
+      this.selectedUserToWarn = {
+        id: message.sender.id,
+        username: message.sender.username,
+        first_name: message.sender.first_name,
+        last_name: message.sender.last_name,
+        warning_count: 0 // Se cargará en el modal
+      };
       this.showModerationModal = true;
     }
   }
 
+  onWarningIssued() {
+    this.showModerationModal = false;
+    this.selectedUserToWarn = null;
+    // Recargar estado por si acaso nos auto-afecta (raro pero posible)
+    this.loadUserModerationStatus();
+  }
+
   closeModerationModal() {
     this.showModerationModal = false;
+    this.selectedUserToWarn = null;
   }
 
-  onWarningIssued(response: any) {
-    console.log('Warning issued:', response);
-    // Refresh moderation status
-    if (this.currentUserId) {
-      this.loadUserModerationStatus();
-    }
-  }
-
-  onMessageClick(message: ChatMessage) {
-    if (this.canModerate && message.sender_id !== this.currentUserId && !message.is_system) {
-      this.chatService.getUserModerationStatus(this.contextType, this.contextId, message.sender.id)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (status) => {
-            this.selectedUserToWarn = {
-              id: message.sender.id,
-              username: message.sender.username,
-              first_name: message.sender.first_name,
-              last_name: message.sender.last_name,
-              warning_count: status.warning_count
-            };
-          },
-          error: (error) => {
-            console.error('Error fetching user moderation status:', error);
-            // Fallback: show user with 0 warnings
-            this.selectedUserToWarn = {
-              id: message.sender.id,
-              username: message.sender.username,
-              first_name: message.sender.first_name,
-              last_name: message.sender.last_name,
-              warning_count: 0
-            };
-          }
-        });
-    }
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.chatService.leaveRoom(this.contextType, this.contextId);
   }
 }

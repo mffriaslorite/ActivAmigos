@@ -1,6 +1,7 @@
 from flask_smorest import Blueprint, abort
 from flask import session
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime, timedelta, timezone
 from models.user.user import User, db
 from models.activity.activity import Activity
 from models.associations.activity_associations import activity_participants
@@ -106,7 +107,12 @@ def list_activities():
     """List all activities with user specific status"""
     current_user = get_current_user()
     
-    activities = Activity.query.order_by(Activity.date.asc()).all()
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
+    
+    activities = Activity.query\
+        .filter(Activity.date > cutoff_time)\
+        .order_by(Activity.date.asc())\
+        .all()
     
     activities_data = []
     for activity in activities:
@@ -145,7 +151,8 @@ def list_activities():
             'is_participant': activity.is_participant(current_user.id),
             'attendance_confirmed': attendance_confirmed,
             'attendance_status': attendance_status,
-            'created_at': activity.created_at
+            'created_at': activity.created_at,
+            'created_by': activity.created_by
         })
     
     return activities_data

@@ -1,109 +1,86 @@
-<div class="space-y-4">
-    <!-- Header -->
-    <div class="mb-4">
-    <h3 class="text-lg font-semibold text-gray-900 mb-2">
-        📋 Seleccionar Reglas
-    </h3>
-    <p class="text-sm text-gray-600">
-        Elige las reglas que se aplicarán a {{ contextType === 'GROUP' ? 'este grupo' : 'esta actividad' }}.
-    </p>
+<div class="flex flex-col h-full max-h-[85vh]">
+    
+    <div class="px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-white z-10">
+        <h3 class="text-xl font-bold text-gray-900 mb-1 flex items-center gap-2">
+            <span>📋</span> Seleccionar Normas
+        </h3>
+        <p class="text-sm text-gray-500">
+            Elige qué reglas se aplican a {{ contextType === 'GROUP' ? 'este grupo' : 'esta actividad' }}.
+        </p>
     </div>
 
-    <!-- Loading State -->
-    <div *ngIf="isLoading" class="text-center py-8">
-    <div class="inline-flex items-center space-x-2">
-        <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <span class="text-gray-500">Cargando reglas...</span>
-    </div>
+    <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
+        
+        <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-12 text-gray-400">
+            <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <span>Cargando reglas disponibles...</span>
+        </div>
+
+        <form [formGroup]="rulesForm" *ngIf="!isLoading" class="space-y-3">
+            
+            <div *ngFor="let template of availableTemplates; let i = index; trackBy: trackByTemplateId"
+                 class="group relative bg-white border-2 rounded-xl p-4 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+                 [ngClass]="isRuleSelected(template.id) ? 'border-blue-500 bg-blue-50/30' : 'border-gray-100 hover:border-blue-300'">
+                
+                <label class="flex items-start gap-4 cursor-pointer w-full">
+                    <div class="relative flex items-center justify-center w-6 h-6 mt-1 flex-shrink-0">
+                        <input type="checkbox" 
+                               [formControlName]="i"
+                               (change)="onRuleToggle(template.id, $event)"
+                               class="peer appearance-none w-6 h-6 border-2 border-gray-300 rounded-lg checked:bg-blue-500 checked:border-blue-500 transition-colors cursor-pointer" />
+                        <span class="absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none font-bold text-sm">✓</span>
+                    </div>
+                    
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-2xl">{{ template.icon }}</span>
+                            <h4 class="font-bold text-gray-800 text-lg leading-tight group-hover:text-blue-700 transition-colors">
+                                {{ template.title }}
+                            </h4>
+                        </div>
+                        <p class="text-gray-600 text-sm leading-relaxed">{{ template.description }}</p>
+                    </div>
+                </label>
+            </div>
+
+            <div *ngIf="availableTemplates.length === 0" class="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
+                <span class="text-4xl mb-2 block">🤷‍♂️</span>
+                <p class="text-gray-500 font-medium">No hay reglas predefinidas disponibles.</p>
+            </div>
+
+        </form>
+
     </div>
 
-    <!-- Rules Form -->
-    <form [formGroup]="rulesForm" *ngIf="!isLoading">
-    <div class="space-y-3">
-        <div 
-        *ngFor="let template of availableTemplates; let i = index; trackBy: trackByTemplateId"
-        class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors"
-        [class.bg-blue-50]="isRuleSelected(template.id)"
-        [class.border-blue-400]="isRuleSelected(template.id)"
-        >
-        <label class="flex items-start space-x-3 cursor-pointer">
-            <input
-            type="checkbox"
-            class="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-            [formControlName]="i"
-            (change)="onRuleToggle(template.id, $event)"
-            />
+    <div class="border-t border-gray-200 bg-white p-4 flex-shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
+        
+        <div class="flex items-center justify-between mb-4 px-1">
+            <span class="text-sm text-gray-500 font-medium">
+                {{ selectedRuleIds.length }} {{ selectedRuleIds.length === 1 ? 'regla seleccionada' : 'reglas seleccionadas' }}
+            </span>
+            <button *ngIf="selectedRuleIds.length > 0" 
+                    (click)="selectedRuleIds = []; setupForm()"
+                    class="text-xs text-red-500 hover:text-red-700 font-bold uppercase tracking-wide">
+                Limpiar todo
+            </button>
+        </div>
+
+        <div class="flex gap-3">
+            <button type="button"
+                    class="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors active:scale-95"
+                    (click)="onCancel()"
+                    [disabled]="isSaving">
+                Cancelar
+            </button>
             
-            <div class="flex-1 min-w-0">
-            <div class="flex items-center space-x-2 mb-1">
-                <span class="text-xl" [attr.aria-hidden]="true">{{ template.icon }}</span>
-                <h4 class="font-medium text-gray-900">{{ template.title }}</h4>
-            </div>
-            <p class="text-sm text-gray-600">{{ template.description }}</p>
-            
-            <!-- Rule type badge -->
-            <div class="mt-2">
-                <span 
-                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                [class.bg-green-100]="template.rule_type === 'GROUP'"
-                [class.text-green-800]="template.rule_type === 'GROUP'"
-                [class.bg-blue-100]="template.rule_type === 'ACTIVITY'"
-                [class.text-blue-800]="template.rule_type === 'ACTIVITY'"
-                [class.bg-purple-100]="template.rule_type === 'BOTH'"
-                [class.text-purple-800]="template.rule_type === 'BOTH'"
-                >
-                {{ getRuleTypeLabel(template.rule_type) }}
-                </span>
-            </div>
-            </div>
-        </label>
+            <button type="button"
+                    class="flex-[2] py-3 px-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
+                    (click)="onSave()"
+                    [disabled]="isSaving">
+                <span *ngIf="!isSaving">Guardar Cambios</span>
+                <span *ngIf="isSaving" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            </button>
         </div>
     </div>
 
-    <!-- No rules available -->
-    <div *ngIf="availableTemplates.length === 0" class="text-center py-8">
-        <div class="text-4xl mb-2">📋</div>
-        <p class="text-gray-600">No hay reglas disponibles para este tipo.</p>
-    </div>
-    </form>
-
-    <!-- Selected Rules Summary -->
-    <div *ngIf="selectedRuleIds.length > 0" class="mt-6 p-4 bg-gray-50 rounded-lg">
-    <h4 class="font-medium text-gray-900 mb-2">
-        Reglas seleccionadas ({{ selectedRuleIds.length }})
-    </h4>
-    <div class="flex flex-wrap gap-2">
-        <span 
-        *ngFor="let template of getSelectedTemplates()"
-        class="inline-flex items-center space-x-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
-        >
-        <span>{{ template.icon }}</span>
-        <span>{{ template.title }}</span>
-        </span>
-    </div>
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="flex space-x-3 pt-4 border-t border-gray-200">
-    <button
-        type="button"
-        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-        (click)="onCancel()"
-        [disabled]="isSaving"
-    >
-        Cancelar
-    </button>
-    <button
-        type="button"
-        class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-        (click)="onSave()"
-        [disabled]="isSaving"
-    >
-        <span *ngIf="!isSaving">Guardar Reglas</span>
-        <span *ngIf="isSaving" class="flex items-center justify-center">
-        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-        Guardando...
-        </span>
-    </button>
-    </div>
 </div>

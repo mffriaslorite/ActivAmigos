@@ -19,9 +19,14 @@ export class CreateActivityModalComponent implements OnInit {
 
   activityForm: FormGroup;
   isSubmitting = false;
-  errorMessage = '';
+  
+  // Gestión de Pasos
+  currentStep: 1 | 2 = 1;
   selectedRuleIds: number[] = [];
-  showRulesStep = false;
+  
+  // Feedback
+  errorMessage = '';
+  successMessage = '';
 
   constructor(
     private fb: FormBuilder,
@@ -33,114 +38,122 @@ export class CreateActivityModalComponent implements OnInit {
   ngOnInit() {}
 
   private createForm(): FormGroup {
+    // Fecha por defecto: Mañana a las 10:00
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(10, 0, 0, 0);
+    // Ajuste zona horaria local para el input datetime-local
+    const localIsoString = new Date(tomorrow.getTime() - (tomorrow.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
 
     return this.fb.group({
-      title: ['', [Validators.required, Validators.maxLength(100)]],
-      description: ['', [Validators.maxLength(500)]],
-      location: ['', [Validators.maxLength(255)]],
-      date: [tomorrow.toISOString().slice(0, 16), [Validators.required]],
-      rules: ['']
+      title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]], // Títulos cortos y claros
+      description: ['', [Validators.maxLength(200)]], // Descripciones concisas
+      location: ['', [Validators.maxLength(50)]],
+      date: [localIsoString, [Validators.required]],
     });
   }
 
-  onSubmit() {
-    if (this.activityForm.valid && !this.isSubmitting) {
-      if (!this.showRulesStep) {
-        // Go to rules step
-        this.showRulesStep = true;
-        return;
-      }
+  // --- Navegación del Wizard ---
 
-      // Create activity with selected rules
-      this.isSubmitting = true;
-      this.errorMessage = '';
-
-      const formValue = this.activityForm.value;
-      const activityData: ActivityCreate = {
-        title: formValue.title,
-        description: formValue.description || undefined,
-        location: formValue.location || undefined,
-        date: new Date(formValue.date).toISOString(),
-        rules: formValue.rules || undefined,
-        rule_ids: this.selectedRuleIds
-      };
-
-      this.activitiesService.createActivity(activityData).subscribe({
-        next: (activity) => {
-          console.log('Activity created successfully:', activity);
-          this.activityCreated.emit();
-          this.resetForm();
-          this.onClose();
-        },
-        error: (error) => {
-          console.error('Error creating activity:', error);
-          this.errorMessage = error.message || 'Error al crear la actividad';
-          this.isSubmitting = false;
-        }
-      });
-    } else {
-      this.markFormGroupTouched();
+  nextStep() {
+    if (this.activityForm.invalid) {
+      this.activityForm.markAllAsTouched();
+      return;
     }
-  }
-
-  goBackToBasicInfo() {
-    this.showRulesStep = false;
-  }
-
-  onRulesSelected(ruleIds: number[]) {
-    this.selectedRuleIds = ruleIds;
-  }
-
-  onClose() {
-    this.resetForm();
+    this.currentStep = 2;
     this.errorMessage = '';
+  }
+
+  prevStep() {
+    this.currentStep = 1;
+    this.errorMessage = '';
+  }
+
+  // --- Gestión de Reglas (Paso 2) ---
+
+  onRulesSave(ruleIds: number[]) {
+    this.selectedRuleIds = ruleIds;
+    // Al guardar reglas, lanzamos la creación final
+    this.finalSubmit();
+  }
+
+  onRulesCancel() {
+    // Si cancela la selección de reglas, volvemos al paso 1
+    this.prevStep();
+  }
+
+  // --- Envío Final ---
+
+  finalSubmit() {
+    this.isSubmitting = true;
+    this.errorMessage = '';
+
+    const formValue = this.activityForm.value;
+    
+    // Preparar objeto para el backend
+    const activityData: ActivityCreate = {
+      title: formValue.title.trim(),
+      description: formValue.description?.trim(),
+      location: formValue.location?.trim(),
+      date: new Date(formValue.date).toISOString(), // Convertir a UTC
+      rule_ids: this.selectedRuleIds
+    };
+
+    this.activitiesService.createActivity(activityData).subscribe({
+      next: () => {
+        this.successMessage = '¡Actividad creada con éxito!';
+        
+        // Cerrar tras breve delay para ver el mensaje
+        setTimeout(() => {
+          this.activityCreated.emit();
+          this.closeModal();
+        }, 1500);
+      },
+      error: (error) => {
+        console.error('Error creating activity:', error);
+        this.errorMessage = 'No se pudo crear la actividad. Inténtalo de nuevo.';
+        this.isSubmitting = false;
+      }
+    });
+  }
+
+  // --- Utilidades ---
+
+  closeModal() {
     this.close.emit();
+    // Resetear estado al cerrar (delay para que no se vea el flash)
+    setTimeout(() => {
+      this.resetForm();
+    }, 300);
   }
 
   private resetForm() {
     this.activityForm.reset();
+    // Restaurar fecha por defecto
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(10, 0, 0, 0);
-    this.activityForm.patchValue({
-      date: tomorrow.toISOString().slice(0, 16)
-    });
+    const localIsoString = new Date(tomorrow.getTime() - (tomorrow.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+    
+    this.activityForm.patchValue({ date: localIsoString });
+    
+    this.currentStep = 1;
     this.isSubmitting = false;
-    this.showRulesStep = false;
+    this.errorMessage = '';
+    this.successMessage = '';
     this.selectedRuleIds = [];
   }
 
-  private markFormGroupTouched() {
-    Object.keys(this.activityForm.controls).forEach(key => {
-      const control = this.activityForm.get(key);
-      control?.markAsTouched();
-    });
-  }
-
-  getFieldError(fieldName: string): string {
-    const field = this.activityForm.get(fieldName);
-    if (field?.touched && field?.errors) {
-      if (field.errors['required']) {
-        return 'Este campo es obligatorio';
-      }
-      if (field.errors['maxlength']) {
-        return `Máximo ${field.errors['maxlength'].requiredLength} caracteres`;
-      }
-    }
-    return '';
-  }
-
+  // Validaciones visuales
   isFieldInvalid(fieldName: string): boolean {
     const field = this.activityForm.get(fieldName);
-    return !!(field?.touched && field?.errors);
+    return !!(field?.invalid && (field?.dirty || field?.touched));
   }
 
   onBackdropClick(event: Event) {
+    if (this.isSubmitting) return; // No cerrar si está enviando
     if (event.target === event.currentTarget) {
-      this.onClose();
+      this.closeModal();
     }
   }
 }

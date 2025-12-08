@@ -9,6 +9,7 @@ export interface Activity {
   created_at: string;
   participant_count: number;
   is_participant: boolean;
+  attendance_status?: 'confirmed' | 'declined' | 'pending' | 'attended' | 'absent' | 'not_participant';
   attendance_confirmed?: boolean;
 }
 

@@ -1,147 +1,106 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { ChatService } from '../../../core/services/chat.service';
-import { AuthService } from '../../../core/services/auth.service';
+import { ModerationService } from '../../../core/services/moderation.service';
 
 export interface UserToWarn {
   id: number;
   username: string;
   first_name?: string;
   last_name?: string;
-  warning_count?: number;
+  warning_count: number;
 }
 
 @Component({
   selector: 'app-moderation-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule],
   templateUrl: './moderation-modal.component.html',
-  styles: [`
-    /* High contrast mode support */
-    @media (prefers-contrast: high) {
-      .bg-white {
-        border: 2px solid #000;
-      }
-      
-      .border-gray-300 {
-        border-color: #374151 !important;
-      }
-      
-      .bg-red-600 {
-        background-color: #dc2626 !important;
-      }
-    }
-    
-    /* Reduced motion support */
-    @media (prefers-reduced-motion: reduce) {
-      .animate-spin {
-        animation: none;
-      }
-    }
-  `]
+  styleUrls: ['./moderation-modal.component.scss']
 })
 export class ModerationModalComponent implements OnInit {
   @Input() isOpen = false;
   @Input() user: UserToWarn | null = null;
   @Input() contextType: 'GROUP' | 'ACTIVITY' = 'GROUP';
-  @Input() contextId!: number;
+  @Input() contextId: number = 0;
 
   @Output() close = new EventEmitter<void>();
   @Output() warningIssued = new EventEmitter<any>();
 
-  warningForm: FormGroup;
+  warningReason = '';
   isSubmitting = false;
-  canIssueWarnings = false;
+  
+  // Estados de feedback interno
+  showSuccess = false;
+  errorMessage = '';
 
-  constructor(
-    private fb: FormBuilder,
-    private chatService: ChatService,
-    private authService: AuthService
-  ) {
-    this.warningForm = this.fb.group({
-      reason: ['', Validators.required],
-      customReason: ['']
-    });
+  // Motivos predefinidos con iconos para hacerlo más visual
+  reasons = [
+    { id: 'language', label: 'Lenguaje inapropiado', icon: '🤬' },
+    { id: 'spam', label: 'Spam / Repetitivo', icon: '📢' },
+    { id: 'respect', label: 'Falta de respeto', icon: '😠' },
+    { id: 'rules', label: 'Incumplimiento de normas', icon: '📜' },
+    { id: 'other', label: 'Otro motivo', icon: '🤔' }
+  ];
 
-    // Add validator for custom reason when "Otro" is selected
-    this.warningForm.get('reason')?.valueChanges.subscribe(value => {
-      const customReasonControl = this.warningForm.get('customReason');
-      if (value === 'Otro') {
-        customReasonControl?.setValidators([Validators.required, Validators.maxLength(255)]);
-      } else {
-        customReasonControl?.clearValidators();
-        customReasonControl?.setValue('');
-      }
-      customReasonControl?.updateValueAndValidity();
-    });
-  }
+  constructor(private moderationService: ModerationService) {}
 
-  ngOnInit() {
-    // Check if current user can issue warnings
-    this.authService.currentUser$.subscribe(user => {
-      this.canIssueWarnings = user?.role === 'ORGANIZER' || user?.role === 'SUPERADMIN';
-    });
-  }
+  ngOnInit() {}
 
   onBackdropClick(event: Event) {
+    if (this.isSubmitting || this.showSuccess) return;
     if (event.target === event.currentTarget) {
-      this.closeModal();
+      this.onClose();
     }
   }
 
-  closeModal() {
+  onClose() {
     this.close.emit();
-    this.resetForm();
+    // Resetear estados al cerrar
+    setTimeout(() => {
+      this.warningReason = '';
+      this.showSuccess = false;
+      this.errorMessage = '';
+      this.isSubmitting = false;
+    }, 300);
   }
 
-  private resetForm() {
-    this.warningForm.reset();
-    this.isSubmitting = false;
+  selectReason(reason: string) {
+    this.warningReason = reason;
+    this.errorMessage = ''; // Limpiar error si selecciona
   }
 
-  getUserDisplayName(): string {
-    if (!this.user) return '';
-    
-    if (this.user.first_name) {
-      return this.user.first_name + (this.user.last_name ? ` ${this.user.last_name}` : '');
-    }
-    return this.user.username;
-  }
-
-  onSubmit() {
-    if (this.warningForm.invalid || !this.user || this.isSubmitting) return;
+  issueWarning() {
+    if (!this.user || !this.warningReason) return;
 
     this.isSubmitting = true;
+    this.errorMessage = '';
 
-    const reason = this.warningForm.get('reason')?.value === 'Otro' 
-      ? this.warningForm.get('customReason')?.value 
-      : this.warningForm.get('reason')?.value;
-
-    this.chatService.issueWarning(
-      this.contextType,
-      this.contextId,
-      this.user.id,
-      reason
-    ).subscribe({
+    this.moderationService.issueWarning({
+      target_user_id: this.user.id,
+      context_type: this.contextType,
+      context_id: this.contextId,
+      reason: this.warningReason
+    }).subscribe({
       next: (response) => {
-        console.log('Warning issued successfully:', response);
-        this.warningIssued.emit(response);
-        this.closeModal();
+        // 1. Mostrar estado de éxito
+        this.showSuccess = true;
         
-        // Show success message
-        // You might want to use a toast service here
-        if (response.was_banned) {
-          alert('Advertencia emitida. El usuario ha sido suspendido automáticamente.');
-        } else {
-          alert('Advertencia emitida correctamente.');
-        }
+        // 2. Notificar y cerrar automáticamente tras leer
+        setTimeout(() => {
+          this.warningIssued.emit(response);
+          this.onClose();
+        }, 1500);
       },
       error: (error) => {
         console.error('Error issuing warning:', error);
-        alert('Error al emitir la advertencia: ' + error.message);
         this.isSubmitting = false;
+        this.errorMessage = 'No se pudo enviar la advertencia. Inténtalo de nuevo.';
       }
     });
+  }
+
+  getUserName(): string {
+    if (!this.user) return 'Usuario';
+    return this.user.first_name || this.user.username;
   }
 }

@@ -68,6 +68,7 @@ class ActivityListSchema(Schema):
     is_participant = fields.Bool()
     attendance_confirmed = fields.Bool()
     created_at = fields.DateTime()
+    created_by = fields.Int()
     attendance_status = fields.Str(allow_none=True)
 
 class JoinLeaveActivityResponseSchema(Schema):

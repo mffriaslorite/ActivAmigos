@@ -40,6 +40,15 @@
   <main class="flex-1 px-4 py-6 max-w-4xl w-full mx-auto space-y-6" *ngIf="!isLoading && activityDetails">
 
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+      <div *ngIf="activityDetails.is_participant && mySemaphoreColor" 
+         class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between mb-2">
+       <div class="flex items-center gap-2">
+         <span class="text-sm text-gray-500 font-medium">Tu comportamiento:</span>
+         <app-semaphore-badge [color]="mySemaphoreColor" [warningCount]="myWarningCount" [showText]="true"></app-semaphore-badge>
+       </div>
+       <span *ngIf="isBanned" class="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded">🚫 Baneado</span>
+    </div>
+
        <div *ngIf="!activityDetails.is_participant" class="text-center">
           <p class="text-gray-600 mb-3">¿Te apetece ir a esta actividad?</p>
           <button (click)="joinActivity()" 

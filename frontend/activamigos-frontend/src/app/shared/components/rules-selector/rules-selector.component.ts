@@ -52,7 +52,8 @@ export class RulesSelectorComponent implements OnInit {
     });
   }
 
-  private setupForm() {
+  // ✅ CORREGIDO: Quitamos 'private' para que el HTML pueda llamarlo
+  setupForm() {
     const controls: any = {};
     
     this.availableTemplates.forEach((template, index) => {

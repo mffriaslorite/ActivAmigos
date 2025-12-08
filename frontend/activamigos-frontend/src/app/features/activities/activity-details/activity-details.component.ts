@@ -11,6 +11,7 @@ import { RulesSelectorComponent } from '../../../shared/components/rules-selecto
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { RulesService } from '../../../core/services/rules.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ModerationService } from '../../../core/services/moderation.service';
 import { AttendanceModalComponent } from '../../../shared/components/attendance-modal/attendance-modal.component';
 
 @Component({
@@ -49,13 +50,18 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
   selectedUserToWarn: UserToWarn | null = null;
   canModerate = false;
 
+  mySemaphoreColor: string | null = null;
+  myWarningCount: number = 0;
+  isBanned = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private activitiesService: ActivitiesService,
     private authService: AuthService,
     private attendanceService: AttendanceService,
-    private rulesService: RulesService
+    private rulesService: RulesService,
+    private moderationService: ModerationService
   ) {}
 
   ngOnInit() {
@@ -93,6 +99,10 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
             name: details.title
           };
 
+          if (this.currentUserId && details.is_participant) {
+            this.loadMyStatus(activityId);
+          }
+
           this.loadActivityRules(activityId);
         },
         error: (error) => {
@@ -115,6 +125,20 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
 
   getRuleIds(): number[] {
     return this.activityRules.map(r => r.id);
+  }
+
+  loadMyStatus(activityId: number) {
+    if (!this.currentUserId) return;
+
+    this.moderationService.getMyStatus('ACTIVITY', activityId, this.currentUserId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (status) => {
+          this.mySemaphoreColor = status.semaphore_color;
+          this.myWarningCount = status.warning_count;
+          this.isBanned = status.status === 'BANNED';
+        }
+      });
   }
 
   // --- Acciones ---

@@ -14,6 +14,7 @@ class Message(db.Model):
     context_id = db.Column(db.Integer, nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    is_system = db.Column(db.Boolean, default=False, nullable=False)
     
     # Foreign keys
     sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -32,6 +33,7 @@ class Message(db.Model):
             'context_id': self.context_id,
             'content': self.content,
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'is_system': self.is_system,
             'sender_id': self.sender_id,
             'sender': {
                 'id': self.sender.id,
@@ -47,8 +49,9 @@ class Message(db.Model):
         """Get the chat room identifier for this message"""
         return f"{self.context_type.value.lower()}:{self.context_id}"
     
-    def __init__(self, content, sender_id, context_type, context_id):
+    def __init__(self, content, sender_id, context_type, context_id, is_system=False):
         self.content = content
         self.sender_id = sender_id
         self.context_type = context_type
         self.context_id = context_id
+        self.is_system = is_system
