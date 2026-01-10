@@ -1,223 +1,164 @@
-<div class="min-h-screen bg-gray-50 flex flex-col">
-  <!-- Header -->
-  <header class="bg-white flex items-center justify-between px-6 py-4 border-b border-gray-200 shadow-sm">
-    <div class="flex items-center space-x-4">
-      <button 
-        class="text-2xl p-2 hover:bg-gray-100 rounded-full transition-colors"
-        (click)="goBack()"
-        aria-label="Volver a grupos"
-      >
-        ←
-      </button>
-      <h1 class="text-xl font-bold text-gray-900">
-        {{ groupDetails ? groupDetails.name : 'Grupo de Lectura' }}
-      </h1>
-    </div>
-  </header>
+<div class="min-h-screen bg-gray-50 pb-20">
+  
+  <div *ngIf="isLoading" class="flex justify-center items-center h-screen">
+    <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
+  </div>
 
-  <!-- Main Content -->
-  <main class="flex-1 px-6 py-6 pb-24 overflow-y-auto">
-    <!-- Loading State -->
-    <div *ngIf="isLoading" class="text-center py-12">
-      <div class="animate-spin inline-block w-8 h-8 border-[3px] border-current border-t-transparent text-blue-600 rounded-full" role="status" aria-label="Cargando">
-        <span class="sr-only">Cargando...</span>
-      </div>
-      <p class="mt-4 text-gray-600">Cargando detalles del grupo...</p>
-    </div>
-
-    <!-- Error Message -->
-    <div *ngIf="errorMessage && !isLoading" class="mb-6">
-      <div class="bg-red-50 border border-red-200 rounded-xl p-4">
-        <div class="flex items-center">
-          <span class="text-red-500 mr-2">⚠️</span>
-          <p class="text-red-700 text-sm">{{ errorMessage }}</p>
-          <button 
-            (click)="loadGroupDetails(groupDetails?.id || 0)" 
-            class="ml-auto text-red-600 text-sm underline hover:text-red-800"
-          >
-            Reintentar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Group Details Content -->
-    <div *ngIf="groupDetails && !isLoading" class="space-y-6">
-      <!-- Group Header -->
-      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <div class="flex items-start space-x-4">
-          <!-- Group Icon -->
-          <div [class]="'w-16 h-16 rounded-xl flex items-center justify-center ' + getIconBackground()">
-            <span class="text-3xl" role="img" [attr.aria-label]="'Icono del grupo ' + groupDetails.name">
-              {{ getGroupIcon() }}
-            </span>
-          </div>
-          
-          <!-- Group Info -->
-          <div class="flex-1 min-w-0">
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">
-              {{ groupDetails.name }}
-            </h2>
-            
-            <div class="flex items-center space-x-4 text-sm text-gray-600 mb-3">
-              <span class="flex items-center">
-                <span class="mr-1" role="img" aria-label="Miembros">👥</span>
-                {{ groupDetails.member_count }} {{ groupDetails.member_count === 1 ? 'miembro' : 'miembros' }}
-              </span>
-            </div>
-            
-            <p *ngIf="groupDetails.description" class="text-gray-700 leading-relaxed">
-              {{ groupDetails.description }}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Members Section -->
-      <section class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <span class="mr-2" role="img" aria-label="Miembros">👥</span>
-          Miembros
-        </h3>
+  <div *ngIf="!isLoading && group">
+    
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+      <div class="px-4 py-3 flex items-center gap-3 max-w-2xl mx-auto">
+        <button (click)="goBack()" class="p-2 -ml-2 hover:bg-gray-100 rounded-full text-xl">←</button>
+        <h1 class="font-bold text-lg truncate flex-1">{{ group.name }}</h1>
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div 
-            *ngFor="let member of groupDetails.members" 
-            class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <!-- Member Avatar -->
-            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
-              {{ getMemberInitials(member) }}
-            </div>
-            
-            <!-- Member Info -->
-            <div class="flex-1 min-w-0">
-              <p class="font-medium text-gray-900 truncate">
-                {{ getMemberDisplayName(member) }}
-                <span *ngIf="member.is_admin" class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                  Organizador
-                </span>
-              </p>
-              <p class="text-sm text-gray-500">{{ member.username }}</p>
-            </div>
-            
-            <!-- Dynamic Semaphore Badge -->
-            <app-semaphore-badge
-              [color]="member.semaphore_color"
-              [warningCount]="member.warning_count"
-              [showText]="true"
-            ></app-semaphore-badge>
+        <button *ngIf="!group.is_member" 
+                (click)="joinGroup()"
+                [disabled]="isActionLoading"
+                class="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-indigo-700 disabled:opacity-50">
+           Unirme
+        </button>
+      </div>
 
-            <!-- Moderation Button (for organizers/admins) -->
-            <button
-              *ngIf="canModerate && currentUserId !== member.id"
-              class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200 transition-colors"
-              (click)="openModerationModal(member)"
-              title="Moderar usuario"
-            >
-              ⚠️
+      <div class="flex border-t border-gray-100">
+        <button (click)="setTab('info')" 
+                class="flex-1 py-3 text-sm font-bold border-b-2 transition-colors"
+                [class.border-indigo-600]="activeTab === 'info'"
+                [class.text-indigo-600]="activeTab === 'info'"
+                [class.border-transparent]="activeTab !== 'info'"
+                [class.text-gray-500]="activeTab !== 'info'">
+          Info
+        </button>
+        <button (click)="setTab('chat')" 
+                class="flex-1 py-3 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2"
+                [class.border-indigo-600]="activeTab === 'chat'"
+                [class.text-indigo-600]="activeTab === 'chat'"
+                [class.border-transparent]="activeTab !== 'chat'"
+                [class.text-gray-500]="activeTab !== 'chat'">
+          Chat 
+          <span *ngIf="!group.is_member" class="text-[10px] bg-gray-200 px-1.5 rounded text-gray-500">🔒</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto p-4">
+
+      <div *ngIf="activeTab === 'info'" class="space-y-4 animate-fade-in">
+        
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+          <div class="text-6xl mb-4">{{ getGroupIcon() }}</div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ group.name }}</h2>
+          <p class="text-gray-500 mb-4">{{ group.description || 'Sin descripción' }}</p>
+          
+          <div class="flex justify-center gap-4 text-sm text-gray-500">
+            <span class="bg-gray-50 px-3 py-1 rounded-lg">👥 {{ group.member_count }} miembros</span>
+            <span class="bg-gray-50 px-3 py-1 rounded-lg">📅 Creado el {{ group.created_at | date:'dd-MM-yyyy' }}</span>
+          </div>
+        </div>
+
+        <button *ngIf="group.is_member"
+                (click)="setTab('chat')"
+                class="w-full py-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-2xl font-bold text-lg border-2 border-indigo-100 shadow-sm transition-all flex items-center justify-center gap-3 active:scale-95">
+            <span class="text-3xl">💬</span>
+            <span>Entrar al Chat del Grupo</span>
+            <span class="text-2xl">→</span>
+        </button>
+
+        <div *ngIf="group.is_member && mySemaphoreColor" 
+             class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+           <div class="flex items-center gap-3">
+             <span class="text-sm text-gray-600 font-medium">Tu comportamiento:</span>
+             <app-semaphore-badge [color]="mySemaphoreColor" [warningCount]="myWarningCount" [showText]="true"></app-semaphore-badge>
+           </div>
+           <span *ngIf="isBanned" class="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded">🚫 Baneado</span>
+        </div>
+
+        <div *ngIf="group.rules" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+          <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">📋 Normas del Grupo</h3>
+          <div class="text-gray-600 text-sm whitespace-pre-line leading-relaxed pl-2 border-l-4 border-indigo-100">
+            {{ group.rules }}
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+          <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+            👥 Participantes <span class="text-sm font-normal text-gray-500">({{ group.members.length }})</span>
+          </h3>
+          
+          <div class="space-y-4">
+            <div *ngFor="let member of group.members" class="flex items-center justify-between group">
+               
+               <div class="flex items-center gap-3">
+                  <div class="relative w-10 h-10 flex-shrink-0">
+                    
+                    <img [src]="getUserAvatarUrl(member.id)" 
+                         class="w-full h-full rounded-full object-cover border border-gray-100"
+                         (error)="member.profile_image = undefined"
+                         *ngIf="member.profile_image">
+                    
+                    <div *ngIf="!member.profile_image" 
+                         class="absolute inset-0 w-full h-full rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 font-bold border border-indigo-100">
+                      {{ member.username.charAt(0).toUpperCase() }}
+                    </div>
+
+                    <span *ngIf="member.is_admin" class="absolute -top-1 -right-1 bg-yellow-400 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full shadow-sm z-10" title="Organizador">👑</span>
+                  </div>
+                  
+                  <div>
+                     <p class="text-sm font-bold text-gray-900 leading-none">
+                       {{ member.first_name ? (member.first_name + ' ' + (member.last_name || '')) : member.username }}
+                     </p>
+                     <p *ngIf="member.is_admin" class="text-xs text-indigo-600 font-medium mt-0.5">Organizador</p>
+                  </div>
+               </div>
+
+               <app-semaphore-badge [color]="member.semaphore_color" [warningCount]="member.warning_count"></app-semaphore-badge>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="group.is_member" class="pt-4">
+           <button (click)="onLeaveClick()"
+                   [disabled]="isActionLoading"
+                   class="w-full py-3 text-red-500 font-bold bg-red-50 rounded-xl hover:bg-red-100 transition-colors">
+             {{ isActionLoading ? 'Procesando...' : 'Salir del Grupo' }}
+           </button>
+        </div>
+
+      </div>
+
+      <div *ngIf="activeTab === 'chat'" class="h-[calc(100vh-180px)]">
+        <ng-container *ngIf="group.is_member; else lockedChat">
+          <app-chat-room 
+            [contextType]="'GROUP'" 
+            [contextId]="group.id">
+          </app-chat-room>
+        </ng-container>
+        
+        <ng-template #lockedChat>
+          <div class="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
+            <div class="text-5xl mb-4">🔒</div>
+            <h3 class="text-lg font-bold text-gray-600 mb-2">Chat Bloqueado</h3>
+            <p class="mb-6 max-w-xs mx-auto">Debes unirte al grupo para poder leer y escribir mensajes.</p>
+            <button (click)="joinGroup()" 
+                    class="bg-indigo-600 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:bg-indigo-700">
+              Unirme al Grupo
             </button>
           </div>
-        </div>
-      </section>
+        </ng-template>
+      </div>
 
-      <!-- Rules Section -->
-      <section class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-gray-900 flex items-center">
-            <span class="mr-2" role="img" aria-label="Reglas">📋</span>
-            Reglas del Grupo
-          </h3>
-          <button
-            *ngIf="canManageRules"
-            class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors"
-            (click)="openRulesSelector()"
-          >
-            ⚙️ Gestionar Reglas
-          </button>
-        </div>
-        
-        <!-- Rules Display -->
-        <div *ngIf="groupRules.length > 0" class="space-y-2">
-          <div 
-            *ngFor="let rule of groupRules"
-            class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
-          >
-            <span class="text-xl">{{ rule.icon }}</span>
-            <div class="flex-1">
-              <h4 class="font-medium text-gray-900">{{ rule.title }}</h4>
-              <p class="text-sm text-gray-600">{{ rule.description }}</p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- No rules state -->
-        <div *ngIf="groupRules.length === 0" class="text-center py-8">
-          <div class="text-4xl mb-2">📋</div>
-          <p class="text-gray-600 mb-2">No hay reglas definidas para este grupo</p>
-          <button
-            *ngIf="canManageRules"
-            class="text-sm text-blue-600 hover:text-blue-800"
-            (click)="openRulesSelector()"
-          >
-            Añadir reglas al grupo
-          </button>
-        </div>
-      </section>
-
-      <!-- Chat Section -->
-      <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <!-- Chat Component -->
-        <div *ngIf="showChat && groupDetails && currentUserId" class="h-96">
-          <app-chat-room 
-            [contextType]="'GROUP'"
-            [contextId]="groupDetails.id"
-          ></app-chat-room>
-        </div>
-        
-        <!-- Loading/Error States -->
-        <div *ngIf="showChat && (!groupDetails || !currentUserId)" class="p-8 text-center text-gray-500">
-          <div class="text-4xl mb-2">💬</div>
-          <p>Preparando el chat...</p>
-        </div>
-        
-        <!-- Collapsed State -->
-        <div *ngIf="!showChat" class="p-4 text-center text-gray-500">
-          <p class="text-sm">Chat minimizado - Haz clic en la flecha para abrir!</p>
-        </div>
-      </section>
-    </div>
-  </main>
-</div>
-
-<!-- Rules Selector Modal -->
-<div 
-  *ngIf="showRulesSelector"
-  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-  (click)="closeRulesSelector()"
->
-  <div 
-    class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden"
-    (click)="$event.stopPropagation()"
-  >
-    <div class="p-6 max-h-[90vh] overflow-y-auto">
-      <app-rules-selector
-        [contextType]="'GROUP'"
-        [contextId]="groupDetails?.id || 0"
-        [preselectedRuleIds]="getPreselectedRuleIds()"
-        (cancel)="closeRulesSelector()"
-        (save)="onRulesSaved($event)"
-      ></app-rules-selector>
-    </div>
+    </main>
   </div>
-</div>
 
-<!-- Moderation Modal -->
-<app-moderation-modal
-  [isOpen]="showModerationModal"
-  [user]="selectedUserToWarn"
-  [contextType]="'GROUP'"
-  [contextId]="groupDetails?.id || 0"
-  (close)="closeModerationModal()"
-  (warningIssued)="onWarningIssued($event)"
-></app-moderation-modal>
+  <app-confirmation-modal
+    [isOpen]="showLeaveModal"
+    [title]="leaveModalConfig.title"
+    [message]="leaveModalConfig.message"
+    [type]="leaveModalConfig.type"
+    [confirmText]="leaveModalConfig.confirmText"
+    [isLoading]="isActionLoading"
+    (confirm)="confirmLeave()"
+    (cancel)="showLeaveModal = false">
+  </app-confirmation-modal>
+
+</div>

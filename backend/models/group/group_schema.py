@@ -29,6 +29,7 @@ class GroupListSchema(Schema):
     member_count = fields.Int()
     is_member = fields.Bool()
     created_at = fields.DateTime()
+    created_by = fields.Int()
 
 class JoinLeaveResponseSchema(Schema):
     message = fields.Str()

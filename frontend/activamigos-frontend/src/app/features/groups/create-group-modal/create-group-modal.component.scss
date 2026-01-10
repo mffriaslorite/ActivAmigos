@@ -1,42 +1,17 @@
-/* Modal specific styles */
-:host {
-  display: block;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* Prevent body scroll when modal is open */
-:host.modal-open {
-  overflow: hidden;
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
-/* Form field enhancements */
-textarea {
-  font-family: inherit;
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
 }
 
-/* Focus and accessibility improvements */
-input:focus,
-textarea:focus {
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-/* Loading state */
-button:disabled {
-  cursor: not-allowed;
-}
-
-/* Character counter styling */
-.character-counter {
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-/* Error state styling */
-.error-field {
-  border-color: #ef4444;
-  background-color: #fef2f2;
-}
-
-.error-field:focus {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }

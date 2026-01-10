@@ -1,116 +1,134 @@
-
-import { Component, Output, EventEmitter, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { GroupsService } from '../../../core/services/groups.service';
 import { GroupCreate } from '../../../core/models/group.model';
 import { RulesSelectorComponent } from '../../../shared/components/rules-selector/rules-selector.component';
 
 @Component({
   selector: 'app-create-group-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RulesSelectorComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RulesSelectorComponent],
   templateUrl: './create-group-modal.component.html',
   styleUrls: ['./create-group-modal.component.scss']
 })
 export class CreateGroupModalComponent {
   @Input() isVisible = false;
-  @Input() isLoading = false;
-  @Output() closeModal = new EventEmitter<void>();
-  @Output() createGroup = new EventEmitter<GroupCreate>();
+  @Output() close = new EventEmitter<void>();
+  @Output() groupCreated = new EventEmitter<void>();
 
-  createGroupForm: FormGroup;
+  groupForm: FormGroup;
+  isSubmitting = false;
+  
+  // Gestión de Pasos
+  currentStep: 1 | 2 = 1;
   selectedRuleIds: number[] = [];
-  showRulesStep = false;
+  
+  // Feedback
+  errorMessage = '';
+  successMessage = '';
 
-  constructor(private fb: FormBuilder) {
-    this.createGroupForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(100)]],
-      description: ['', [Validators.maxLength(500)]],
-      rules: ['']
+  constructor(
+    private fb: FormBuilder,
+    private groupsService: GroupsService
+  ) {
+    this.groupForm = this.createForm();
+  }
+
+  private createForm(): FormGroup {
+    return this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
+      description: ['', [Validators.maxLength(200)]]
     });
   }
 
-  onSubmit() {
-    if (this.createGroupForm.valid && !this.isLoading) {
-      if (!this.showRulesStep) {
-        // Go to rules step
-        this.showRulesStep = true;
-        return;
-      }
+  // --- Navegación ---
 
-      // Create group with selected rules
-      const formData = this.createGroupForm.value;
-      const groupData: GroupCreate = {
-        name: formData.name.trim(),
-        description: formData.description?.trim() || undefined,
-        rules: formData.rules?.trim() || undefined,
-        rule_ids: this.selectedRuleIds
-      };
-
-      this.createGroup.emit(groupData);
+  nextStep() {
+    if (this.groupForm.invalid) {
+      this.groupForm.markAllAsTouched();
+      return;
     }
+    this.currentStep = 2;
+    this.errorMessage = '';
   }
 
-  goBackToBasicInfo() {
-    this.showRulesStep = false;
+  prevStep() {
+    this.currentStep = 1;
+    this.errorMessage = '';
   }
 
-  onRulesSelected(ruleIds: number[]) {
+  // --- Gestión de Reglas (Paso 2) ---
+
+  onRulesSave(ruleIds: number[]) {
     this.selectedRuleIds = ruleIds;
+    // Al guardar reglas, lanzamos la creación final
+    this.finalSubmit();
   }
 
-  onClose() {
-    if (!this.isLoading) {
-      this.closeModal.emit();
+  onRulesCancel() {
+    this.prevStep();
+  }
+
+  // --- Envío Final ---
+
+  finalSubmit() {
+    this.isSubmitting = true;
+    this.errorMessage = '';
+
+    const formValue = this.groupForm.value;
+    
+    const groupData: GroupCreate = {
+      name: formValue.name.trim(),
+      description: formValue.description?.trim(),
+      rule_ids: this.selectedRuleIds
+    };
+
+    this.groupsService.createGroup(groupData).subscribe({
+      next: () => {
+        this.successMessage = '¡Grupo creado con éxito!';
+        
+        // Cerrar tras breve delay
+        setTimeout(() => {
+          this.groupCreated.emit();
+          this.closeModal();
+        }, 1500);
+      },
+      error: (error) => {
+        console.error('Error creating group:', error);
+        this.errorMessage = 'No se pudo crear el grupo. Inténtalo de nuevo.';
+        this.isSubmitting = false;
+      }
+    });
+  }
+
+  // --- Utilidades ---
+
+  closeModal() {
+    this.close.emit();
+    setTimeout(() => {
       this.resetForm();
-    }
+    }, 300);
   }
 
-  onBackdropClick(event: Event) {
-    if (event.target === event.currentTarget) {
-      this.onClose();
-    }
-  }
-
-  resetForm() {
-    this.createGroupForm.reset();
-    this.createGroupForm.markAsUntouched();
-    this.showRulesStep = false;
+  private resetForm() {
+    this.groupForm.reset();
+    this.currentStep = 1;
+    this.isSubmitting = false;
+    this.errorMessage = '';
+    this.successMessage = '';
     this.selectedRuleIds = [];
   }
 
-  // Getter methods for easy access to form controls
-  get name() { return this.createGroupForm.get('name'); }
-  get description() { return this.createGroupForm.get('description'); }
-  get rules() { return this.createGroupForm.get('rules'); }
-
-  // Helper methods for validation
   isFieldInvalid(fieldName: string): boolean {
-    const field = this.createGroupForm.get(fieldName);
-    return !!(field && field.invalid && (field.dirty || field.touched));
+    const field = this.groupForm.get(fieldName);
+    return !!(field?.invalid && (field?.dirty || field?.touched));
   }
 
-  getFieldError(fieldName: string): string {
-    const field = this.createGroupForm.get(fieldName);
-
-    if (field?.errors) {
-      if (field.errors['required']) {
-        return 'Este campo es obligatorio';
-      }
-      if (field.errors['minlength']) {
-        return 'El nombre debe tener al menos 1 carácter';
-      }
-      if (field.errors['maxlength']) {
-        const maxLength = field.errors['maxlength'].requiredLength;
-        return `Máximo ${maxLength} caracteres permitidos`;
-      }
+  onBackdropClick(event: Event) {
+    if (this.isSubmitting) return;
+    if (event.target === event.currentTarget) {
+      this.closeModal();
     }
-
-    return '';
-  }
-
-  getCharacterCount(fieldName: string): number {
-    const field = this.createGroupForm.get(fieldName);
-    return field?.value?.length || 0;
   }
 }

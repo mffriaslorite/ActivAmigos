@@ -304,7 +304,7 @@ def get_group_details(group_id):
         'description': group.description,
         'rules': group.rules,
         'created_by': group.created_by,
-        'created_at': group.created_at.isoformat(),
+        'created_at': group.created_at,
         'member_count': group.member_count,
         'is_member': group.is_member(current_user.id),
         'members': members_data

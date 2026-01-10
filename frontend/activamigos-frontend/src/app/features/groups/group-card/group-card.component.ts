@@ -13,91 +13,45 @@ import { Group } from '../../../core/models/group.model';
 export class GroupCardComponent {
   @Input() group!: Group;
   @Input() isLoading = false;
+  
   @Output() joinGroup = new EventEmitter<number>();
   @Output() leaveGroup = new EventEmitter<number>();
 
   constructor(private router: Router) {}
 
-  onJoinLeave() {
-    if (this.isLoading) return;
-    
-    if (this.group.is_member) {
-      this.leaveGroup.emit(this.group.id);
-    } else {
-      this.joinGroup.emit(this.group.id);
-    }
-  }
-
   onCardClick() {
     this.router.navigate(['/groups', this.group.id]);
   }
 
+  // Acciones separadas para mayor claridad
+  onJoin(event: Event) {
+    event.stopPropagation();
+    if (!this.isLoading) this.joinGroup.emit(this.group.id);
+  }
+
+  onLeave(event: Event) {
+    event.stopPropagation();
+    if (!this.isLoading) this.leaveGroup.emit(this.group.id);
+  }
+
   getGroupIcon(): string {
-    // Simple mapping of group names to icons
     const name = this.group.name.toLowerCase();
-    if (name.includes('fútbol') || name.includes('football') || name.includes('soccer') || name.includes('futbol')) {
-      return '⚽';
-    } else if (name.includes('arte') || name.includes('art') || name.includes('pintura')) {
-      return '🎨';
-    } else if (name.includes('música') || name.includes('music')) {
-      return '🎵';
-    } else if (name.includes('cocina') || name.includes('cooking') || name.includes('chef')) {
-      return '👩‍🍳';
-    } else if (name.includes('juegos') || name.includes('games') || name.includes('gaming')) {
-      return '🎮';
-    } else if (name.includes('lectura') || name.includes('reading') || name.includes('libros')) {
-      return '📚';
-    } else if (name.includes('ejercicio') || name.includes('gym') || name.includes('fitness')) {
-      return '💪';
-    } else if (name.includes('naturaleza') || name.includes('nature') || name.includes('hiking')) {
-      return '🌳';
-    } else {
-      return '👥';
-    }
+    if (name.includes('lectura') || name.includes('libro')) return '📚';
+    if (name.includes('deporte') || name.includes('fútbol')) return '⚽';
+    if (name.includes('cocina') || name.includes('receta')) return '👨‍🍳';
+    if (name.includes('arte') || name.includes('pintura')) return '🎨';
+    if (name.includes('música') || name.includes('canto')) return '🎵';
+    if (name.includes('tecnología') || name.includes('código')) return '💻';
+    if (name.includes('viaje') || name.includes('turismo')) return '✈️';
+    return '👥';
   }
 
   getIconBackground(): string {
     const name = this.group.name.toLowerCase();
-    if (name.includes('fútbol') || name.includes('football') || name.includes('soccer')) {
-      return 'bg-green-100';
-    } else if (name.includes('arte') || name.includes('art') || name.includes('pintura')) {
-      return 'bg-purple-100';
-    } else if (name.includes('música') || name.includes('music')) {
-      return 'bg-pink-100';
-    } else if (name.includes('cocina') || name.includes('cooking') || name.includes('chef')) {
-      return 'bg-orange-100';
-    } else if (name.includes('juegos') || name.includes('games') || name.includes('gaming')) {
-      return 'bg-indigo-100';
-    } else if (name.includes('lectura') || name.includes('reading') || name.includes('libros')) {
-      return 'bg-yellow-100';
-    } else if (name.includes('ejercicio') || name.includes('gym') || name.includes('fitness')) {
-      return 'bg-red-100';
-    } else if (name.includes('naturaleza') || name.includes('nature') || name.includes('hiking')) {
-      return 'bg-green-100';
-    } else {
-      return 'bg-blue-100';
-    }
-  }
-
-  formatDate(dateString: string): string {
-    // Asegurar que la fecha se interprete correctamente
-    let date: Date;
-    
-    if (dateString.endsWith('Z') || dateString.includes('+')) {
-      // Ya tiene información de zona horaria
-      date = new Date(dateString);
-    } else {
-      // Asumir que es UTC y añadir 'Z'
-      date = new Date(dateString + (dateString.includes('T') ? 'Z' : 'T00:00:00Z'));
-    }
-    
-    return date.toLocaleDateString('es-ES', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (name.includes('lectura')) return 'bg-purple-100 text-purple-600';
+    if (name.includes('deporte')) return 'bg-green-100 text-green-600';
+    if (name.includes('cocina')) return 'bg-orange-100 text-orange-600';
+    if (name.includes('arte')) return 'bg-pink-100 text-pink-600';
+    return 'bg-indigo-100 text-indigo-600';
   }
 }

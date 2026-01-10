@@ -1,139 +1,102 @@
-<div class="min-h-screen bg-gray-50 flex flex-col">
-  <!-- Header -->
-  <header class="bg-white flex items-center justify-between px-6 py-4 border-b border-gray-200 shadow-sm">
-    <div class="flex items-center space-x-4">
-      <button 
-        class="text-2xl p-2 hover:bg-gray-100 rounded-full transition-colors"
-        (click)="goBack()"
-        aria-label="Volver al dashboard"
-      >
-        ←
-      </button>
-      <h1 class="text-xl font-bold text-gray-900">Grupos</h1>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main class="flex-1 px-6 py-6 pb-24">
-    <!-- Error Message -->
-    <div *ngIf="errorMessage" class="mb-6">
-      <div class="bg-red-50 border border-red-200 rounded-xl p-4">
-        <div class="flex items-center">
-          <span class="text-red-500 mr-2">⚠️</span>
-          <p class="text-red-700 text-sm">{{ errorMessage }}</p>
-          <button 
-            (click)="retryLoad()" 
-            class="ml-auto text-red-600 text-sm underline hover:text-red-800"
-          >
-            Reintentar
-          </button>
-        </div>
+<div class="min-h-screen bg-gray-50 flex flex-col pb-20">
+    
+    <header class="bg-white px-6 py-4 border-b border-gray-200 sticky top-0 z-10">
+      <div class="flex items-center gap-4 max-w-2xl mx-auto w-full">
+        <button (click)="goBack()" class="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors text-2xl">
+          ←
+        </button>
+        <h1 class="text-2xl font-bold text-gray-900">Grupos</h1>
       </div>
-    </div>
+    </header>
 
-    <!-- Search Bar -->
-    <div class="mb-6">
+    <main class="flex-1 px-4 py-6 w-full max-w-2xl mx-auto space-y-8">
+      
       <div class="relative">
         <input 
           type="text" 
-          placeholder="Buscar grupos..."
+          placeholder="Buscar grupos..." 
           (input)="onSearch($event)"
           [value]="searchTerm"
-          class="w-full px-4 py-3 pl-12 bg-white rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          [disabled]="isLoading"
+          class="w-full px-5 py-3 pl-12 bg-white rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all text-lg"
         >
-        <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" role="img" aria-label="Buscar">🔍</span>
+        <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-2xl">🔍</span>
       </div>
-    </div>
 
-    <!-- Loading State -->
-    <div *ngIf="isLoading && groups.length === 0" class="text-center py-12">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
-      <p class="text-gray-600">Cargando grupos...</p>
-    </div>
-
-    <!-- My Groups Section -->
-    <div *ngIf="!isLoading && getMyGroups().length > 0" class="mb-8">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-        <span class="mr-2" role="img" aria-label="Mis grupos">👥</span>
-        Mis Grupos
-      </h2>
-      <div class="space-y-4">
-        <app-group-card
-          *ngFor="let group of getMyGroups()"
-          [group]="group"
-          [isLoading]="isGroupLoading(group.id)"
-          (joinGroup)="onJoinGroup($event)"
-          (leaveGroup)="onLeaveGroup($event)"
-        ></app-group-card>
+      <div *ngIf="errorMessage" class="bg-red-50 p-4 rounded-xl text-red-700 flex items-center justify-between animate-fade-in">
+        <span>{{ errorMessage }}</span>
+        <button (click)="retryLoad()" class="underline font-bold">Reintentar</button>
       </div>
-    </div>
 
-    <!-- Available Groups Section -->
-    <div *ngIf="!isLoading && getAvailableGroups().length > 0" class="mb-8">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-        <span class="mr-2" role="img" aria-label="Grupos disponibles">🌟</span>
-        Grupos Disponibles
-      </h2>
-      <div class="space-y-4">
-        <app-group-card
-          *ngFor="let group of getAvailableGroups()"
-          [group]="group"
-          [isLoading]="isGroupLoading(group.id)"
-          (joinGroup)="onJoinGroup($event)"
-          (leaveGroup)="onLeaveGroup($event)"
-        ></app-group-card>
+      <div *ngIf="isLoading && groups.length === 0" class="space-y-4">
+         <div class="bg-white h-24 rounded-2xl animate-pulse"></div>
+         <div class="bg-white h-24 rounded-2xl animate-pulse"></div>
+         <div class="bg-white h-24 rounded-2xl animate-pulse"></div>
       </div>
-    </div>
 
-    <!-- Empty State -->
-    <div *ngIf="!isLoading && filteredGroups.length === 0 && !errorMessage" class="text-center py-12">
-      <div class="text-6xl mb-4" role="img" aria-label="Sin grupos">👥</div>
-      <h3 class="text-lg font-semibold text-gray-900 mb-2">
-        {{ searchTerm ? 'No se encontraron grupos' : 'No hay grupos disponibles' }}
-      </h3>
-      <p class="text-gray-500 mb-6">
-        {{ searchTerm ? 'Prueba con otros términos de búsqueda' : 'Sé el primero en crear un grupo' }}
-      </p>
-      <button
-        *ngIf="!searchTerm"
-        (click)="openCreateGroupModal()"
-        class="px-6 py-3 bg-blue-500 text-white font-medium rounded-xl hover:bg-blue-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-      >
-        Crear Primer Grupo
-      </button>
-    </div>
+      <div *ngIf="!isLoading || groups.length > 0">
+        
+        <section *ngIf="getMyGroups().length > 0" class="animate-fade-in">
+          <h2 class="font-bold text-gray-800 text-lg mb-3 flex items-center gap-2">
+            <span>🌟</span> Mis Grupos
+          </h2>
+          <div class="flex flex-col gap-3">
+            <app-group-card 
+              *ngFor="let group of getMyGroups()" 
+              [group]="group" 
+              [isLoading]="isGroupLoading(group.id)"
+              (leaveGroup)="onLeaveGroupClick($event)">
+            </app-group-card>
+          </div>
+        </section>
 
-    <!-- No Search Results -->
-    <div *ngIf="!isLoading && searchTerm && filteredGroups.length === 0 && groups.length > 0" class="text-center py-8">
-      <div class="text-4xl mb-4" role="img" aria-label="Sin resultados">🔍</div>
-      <h3 class="text-lg font-semibold text-gray-900 mb-2">No se encontraron grupos</h3>
-      <p class="text-gray-500">Prueba con otros términos de búsqueda</p>
-    </div>
-  </main>
+        <section *ngIf="getAvailableGroups().length > 0" class="animate-fade-in">
+          <h2 class="font-bold text-gray-800 text-lg mb-3 flex items-center gap-2" 
+              [class.mt-8]="getMyGroups().length > 0">
+            <span>🌍</span> Descubrir
+          </h2>
+          <div class="flex flex-col gap-3">
+            <app-group-card 
+              *ngFor="let group of getAvailableGroups()" 
+              [group]="group" 
+              [isLoading]="isGroupLoading(group.id)"
+              (joinGroup)="onJoinGroup($event)">
+            </app-group-card>
+          </div>
+        </section>
 
-  <!-- Floating Action Button -->
-  <button 
-    class="fixed bottom-28 right-5 w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center text-2xl z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-    (click)="openCreateGroupModal()"
-    [attr.aria-label]="'Crear nuevo grupo'"
-    [disabled]="isCreatingGroup"
-  >
-    <span *ngIf="!isCreatingGroup">+</span>
-    <svg *ngIf="isCreatingGroup" class="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
-  </button>
+        <div *ngIf="filteredGroups.length === 0 && !isLoading && !errorMessage" class="text-center py-12 text-gray-400">
+          <div class="text-5xl mb-3">🤔</div>
+          <p class="text-lg">No encontramos grupos...</p>
+          <button (click)="openCreateGroupModal()" class="mt-4 text-indigo-600 font-bold underline">
+            ¡Crea uno tú!
+          </button>
+        </div>
 
-  <!-- Create Group Modal -->
-  <app-create-group-modal
-    [isVisible]="isModalVisible"
-    [isLoading]="isCreatingGroup"
-    (closeModal)="closeCreateGroupModal()"
-    (createGroup)="onCreateGroup($event)"
-  ></app-create-group-modal>
+      </div>
+    </main>
 
-  <!-- Bottom Navigation -->
-  <app-bottom-nav></app-bottom-nav>
+    <button (click)="openCreateGroupModal()" 
+            class="fixed bottom-24 right-6 w-16 h-16 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center text-4xl pb-1 z-20"
+            aria-label="Crear grupo">
+      +
+    </button>
+
+    <app-create-group-modal 
+        [isVisible]="isModalVisible" 
+        (close)="closeCreateGroupModal()" 
+        (groupCreated)="loadGroups()">
+    </app-create-group-modal>
+
+    <app-confirmation-modal
+      [isOpen]="showLeaveModal"
+      [title]="leaveModalConfig.title"
+      [message]="leaveModalConfig.message"
+      [type]="leaveModalConfig.type"
+      [confirmText]="leaveModalConfig.confirmText"
+      [isLoading]="isGroupLoading(groupToLeave?.id || 0)"
+      (confirm)="confirmLeave()"
+      (cancel)="showLeaveModal = false">
+    </app-confirmation-modal>
+
+    <app-bottom-nav></app-bottom-nav>
 </div>

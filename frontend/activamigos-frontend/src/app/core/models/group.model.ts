@@ -14,7 +14,7 @@ export interface GroupMember {
   username: string;
   first_name?: string;
   last_name?: string;
-  profile_image?: string;
+  profile_image?: string | null;
   is_admin: boolean;
   joined_at: string;
   semaphore_color: 'grey' | 'light_green' | 'dark_green' | 'yellow' | 'red';

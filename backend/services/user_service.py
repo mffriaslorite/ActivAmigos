@@ -306,3 +306,33 @@ def get_user_status_for_context(user_id, context_id=None, context_type=None):
         'active_activities': active_activities,
         'banned_contexts': banned_contexts
     }
+
+@blp.route("/<int:user_id>/image", methods=["GET"])
+def get_user_image(user_id):
+    """Obtener la imagen de perfil pública de cualquier usuario por ID"""
+    user = User.query.get_or_404(user_id)
+    
+    if not user.profile_image:
+        abort(404, message="User has no profile image")
+
+    # 1. Usamos tu método existente para sacar el nombre del archivo de la URL
+    object_name = minio_client._extract_filename_from_url(user.profile_image)
+    
+    # Fallback por si el método devuelve None (si la URL no tiene el formato esperado)
+    if not object_name:
+        object_name = user.profile_image
+
+    try:
+        # 2. Usamos tu método existente para obtener los bytes y el tipo
+        data, content_type = minio_client.get_object_bytes(object_name)
+        
+        return Response(
+            data, 
+            mimetype=content_type,
+            headers={
+                'Cache-Control': 'public, max-age=3600' # Cachear 1 hora en navegador
+            }
+        )
+    except Exception as e:
+        current_app.logger.error(f"Failed to fetch image for user {user_id}: {e}")
+        abort(404, message="Image not found")
