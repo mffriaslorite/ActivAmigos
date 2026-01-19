@@ -1,195 +1,72 @@
-<div class="min-h-screen bg-gray-50 flex flex-col">
-  <!-- Header -->
-  <header class="bg-white flex items-center justify-between px-6 py-4 border-b border-gray-200 shadow-sm">
-    <div class="flex items-center space-x-4">
-      <button 
-        class="text-2xl p-2 hover:bg-gray-100 rounded-full transition-colors"
-        (click)="goBack()"
-      >
-        ←
-      </button>
-      <h1 class="text-xl font-bold text-gray-900">Logros</h1>
-    </div>
-    <div class="flex items-center space-x-2 text-sm text-gray-600">
-      <span>🏆</span>
-      <span>{{ gamificationState?.earned_achievements?.length || 0 }} logros</span>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main class="flex-1 px-6 py-6 pb-24">
-    <!-- User Progress Section -->
-    <div *ngIf="gamificationState" class="bg-white rounded-xl p-6 mb-6 shadow-sm border border-gray-200">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-xl font-bold text-gray-900">
-            ¡Hola, {{ getDisplayName() }}!
-          </h2>
-          <p class="text-gray-600 text-sm">Tu progreso en ActivAmigos</p>
+<div class="min-h-screen bg-gray-50 pb-24">
+    
+    <header class="bg-white shadow-sm sticky top-0 z-10 p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <button (click)="location.back()" class="p-2 -ml-2 hover:bg-gray-100 rounded-full text-xl">←</button>
+            <h1 class="font-bold text-lg text-gray-900">Logros</h1>
         </div>
-        <div class="text-right">
-          <div class="text-2xl font-bold text-indigo-600">
-            {{ gamificationState.points }}
-          </div>
-          <div class="text-xs text-gray-500">puntos totales</div>
-        </div>
-      </div>
-      
-      <!-- Progress Bar -->
-      <app-level-progress-bar
-        [level]="gamificationState.level"
-        [progressToNextLevel]="gamificationState.progress_to_next_level"
-        [showPoints]="true"
-        [showLevel]="true">
-      </app-level-progress-bar>
-    </div>
-
-    <!-- Loading State for Gamification -->
-    <div *ngIf="isLoadingGamification" class="bg-white rounded-xl p-6 mb-6 shadow-sm border border-gray-200">
-      <div class="animate-pulse">
-        <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-        <div class="h-8 bg-gray-200 rounded w-1/2"></div>
-      </div>
-    </div>
-
-    <!-- Achievements Gallery -->
-    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-      <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-        🎯 Galería de Logros
-      </h3>
-
-      <!-- Achievement Categories -->
-      <div class="mb-6">
-        <div class="flex flex-wrap gap-2 mb-4">
-          <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-            ✅ Obtenidos: {{ gamificationState?.earned_achievements?.length || 0 }}
-          </span>
-          <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-            🔒 Pendientes: {{ (allAchievements.length - (gamificationState?.earned_achievements?.length || 0)) }}
-          </span>
-          <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-            📊 Total: {{ allAchievements.length }}
-          </span>
-        </div>
-      </div>
-
-      <!-- Achievements Grid -->
-      <div *ngIf="allAchievements.length > 0; else noAchievements" 
-           class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         
-        <div *ngFor="let achievement of allAchievements" 
-             class="achievement-card relative overflow-hidden"
-             [ngClass]="{
-               'earned': isAchievementEarned(achievement.id),
-               'locked': !isAchievementEarned(achievement.id)
-             }">
-          
-          <!-- Achievement Content -->
-          <div class="p-4 h-full flex flex-col">
-            <!-- Achievement Icon -->
-            <div class="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
-                 [ngClass]="{
-                   'bg-yellow-100': isAchievementEarned(achievement.id),
-                   'bg-gray-100': !isAchievementEarned(achievement.id)
-                 }">
-              <img *ngIf="achievement.icon_url && isAchievementEarned(achievement.id)" 
-                   [src]="getAchievementIconUrl(achievement.id)"
-                   [alt]="achievement.title"
-                   class="w-full h-full object-cover"
-                   (error)="$event.target.style.display='none'">
-              <span *ngIf="!achievement.icon_url || !isAchievementEarned(achievement.id)" 
-                    class="text-2xl"
-                    [ngClass]="{
-                      'opacity-100': isAchievementEarned(achievement.id),
-                      'opacity-30': !isAchievementEarned(achievement.id)
-                    }">
-                {{ isAchievementEarned(achievement.id) ? '🏆' : '🔒' }}
-              </span>
-            </div>
+        <div *ngIf="!isLoading" class="text-sm font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+            {{ unlockedAchievementIds.size }} / {{ allAchievements.length }}
+        </div>
+    </header>
+
+    <main class="p-4 max-w-3xl mx-auto">
+        
+        <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-20">
+            <div class="animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-4"></div>
+            <p class="text-gray-400 animate-pulse">Cargando tu progreso...</p>
+        </div>
+
+        <div *ngIf="!isLoading && allAchievements.length === 0" class="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+            <span class="text-4xl block mb-2">🤷‍♂️</span>
+            <p class="text-gray-500">No hay logros configurados en el sistema.</p>
+        </div>
+
+        <div *ngIf="!isLoading && allAchievements.length > 0" class="grid grid-cols-2 gap-4">
             
-            <!-- Achievement Details -->
-            <div class="text-center flex-1">
-              <h4 class="font-semibold text-gray-900 text-sm mb-2"
-                  [ngClass]="{
-                    'text-gray-900': isAchievementEarned(achievement.id),
-                    'text-gray-400': !isAchievementEarned(achievement.id)
-                  }">
-                {{ achievement.title }}
-              </h4>
-              <p class="text-xs text-gray-600 mb-3 line-clamp-2"
-                 [ngClass]="{
-                   'text-gray-600': isAchievementEarned(achievement.id),
-                   'text-gray-400': !isAchievementEarned(achievement.id)
-                 }">
-                {{ achievement.description }}
-              </p>
-              
-              <!-- Points Badge -->
-              <div class="inline-block px-2 py-1 rounded-full text-xs font-medium mb-2"
-                   [ngClass]="{
-                     'bg-yellow-200 text-yellow-800': isAchievementEarned(achievement.id),
-                     'bg-gray-200 text-gray-600': !isAchievementEarned(achievement.id)
-                   }">
-                +{{ achievement.points_reward }} pts
-              </div>
-              
-              <!-- Date Earned -->
-              <div *ngIf="isAchievementEarned(achievement.id)" class="text-xs text-gray-500 mt-2">
-                {{ formatDate(getEarnedDate(achievement.id)!) }}
-              </div>
-              
-              <!-- Locked State -->
-              <div *ngIf="!isAchievementEarned(achievement.id)" class="text-xs text-gray-400 mt-2">
-                Por desbloquear
-              </div>
+            <div *ngFor="let achievement of allAchievements" 
+                 class="relative flex flex-col items-center text-center p-4 rounded-2xl border-2 transition-all duration-300 h-full"
+                 [ngClass]="isUnlocked(achievement.id) 
+                    ? 'bg-white border-indigo-100 shadow-sm scale-100 opacity-100' 
+                    : 'bg-gray-100 border-transparent opacity-60 grayscale'">
+                
+                <div class="mb-3 text-4xl transform transition-transform duration-500"
+                     [ngClass]="isUnlocked(achievement.id) ? 'scale-110' : 'scale-90'">
+                    {{ isUnlocked(achievement.id) ? '🏆' : '🔒' }}
+                </div>
+                
+                <h3 class="font-bold text-sm mb-1 leading-tight"
+                    [class.text-indigo-900]="isUnlocked(achievement.id)"
+                    [class.text-gray-600]="!isUnlocked(achievement.id)">
+                    {{ achievement.title }}
+                </h3>
+                
+                <p class="text-xs text-gray-500 line-clamp-3 mb-3 leading-relaxed">
+                    {{ achievement.description }}
+                </p>
+
+                <div class="mt-auto pt-2 w-full border-t border-gray-50 flex flex-col items-center gap-1">
+                    
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          [ngClass]="isUnlocked(achievement.id) ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-200 text-gray-500'">
+                        +{{ achievement.points_reward }} XP
+                    </span>
+
+                    <span *ngIf="isUnlocked(achievement.id)" class="text-[10px] text-indigo-400 font-medium">
+                        {{ getUnlockDate(achievement.id) | date:'shortDate' }}
+                    </span>
+                    <span *ngIf="!isUnlocked(achievement.id)" class="text-[10px] text-gray-400 italic">
+                        Bloqueado
+                    </span>
+                </div>
+
+                <div *ngIf="isUnlocked(achievement.id)" class="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+
             </div>
-          </div>
-          
-          <!-- Earned Badge -->
-          <div *ngIf="isAchievementEarned(achievement.id)" 
-               class="absolute top-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-            <span class="text-white text-xs">✓</span>
-          </div>
         </div>
-      </div>
 
-      <!-- No Achievements State -->
-      <ng-template #noAchievements>
-        <div class="text-center py-12">
-          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="text-3xl">🏆</span>
-          </div>
-          <h4 class="text-lg font-semibold text-gray-900 mb-2">Sistema de logros disponible pronto</h4>
-          <p class="text-gray-600 text-sm max-w-xs mx-auto">
-            Los logros están siendo configurados. ¡Vuelve pronto para ver tu progreso!
-          </p>
-        </div>
-      </ng-template>
-
-      <!-- Loading State -->
-      <div *ngIf="isLoadingAchievements" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div *ngFor="let i of [1,2,3,4,5,6]" class="bg-gray-50 rounded-lg p-4 animate-pulse">
-          <div class="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-3"></div>
-          <div class="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
-          <div class="h-3 bg-gray-200 rounded w-full mb-2"></div>
-          <div class="h-6 bg-gray-200 rounded w-1/2 mx-auto"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tips Section -->
-    <div class="mt-6 bg-blue-50 rounded-xl p-4 border border-blue-200">
-      <h4 class="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-        💡 Consejos para obtener logros
-      </h4>
-      <ul class="text-sm text-blue-800 space-y-1">
-        <li>• Participa activamente en grupos para ganar puntos</li>
-        <li>• Crea y únete a actividades regularmente</li>
-        <li>• Cada logro te otorga puntos que te ayudan a subir de nivel</li>
-      </ul>
-    </div>
-  </main>
-
-  <!-- Bottom Navigation -->
-  <app-bottom-nav></app-bottom-nav>
+    </main>
+    
+    <app-bottom-nav></app-bottom-nav>
 </div>

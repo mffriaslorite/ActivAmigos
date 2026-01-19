@@ -86,9 +86,10 @@ class ModerationService:
                     )
             
             # 3. Penalización de Puntos
+            # Al ejecutarse esto, ahora bajará la barra de nivel del usuario automáticamente
             PointsService.deduct_points(
                 target_user_id, 
-                100, 
+                100,
                 f"Aviso de moderación: {reason}",
                 context_type,
                 context_id

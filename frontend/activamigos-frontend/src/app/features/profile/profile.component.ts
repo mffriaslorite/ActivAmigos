@@ -10,9 +10,13 @@ import { Activity } from '../../core/models/activity.model';
 import { GamificationState } from '../../core/models/achivement.model';
 import { GroupsService } from '../../core/services/groups.service';
 import { ActivitiesService } from '../../core/services/activities.service';
-import { AchievementsService } from '../../core/services/achievements.service';
+import { AchievementService } from '../../core/services/achievements.service';
+import { UserStatusService } from '../../core/services/user-status.service';
+
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav.component';
+import { DesktopLayoutComponent } from '../../shared/components/desktop-layout/desktop-layout.component';
 import { LevelProgressBarComponent } from '../../shared/components/level-progress-bar/level-progress-bar.component';
+import { SemaphoreBadgeComponent } from '../../shared/components/semaphore-badge/semaphore-badge.component';
 import { ProfileEditModalComponent } from './edit-profile-modal/edit-profile-modal.component';
 import { PasswordChangeModalComponent } from './password-change-modal/password-change-modal.component';
 
@@ -22,7 +26,9 @@ import { PasswordChangeModalComponent } from './password-change-modal/password-c
     imports: [
       CommonModule, 
       BottomNavComponent, 
+      DesktopLayoutComponent,
       LevelProgressBarComponent,
+      SemaphoreBadgeComponent,
       ProfileEditModalComponent, 
       PasswordChangeModalComponent
     ],
@@ -32,12 +38,15 @@ import { PasswordChangeModalComponent } from './password-change-modal/password-c
 export class ProfileComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
   private destroy$ = new Subject<void>();
+  
   userGroups: Group[] = [];
   upcomingActivities: Activity[] = [];
-  gamificationState: GamificationState | null = null;
-  isLoadingAchievements = false;
   
-  // Modal states
+  gamificationState: GamificationState | null = null;
+  semaphoreColor: string = 'grey';
+  warningCount: number = 0;
+  
+  isLoadingAchievements = false;
   showEditModal = false;
   showPasswordModal = false;
 
@@ -46,14 +55,20 @@ export class ProfileComponent implements OnInit, OnDestroy {
     private router: Router,
     private groupsService: GroupsService,
     private activitiesService: ActivitiesService,
-    private achievementsService: AchievementsService
+    private achievementsService: AchievementService,
+    private userStatusService: UserStatusService
   ) {}
 
   ngOnInit() {
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(user => {
-        this.currentUser = user;
+      .subscribe(user => this.currentUser = user);
+
+    this.userStatusService.userStatus$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(status => {
+        this.semaphoreColor = status.overall_semaphore_color;
+        this.warningCount = status.total_warnings;
       });
 
     this.groupsService.getUserGroups()
@@ -88,94 +103,41 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  goBack() {
-    this.router.navigate(['/dashboard']);
-  }
+  goBack() { this.router.navigate(['/dashboard']); }
 
   navigateTo(path: string) {
-    if (path === '/settings') {
-      this.router.navigate(['/settings/accessibility']);
-    } else if (path === '/notifications' || path === '/privacy') {
-      alert('Funcionalidad próximamente');
-    } else {
-      this.router.navigate([path]);
-    }
+    if (path === '/notifications' || path === '/privacy') alert('Próximamente');
+    else this.router.navigate([path]);
   }
 
-  editProfile() {
-    this.showEditModal = true;
-  }
+  editProfile() { this.showEditModal = true; }
+  onEditModalClose() { this.showEditModal = false; }
+  onProfileUpdated(updatedUser: User) { this.currentUser = updatedUser; }
 
-  changePassword() {
-    this.showPasswordModal = true;
-  }
-
-  onProfileUpdated(updatedUser: User) {
-    this.currentUser = updatedUser;
-  }
-
-  onPasswordChanged() {
-    // Optionally show a success message or perform additional actions
-    console.log('Password changed successfully');
-  }
-
-  onEditModalClose() {
-    this.showEditModal = false;
-  }
-
-  onPasswordModalClose() {
-    this.showPasswordModal = false;
-  }
+  changePassword() { this.showPasswordModal = true; }
+  onPasswordModalClose() { this.showPasswordModal = false; }
+  onPasswordChanged() { console.log('Password changed'); }
 
   getDisplayName(): string {
-    if (!this.currentUser) return '';
-    
-    const firstName = this.currentUser.first_name || '';
-    const lastName = this.currentUser.last_name || '';
-    
-    if (firstName || lastName) {
-      return `${firstName} ${lastName}`.trim();
-    }
-    
-    return this.currentUser.username || 'Usuario';
+    if (!this.currentUser) return 'Cargando...';
+    const { first_name, last_name, username } = this.currentUser;
+    if (first_name || last_name) return `${first_name || ''} ${last_name || ''}`.trim();
+    return username || 'Usuario';
   }
 
-  getProfileImageUrl(): string | null {
-    return this.authService.getProfileImageSrc ? this.authService.getProfileImageSrc() : null;
-  }
-
-  getAchievementIconUrl(achievementId: number): string {
-    return this.achievementsService.getAchievementIconUrl(achievementId);
+  getUserProfileImageUrl(): string | null {
+    return this.authService.getProfileImageSrc() || null;
   }
 
   formatDate(dateString: string): string {
-    // Asegurar que la fecha se interprete correctamente
-    let date: Date;
-    
-    if (dateString.endsWith('Z') || dateString.includes('+')) {
-      // Ya tiene información de zona horaria
-      date = new Date(dateString);
-    } else {
-      // Asumir que es UTC y añadir 'Z'
-      date = new Date(dateString + (dateString.includes('T') ? 'Z' : 'T00:00:00Z'));
-    }
-    
-    return date.toLocaleDateString('es-ES', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (!dateString) return '';
+    const date = new Date(dateString.endsWith('Z') ? dateString : dateString + 'Z');
+    return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' });
   }
   
   logout() {
-    const confirmLogout = confirm('¿Estás seguro de que quieres cerrar sesión?');
-    if (confirmLogout) {
-      this.authService.logout()
-        .pipe(takeUntil(this.destroy$))
-        .subscribe(() => this.router.navigate(['/auth/login']));
-    }
+    this.authService.logout()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.router.navigate(['/auth/login']));
   }
 }

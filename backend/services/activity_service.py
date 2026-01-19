@@ -70,16 +70,15 @@ def create_activity(args):
         
         db.session.commit()
         
-        # Trigger achievement check for creating activities
+        # ✅ TRIGGER: Verificar logro "Soy Organizador"
         try:
-            from utils.achievement_engine_simple import trigger_activity_creation, trigger_activity_join
-            creation_achievements = trigger_activity_creation(current_user.id)
-            participation_achievements = trigger_activity_join(current_user.id)
-            all_achievements = creation_achievements + participation_achievements
-            if all_achievements:
-                print(f"🏆 User {current_user.id} earned achievements: {all_achievements}")
+            from utils.achievement_engine_simple import trigger_creation, trigger_activity_join
+            # Verificamos creación
+            trigger_creation(current_user.id)
+            # Como el creador se une automáticamente, verificamos participación también
+            trigger_activity_join(current_user.id)
         except Exception as e:
-            print(f"Error triggering activity creation achievements: {e}")
+            print(f"Error checking activity creation achievements: {e}")
         
         # Prepare response
         response_data = {
@@ -367,14 +366,12 @@ def join_activity(activity_id):
         if activity.add_participant(current_user):
             db.session.commit()
             
-            # Trigger achievement check for joining activities
+            # ✅ TRIGGER: Verificar logro "¡Me Apunto!" y "Súper Activo"
             try:
                 from utils.achievement_engine_simple import trigger_activity_join
-                achievements_earned = trigger_activity_join(current_user.id)
-                if achievements_earned:
-                    print(f"🏆 User {current_user.id} earned achievements: {achievements_earned}")
+                trigger_activity_join(current_user.id)
             except Exception as e:
-                print(f"Error triggering activity participation achievements: {e}")
+                print(f"Error checking activity join achievements: {e}")
             
             return {
                 'message': 'Successfully joined the activity',

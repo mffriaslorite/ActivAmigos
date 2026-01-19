@@ -1,14 +1,13 @@
 """
-Simplified Achievement Engine
-
-This simplified version focuses on reliability and clarity.
-Updated for accessibility - achievements designed for people with cognitive difficulties:
-- "Primera Actividad": Join first activity
-- "Explorador Social": Join first group  
-- "Creador de Grupo": Create first group
-- "Organizador Nato": Create first activity
-- "Constancia en Grupos": Create 3 groups
-- "Estrella ActivAmigos": Reach level 3
+Motor de Logros Simplificado y Actualizado (ActivAmigos)
+Implementa la lógica para los nuevos logros:
+- "¡Hola!" (Primer mensaje)
+- "Así Soy Yo" (Foto de perfil)
+- "¡Me Apunto!" (Primera actividad)
+- "Haciendo Amigos" (Primer grupo)
+- "Soy Organizador" (Crear grupo o actividad)
+- "Súper Activo" (5 actividades)
+- "Gran Experto" (Nivel 5)
 """
 
 from typing import List
@@ -17,13 +16,17 @@ from models.achievement.achievement import Achievement
 from models.associations.achievement_associations import UserAchievement, UserPoints
 from models.associations.group_associations import group_members
 from models.associations.activity_associations import activity_participants
+from models.message.message import Message
+from models.group.group import Group
+from models.activity.activity import Activity
+from services.points_service import PointsService
 from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
 
 def get_or_create_user_points(user_id: int) -> UserPoints:
-    """Get or create UserPoints record for a user"""
+    """Obtener o inicializar el registro de puntos del usuario"""
     user_points = UserPoints.query.filter_by(user_id=user_id).first()
     if not user_points:
         user_points = UserPoints(user_id=user_id, points=0)
@@ -31,31 +34,30 @@ def get_or_create_user_points(user_id: int) -> UserPoints:
         db.session.flush()
     return user_points
 
-def award_achievement(user_id: int, achievement_title: str) -> bool:
-    """Award a specific achievement to a user if they don't already have it"""
+def award_achievement_if_new(user_id: int, achievement_title: str) -> bool:
+    """
+    Otorga un logro específico si el usuario no lo tiene aún.
+    Registra los puntos en el historial usando PointsService.
+    """
     try:
-        # Find the achievement
+        # 1. Buscar el logro en la base de datos
         achievement = Achievement.query.filter_by(title=achievement_title).first()
         if not achievement:
-            print(f"❌ Achievement '{achievement_title}' not found in database")
-            logger.warning(f"Achievement '{achievement_title}' not found")
+            # Silencioso en producción para no llenar logs si el logro no existe (aún no se ha hecho seed)
             return False
         
-        print(f"✅ Found achievement '{achievement_title}' (ID: {achievement.id})")
-        
-        # Check if user already has this achievement
+        # 2. Comprobar si el usuario ya lo tiene
         existing = UserAchievement.query.filter_by(
             user_id=user_id, 
             achievement_id=achievement.id
         ).first()
         
         if existing:
-            print(f"⚠️ User {user_id} already has achievement '{achievement_title}'")
-            return False  # Already has achievement
+            return False  # Ya lo tiene, no hacemos nada
+
+        print(f"✅ ¡Usuario {user_id} gana el logro '{achievement_title}'!")
         
-        print(f"✅ User {user_id} eligible for achievement '{achievement_title}'")
-        
-        # Award the achievement
+        # 3. Guardar la relación Usuario-Logro
         user_achievement = UserAchievement(
             user_id=user_id,
             achievement_id=achievement.id,
@@ -63,195 +65,126 @@ def award_achievement(user_id: int, achievement_title: str) -> bool:
         )
         db.session.add(user_achievement)
         
-        # Add points reward
+        # 4. Otorgar Puntos y registrar en Historial
         if achievement.points_reward > 0:
-            user_points = get_or_create_user_points(user_id)
-            user_points.add_points(achievement.points_reward)
-            print(f"🎯 Added {achievement.points_reward} points to user {user_id}")
+            PointsService.award_points(
+                user_id, 
+                achievement.points_reward, 
+                f"Logro desbloqueado: {achievement_title}",
+                "ACHIEVEMENT",
+                achievement.id
+            )
+            print(f"🎯 +{achievement.points_reward} XP añadidos al historial.")
         
-        logger.info(f"Awarded achievement '{achievement_title}' to user {user_id}")
-        print(f"🏆 Successfully awarded '{achievement_title}' to user {user_id}")
+        # Commit de la transacción del logro
+        db.session.commit()
+        
+        # Opcional: Notificar al servicio de logros para avisos en tiempo real (si se implementa socket)
+        # from services.achievement_service import notify_user...
+        
+        logger.info(f"Logro '{achievement_title}' otorgado al usuario {user_id}")
         return True
         
     except Exception as e:
-        logger.error(f"Error awarding achievement '{achievement_title}' to user {user_id}: {e}")
-        print(f"❌ Error awarding achievement '{achievement_title}': {e}")
+        logger.error(f"Error otorgando logro '{achievement_title}' al usuario {user_id}: {e}")
+        print(f"❌ Error en el motor de logros: {e}")
+        db.session.rollback()
         return False
 
-def check_group_achievements(user_id: int) -> List[str]:
-    """Check and award group-related achievements"""
+# --- TRIGGERS: Funciones que llaman los servicios cuando ocurre una acción ---
+
+def trigger_message_sent(user_id: int):
+    """
+    Llamar cuando el usuario envía un mensaje.
+    Logro: "¡Hola!" (Primer mensaje)
+    """
     try:
-        # Count user's groups
-        group_count = db.session.query(group_members).filter_by(user_id=user_id).count()
-        
-        achievements_awarded = []
-        
-        # First group achievement: "Explorador Social"
-        if group_count == 1:
-            if award_achievement(user_id, "Explorador Social"):
-                achievements_awarded.append("Explorador Social")
-        
-        return achievements_awarded
-        
+        msg_count = Message.query.filter_by(sender_id=user_id).count()
+        if msg_count == 1:
+            award_achievement_if_new(user_id, "¡Hola!")
     except Exception as e:
-        logger.error(f"Error checking group achievements for user {user_id}: {e}")
-        return []
+        logger.error(f"Error en trigger_message_sent: {e}")
 
-def check_group_creation_achievements(user_id: int) -> List[str]:
-    """Check and award group creation achievements"""
+def trigger_profile_updated(user_id: int):
+    """
+    Llamar cuando el usuario actualiza su perfil.
+    Logro: "Así Soy Yo" (Foto de perfil subida)
+    """
     try:
-        # Import here to avoid circular imports
-        from models.group.group import Group
-        
-        # Count groups created by user
-        group_count = Group.query.filter_by(created_by=user_id).count()
-        print(f"🔍 User {user_id} has created {group_count} groups")
-        
-        achievements_awarded = []
-        
-        # First group creation: "Creador de Grupo"
-        if group_count == 1:
-            print(f"🎯 Checking 'Creador de Grupo' achievement for user {user_id}")
-            if award_achievement(user_id, "Creador de Grupo"):
-                achievements_awarded.append("Creador de Grupo")
-                print(f"🏆 Awarded 'Creador de Grupo' to user {user_id}")
-        
-        # 3 group creations: "Constancia en Grupos"
-        elif group_count == 3:
-            print(f"🎯 Checking 'Constancia en Grupos' achievement for user {user_id}")
-            if award_achievement(user_id, "Constancia en Grupos"):
-                achievements_awarded.append("Constancia en Grupos")
-                print(f"🏆 Awarded 'Constancia en Grupos' to user {user_id}")
-        
-        return achievements_awarded
-        
+        user = User.query.get(user_id)
+        if user and user.profile_image:
+            award_achievement_if_new(user_id, "Así Soy Yo")
     except Exception as e:
-        logger.error(f"Error checking group creation achievements for user {user_id}: {e}")
-        print(f"❌ Error in group creation achievements: {e}")
-        return []
+        logger.error(f"Error en trigger_profile_updated: {e}")
 
-def check_activity_creation_achievements(user_id: int) -> List[str]:
-    """Check and award activity creation achievements"""
+def trigger_activity_join(user_id: int):
+    """
+    Llamar cuando el usuario se une a una actividad.
+    Logros: 
+    - "¡Me Apunto!" (1ª actividad)
+    - "Súper Activo" (5 actividades)
+    """
     try:
-        # Import here to avoid circular imports
-        from models.activity.activity import Activity
+        count = db.session.query(activity_participants).filter_by(user_id=user_id).count()
         
-        # Count activities created by user
-        activity_count = Activity.query.filter_by(created_by=user_id).count()
-        print(f"🔍 User {user_id} has created {activity_count} activities")
+        if count >= 1:
+            award_achievement_if_new(user_id, "¡Me Apunto!")
         
-        achievements_awarded = []
-        
-        # First activity creation: "Organizador Nato"
-        if activity_count == 1:
-            print(f"🎯 Checking 'Organizador Nato' achievement for user {user_id}")
-            if award_achievement(user_id, "Organizador Nato"):
-                achievements_awarded.append("Organizador Nato")
-                print(f"🏆 Awarded 'Organizador Nato' to user {user_id}")
-        
-        return achievements_awarded
-        
+        if count >= 5:
+            award_achievement_if_new(user_id, "Súper Activo")
     except Exception as e:
-        logger.error(f"Error checking activity creation achievements for user {user_id}: {e}")
-        print(f"❌ Error in activity creation achievements: {e}")
-        return []
+        logger.error(f"Error en trigger_activity_join: {e}")
 
-def check_activity_join_achievements(user_id: int) -> List[str]:
-    """Check and award activity join achievements"""
+def trigger_group_join(user_id: int):
+    """
+    Llamar cuando el usuario se une a un grupo.
+    Logro: "Haciendo Amigos" (1er grupo)
+    """
     try:
-        # Count activities user has joined
-        participation_count = db.session.query(activity_participants).filter_by(user_id=user_id).count()
-        
-        achievements_awarded = []
-        
-        # First activity join: "Primera Actividad"
-        if participation_count == 1:
-            if award_achievement(user_id, "Primera Actividad"):
-                achievements_awarded.append("Primera Actividad")
-        
-        return achievements_awarded
-        
+        count = db.session.query(group_members).filter_by(user_id=user_id).count()
+        if count >= 1:
+            award_achievement_if_new(user_id, "Haciendo Amigos")
     except Exception as e:
-        logger.error(f"Error checking activity join achievements for user {user_id}: {e}")
-        return []
+        logger.error(f"Error en trigger_group_join: {e}")
 
-def check_level_achievements(user_id: int) -> List[str]:
-    """Check and award level-based achievements"""
+def trigger_creation(user_id: int):
+    """
+    Llamar cuando el usuario crea un Grupo O una Actividad.
+    Logro: "Soy Organizador" (Crear algo por primera vez)
+    """
     try:
-        user_points = UserPoints.query.filter_by(user_id=user_id).first()
-        if not user_points:
-            return []
+        g_count = Group.query.filter_by(created_by=user_id).count()
+        a_count = Activity.query.filter_by(created_by=user_id).count()
         
-        current_level = user_points.level
-        achievements_awarded = []
-
-        # Level 5 achievement: "Estrella ActivAmigos"
-        if current_level >= 5:
-            if award_achievement(user_id, "Estrella ActivAmigos"):
-                achievements_awarded.append("Estrella ActivAmigos")
-        
-        return achievements_awarded
-        
+        if (g_count + a_count) >= 1:
+            award_achievement_if_new(user_id, "Soy Organizador")
     except Exception as e:
-        logger.error(f"Error checking level achievements for user {user_id}: {e}")
-        return []
+        logger.error(f"Error en trigger_creation: {e}")
 
-def check_all_achievements(user_id: int) -> List[str]:
-    """Check all possible achievements for a user"""
+def trigger_points_update(user_id: int):
+    """
+    Llamar cuando el usuario gana puntos.
+    Logro: "Gran Experto" (Nivel 5)
+    """
     try:
-        all_achievements = []
+        # Calcular nivel actual basándonos en puntos totales
+        points = PointsService.get_user_points(user_id)
+        # Fórmula simple: Cada 100 puntos es 1 nivel (0-99=Lv1, 100-199=Lv2...)
+        level = (points // 100) + 1
         
-        # Check all achievement types
-        all_achievements.extend(check_group_achievements(user_id))
-        all_achievements.extend(check_group_creation_achievements(user_id))
-        all_achievements.extend(check_activity_creation_achievements(user_id))
-        all_achievements.extend(check_activity_join_achievements(user_id))
-        all_achievements.extend(check_level_achievements(user_id))
-        
-        # Commit all changes if any achievements were awarded
-        if all_achievements:
-            db.session.commit()
-            logger.info(f"User {user_id} earned achievements: {all_achievements}")
-        
-        return all_achievements
-        
+        if level >= 5:
+            award_achievement_if_new(user_id, "Gran Experto")
     except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error checking all achievements for user {user_id}: {e}")
-        return []
+        logger.error(f"Error en trigger_points_update: {e}")
 
-# Convenience functions for easy integration
-def trigger_group_join(user_id: int) -> List[str]:
-    """Trigger when user joins a group"""
-    achievements = check_group_achievements(user_id)
-    if achievements:
-        db.session.commit()
-    return achievements
-
-def trigger_group_creation(user_id: int) -> List[str]:
-    """Trigger when user creates a group"""
-    achievements = check_group_creation_achievements(user_id)
-    if achievements:
-        db.session.commit()
-    return achievements
-
-def trigger_activity_creation(user_id: int) -> List[str]:
-    """Trigger when user creates an activity"""
-    achievements = check_activity_creation_achievements(user_id)
-    if achievements:
-        db.session.commit()
-    return achievements
-
-def trigger_activity_join(user_id: int) -> List[str]:
-    """Trigger when user joins an activity"""
-    achievements = check_activity_join_achievements(user_id)
-    if achievements:
-        db.session.commit()
-    return achievements
-
-def trigger_points_update(user_id: int) -> List[str]:
-    """Trigger when user gains points (check for level achievements)"""
-    achievements = check_level_achievements(user_id)
-    if achievements:
-        db.session.commit()
-    return achievements
+def check_all_achievements(user_id: int):
+    """
+    Comprobación completa de sincronización.
+    Útil para llamar al iniciar sesión o en mantenimientos.
+    """
+    trigger_message_sent(user_id)
+    trigger_profile_updated(user_id)
+    trigger_activity_join(user_id)
+    trigger_group_join(user_id)
+    trigger_creation(user_id)
+    trigger_points_update(user_id)

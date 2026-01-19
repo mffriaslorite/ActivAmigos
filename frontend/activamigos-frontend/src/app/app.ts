@@ -1,21 +1,22 @@
 import { Component, signal, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { AchievementNotificationsContainerComponent } from './shared/components/achievement-notification-container/achievement-notification-container.component';
-import { AchievementNotificationsSimpleService } from './core/services/achievement-notifications-simple.service';
+import { AuthService } from './core/services/auth.service';
+
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, AchievementNotificationsContainerComponent],
+  imports: [RouterOutlet],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
 export class App implements OnInit {
   protected readonly title = signal('activamigos-frontend');
 
-  constructor(private achievementNotifications: AchievementNotificationsSimpleService) {}
+  constructor(
+    private authService: AuthService
+  ) {}
 
   ngOnInit() {
-    // Initialize the achievement notifications service
-    this.achievementNotifications.initialize();
+    this.authService.checkAuthStatus().subscribe();
   }
 }

@@ -7,6 +7,7 @@ import { ChatService } from '../../../core/services/chat.service';
 import { ActivitiesService } from '../../../core/services/activities.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ModerationService } from '../../../core/services/moderation.service';
+import { UserService } from '../../../core/services/user.service';
 import { SemaphoreBadgeComponent } from '../semaphore-badge/semaphore-badge.component';
 import { ModerationModalComponent, UserToWarn } from '../moderation-modal/moderation-modal.component';
 
@@ -67,7 +68,8 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
     private chatService: ChatService,
     private authService: AuthService,
     private activitiesService: ActivitiesService,
-    private moderationService: ModerationService
+    private moderationService: ModerationService,
+    private userService: UserService
   ) {
     this.messageForm = this.fb.group({
       content: ['', [Validators.required, Validators.maxLength(500)]]
@@ -214,6 +216,10 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
   getAvatarInitial(sender: any): string {
     const name = this.getSenderName(sender);
     return name.charAt(0).toUpperCase();
+  }
+
+  getUserAvatarUrl(userId: number): string {
+    return this.userService.getProfileImageUrl(userId);
   }
 
   formatTimestamp(timestamp: string): string {

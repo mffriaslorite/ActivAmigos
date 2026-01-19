@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, throwError, of } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { User } from '../models/user.model';
 import { LoginRequest, RegisterRequest, AuthResponse, PasswordHint, AnimalListResponse } from '../models/auth.model';
@@ -293,6 +293,26 @@ export class AuthService {
   isOrganizerOrAdmin(): boolean {
     const user = this.currentUserSubject.value;
     return user?.role === 'ORGANIZER' || user?.role === 'SUPERADMIN';
+  }
+
+  /**
+   * Verifica si hay una sesión activa en el backend al recargar la página.
+   * Llama al endpoint /me que creamos en el backend.
+   */
+  checkAuthStatus(): Observable<boolean> {
+    return this.http.get<User>(`${this.API_BASE_URL}/auth/me`, { withCredentials: true })
+      .pipe(
+        map(user => {
+          // Al actualizar el usuario, isAuthenticated$ se actualiza automáticamente
+          this.currentUserSubject.next(user);
+          return true;
+        }),
+        catchError(() => {
+          // Si falla, limpiamos el usuario
+          this.currentUserSubject.next(null);
+          return of(false);
+        })
+      );
   }
 
 }

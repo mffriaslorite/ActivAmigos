@@ -2,9 +2,10 @@ export interface Achievement {
   id: number;
   title: string;
   description: string;
-  icon_url?: string;
   points_reward: number;
-  created_at: string;
+  icon?: string;          // Icono (emoji)
+  earned_at?: string;     // Fecha de obtención (si lo tiene)
+  date_earned?: string;
 }
 
 export interface UserAchievement {

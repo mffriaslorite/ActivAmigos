@@ -242,6 +242,13 @@ def init_socketio(app, socketio_instance):
             
             db.session.add(message)
             db.session.commit()
+
+            # ✅ TRIGGER: Verificar logro "¡Hola!"
+            try:
+                from utils.achievement_engine_simple import trigger_message_sent
+                trigger_message_sent(message.sender_id)
+            except Exception as e:
+                print(f"Error checking chat achievements: {e}")
             
             # Serialize message for broadcast
             message_dict = message.to_dict()

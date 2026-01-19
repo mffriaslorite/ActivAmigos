@@ -9,29 +9,41 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./level-progress-bar.component.scss']
 })
 export class LevelProgressBarComponent implements OnChanges {
-  @Input() level: number = 0;
-  @Input() progressToNextLevel: number = 0; // 0-1 float
+  // ✅ Nuevo Input: Puntos totales (lo que manda el perfil)
+  @Input() points: number = 0;
+  
+  // Opciones visuales
   @Input() showPoints: boolean = true;
   @Input() showLevel: boolean = true;
 
+  // Variables calculadas para la vista
+  level: number = 1;
   progressPercentage: number = 0;
-  currentPoints: number = 0;
+  pointsInCurrentLevel: number = 0;
   pointsToNextLevel: number = 100;
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['progressToNextLevel']) {
-      this.updateProgress();
+    if (changes['points']) {
+      this.calculateLevelData();
     }
   }
 
-  private updateProgress(): void {
-    // Ensure progress is between 0 and 1
-    const progress = Math.max(0, Math.min(1, this.progressToNextLevel));
-    this.progressPercentage = progress * 100;
+  private calculateLevelData(): void {
+    // Lógica Simple: Cada 100 puntos es un nivel
+    // 0-99 pts = Nivel 1
+    // 100-199 pts = Nivel 2, etc.
     
-    // Calculate current points within the level (0-99)
-    this.currentPoints = Math.floor(progress * 100);
-    this.pointsToNextLevel = 100 - this.currentPoints;
+    // 1. Calcular Nivel (mínimo nivel 1)
+    this.level = Math.floor(this.points / 100) + 1;
+    
+    // 2. Calcular puntos dentro del nivel actual (el resto de dividir por 100)
+    this.pointsInCurrentLevel = this.points % 100;
+    
+    // 3. Calcular porcentaje (al ser base 100, es igual a los puntos)
+    this.progressPercentage = this.pointsInCurrentLevel;
+
+    // 4. Calcular cuánto falta
+    this.pointsToNextLevel = 100 - this.pointsInCurrentLevel;
   }
 
   getProgressBarStyle(): { [key: string]: string } {

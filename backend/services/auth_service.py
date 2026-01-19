@@ -159,3 +159,25 @@ def refresh_token():
         abort(401, message="Refresh token expired")
     except jwt.InvalidTokenError:
         abort(401, message="Invalid refresh token")
+
+@blp.route("/me", methods=["GET"])
+@blp.response(200, UserSchema)
+def get_current_user_info():
+    """
+    Obtener información del usuario actual logueado.
+    Se usa para persistencia de sesión al recargar el frontend.
+    """
+    # 1. Verificar si hay ID en la sesión
+    if "user_id" not in session:
+        abort(401, message="Authentication required")
+    
+    # 2. Buscar el usuario
+    user = User.query.get(session["user_id"])
+    
+    # 3. Verificar que exista y esté activo
+    if not user or not user.is_active:
+        # Si la sesión es inválida (usuario borrado/ban), la limpiamos
+        session.clear()
+        abort(401, message="User not found or inactive")
+        
+    return user

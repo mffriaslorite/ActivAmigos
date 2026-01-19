@@ -118,6 +118,13 @@ def upload_profile_image(files, current_user: User):
         current_user.profile_image = image_url
         db.session.commit()
 
+        # ✅ TRIGGER: Verificar logro "Así Soy Yo"
+        try:
+            from utils.achievement_engine_simple import trigger_profile_updated
+            trigger_profile_updated(current_user.id)
+        except Exception as e:
+            print(f"Error checking profile achievements: {e}")
+
         return current_user
 
     except ValueError as e:
@@ -311,7 +318,7 @@ def get_user_status_for_context(user_id, context_id=None, context_type=None):
 def get_user_image(user_id):
     """Obtener la imagen de perfil pública de cualquier usuario por ID"""
     user = User.query.get_or_404(user_id)
-    
+    print(user.profile_image)
     if not user.profile_image:
         abort(404, message="User has no profile image")
 

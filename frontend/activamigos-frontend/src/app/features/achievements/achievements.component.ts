@@ -1,166 +1,86 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
-import { AchievementsService } from '../../core/services/achievements.service';
-import { AchievementNotificationsSimpleService } from '../../core/services/achievement-notifications-simple.service';
-import { AuthService } from '../../core/services/auth.service';
-
-import { GamificationState, Achievement } from '../../core/models/achivement.model';
-import { User } from '../../core/models/user.model';
+import { Location } from '@angular/common';
+import { forkJoin } from 'rxjs';
+import { AchievementService } from '../../core/services/achievements.service';
+import { Achievement, GamificationState } from '../../core/models/achivement.model';
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav.component';
-import { LevelProgressBarComponent } from '../../shared/components/level-progress-bar/level-progress-bar.component';
 
 @Component({
   selector: 'app-achievements',
   standalone: true,
-  imports: [
-    CommonModule,
-    BottomNavComponent,
-    LevelProgressBarComponent
-  ],
+  imports: [CommonModule, BottomNavComponent],
   templateUrl: './achievements.component.html',
   styleUrls: ['./achievements.component.scss']
 })
-export class AchievementsComponent implements OnInit, OnDestroy {
-  currentUser: User | null = null;
-  gamificationState: GamificationState | null = null;
+export class AchievementsComponent implements OnInit {
+  // Lista completa para mostrar
   allAchievements: Achievement[] = [];
-  isLoadingGamification = false;
-  isLoadingAchievements = false;
-  private destroy$ = new Subject<void>();
+  
+  // IDs de los que ya tengo
+  unlockedAchievementIds: Set<number> = new Set();
+  
+  // Estado del usuario
+  myState: GamificationState | null = null;
+  
+  isLoading = true;
 
   constructor(
-    private achievementsService: AchievementsService,
-    private authService: AuthService,
-    private router: Router,
-    private achievementNotifications: AchievementNotificationsSimpleService
+    private achievementsService: AchievementService,
+    public location: Location
   ) {}
 
   ngOnInit() {
-    this.authService.currentUser$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(user => {
-        this.currentUser = user;
-      });
-
-    // Subscribe to the global gamification state
-    this.achievementNotifications.gamificationState$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(state => {
-        if (state) {
-          this.gamificationState = state;
-          this.isLoadingGamification = false;
-        }
-      });
-
-    this.loadAllAchievements();
-    this.loadGamificationState();
+    this.loadData();
   }
 
-  ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
-
-  loadGamificationState() {
-    this.isLoadingGamification = true;
-    this.achievementsService.getGamificationState()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (state) => {
-          this.gamificationState = state;
-          this.isLoadingGamification = false;
-        },
-        error: (error) => {
-          console.error('Error loading gamification state:', error);
-          this.isLoadingGamification = false;
-        }
-      });
-  }
-
-  loadAllAchievements() {
-    this.isLoadingAchievements = true;
-    this.achievementsService.getAllAchievements()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (achievements) => {
-          this.allAchievements = achievements;
-          this.isLoadingAchievements = false;
-        },
-        error: (error) => {
-          console.error('Error loading achievements:', error);
-          this.isLoadingAchievements = false;
-        }
-      });
-  }
-
-  goBack() {
-    this.router.navigate(['/dashboard']);
-  }
-
-  getAchievementIconUrl(achievementId: number): string {
-    return this.achievementsService.getAchievementIconUrl(achievementId);
-  }
-
-  formatDate(dateString: string): string {
-    // Asegurar que la fecha se interprete correctamente
-    let date: Date;
+  loadData() {
+    this.isLoading = true;
     
-    if (dateString.endsWith('Z') || dateString.includes('+')) {
-      // Ya tiene información de zona horaria
-      date = new Date(dateString);
-    } else {
-      // Asumir que es UTC y añadir 'Z'
-      date = new Date(dateString + (dateString.includes('T') ? 'Z' : 'T00:00:00Z'));
-    }
-    
-    return date.toLocaleDateString('es-ES', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    // Llamamos a los dos endpoints a la vez
+    forkJoin({
+      catalog: this.achievementsService.getAllAchievements(),
+      myState: this.achievementsService.getGamificationState()
+    }).subscribe({
+      next: (response) => {
+        this.allAchievements = response.catalog;
+        this.myState = response.myState;
+        
+        // Creamos un Set con los IDs obtenidos para búsqueda rápida
+        this.unlockedAchievementIds = new Set(
+          response.myState.earned_achievements.map(ua => ua.achievement_id) // Ojo: achievement_id o achievement.id según venga del backend
+        );
+        
+        // Parche de seguridad: si el array viene vacío (mapper), intentamos map manual
+        if (this.unlockedAchievementIds.size === 0 && response.myState.earned_achievements.length > 0) {
+             response.myState.earned_achievements.forEach(ua => {
+                 // A veces viene el objeto entero 'achievement'
+                 if (ua.achievement && ua.achievement.id) this.unlockedAchievementIds.add(ua.achievement.id);
+                 // O a veces la ID directa
+                 else if (ua.achievement_id) this.unlockedAchievementIds.add(ua.achievement_id);
+             });
+        }
+
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando logros:', err);
+        this.isLoading = false;
+      }
     });
   }
 
-  isAchievementEarned(achievementId: number): boolean {
-    return this.gamificationState?.earned_achievements?.some(
-      userAchievement => userAchievement.achievement.id === achievementId
-    ) || false;
+  isUnlocked(achievementId: number): boolean {
+    return this.unlockedAchievementIds.has(achievementId);
   }
 
-  getEarnedDate(achievementId: number): string | null {
-    const userAchievement = this.gamificationState?.earned_achievements?.find(
-      userAchievement => userAchievement.achievement.id === achievementId
+  // Obtener fecha de obtención (si existe)
+  getUnlockDate(achievementId: number): string | null {
+    if (!this.myState) return null;
+    const found = this.myState.earned_achievements.find(ua => 
+        (ua.achievement && ua.achievement.id === achievementId) || 
+        ua.achievement_id === achievementId
     );
-    return userAchievement ? userAchievement.date_earned : null;
-  }
-
-  getDisplayName(): string {
-    if (!this.currentUser) return '';
-    
-    const firstName = this.currentUser.first_name || '';
-    const lastName = this.currentUser.last_name || '';
-    
-    if (firstName || lastName) {
-      return `${firstName} ${lastName}`.trim();
-    }
-    
-    return this.currentUser.username || 'Usuario';
-  }
-
-  checkAllAchievements() {
-    this.isLoadingGamification = true;
-    try {
-      this.achievementNotifications.refreshAchievements();
-      console.log('✅ Achievements checked and updated!');
-    } catch (error) {
-      console.error('Error checking achievements:', error);
-    } finally {
-      this.isLoadingGamification = false;
-    }
+    return found ? found.date_earned : null;
   }
 }

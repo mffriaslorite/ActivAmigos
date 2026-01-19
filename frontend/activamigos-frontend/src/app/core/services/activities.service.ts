@@ -67,13 +67,6 @@ export class ActivitiesService {
         const currentActivities = this.activitiesSubject.value;
         this.activitiesSubject.next([newActivity, ...currentActivities]);
         this.isLoadingSubject.next(false);
-        
-        // Automatically refresh achievements after creating an activity
-        try {
-          this.achievementNotifications.refreshAchievements();
-        } catch (error) {
-          console.error('Error refreshing achievements after activity creation:', error);
-        }
       }),
       catchError(this.handleError)
     );
@@ -130,15 +123,6 @@ export class ActivitiesService {
       tap(async response => {
         // Update the activity's participation status in the current activities list
         this.updateActivityParticipation(id, response.is_participant, response.participant_count);
-        
-        // Automatically refresh achievements after joining an activity
-        if (response.is_participant) {
-          try {
-            this.achievementNotifications.refreshAchievements();
-          } catch (error) {
-            console.error('Error refreshing achievements after activity join:', error);
-          }
-        }
       }),
       catchError(this.handleError)
     );

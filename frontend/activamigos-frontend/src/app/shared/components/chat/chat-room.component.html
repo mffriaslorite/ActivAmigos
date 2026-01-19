@@ -42,9 +42,15 @@
            class="flex gap-3 group" 
            [ngClass]="isMyMessage(msg) ? 'flex-row-reverse' : 'flex-row'">
         
-        <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm"
+        <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm"
              [ngClass]="isMyMessage(msg) ? 'bg-blue-500' : 'bg-gray-400'">
-          {{ getAvatarInitial(msg.sender) }}
+          <img *ngIf="getUserAvatarUrl(msg.sender.id); else showInitial" 
+               [src]="getUserAvatarUrl(msg.sender.id)" 
+               alt="Avatar" 
+               class="w-10 h-10 rounded-full object-cover">
+          <ng-template #showInitial>
+            {{ getAvatarInitial(msg.sender) }}
+          </ng-template>
         </div>
 
         <div class="flex flex-col max-w-[75%]" 

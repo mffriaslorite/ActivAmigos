@@ -67,14 +67,13 @@ def create_group(args):
         
         db.session.commit()
         
-        # Trigger achievement check for creating groups
+        # ✅ TRIGGER: Verificar logro "Soy Organizador"
         try:
-            from utils.achievement_engine_simple import trigger_group_creation
-            achievements_earned = trigger_group_creation(current_user.id)
-            if achievements_earned:
-                print(f"🏆 User {current_user.id} earned achievements: {achievements_earned}")
+            from utils.achievement_engine_simple import trigger_creation, trigger_group_join
+            trigger_creation(current_user.id)
+            trigger_group_join(current_user.id) # El creador se une al grupo
         except Exception as e:
-            print(f"Error triggering group creation achievements: {e}")
+            print(f"Error checking group creation achievements: {e}")
         
         # Prepare response
         response_data = {
@@ -210,14 +209,12 @@ def join_group(group_id):
         if group.add_member(current_user):
             db.session.commit()
             
-            # Trigger achievement check for joining groups
+            # ✅ TRIGGER: Verificar logro "Haciendo Amigos"
             try:
                 from utils.achievement_engine_simple import trigger_group_join
-                achievements_earned = trigger_group_join(current_user.id)
-                if achievements_earned:
-                    print(f"🏆 User {current_user.id} earned achievements: {achievements_earned}")
+                trigger_group_join(current_user.id)
             except Exception as e:
-                print(f"Error triggering group join achievements: {e}")
+                print(f"Error checking group join achievements: {e}")
             
             return {
                 'message': 'Successfully joined the group',

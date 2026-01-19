@@ -17,6 +17,6 @@ private apiUrl = `${environment.apiUrl}/api`;
    */
   getProfileImageUrl(userId: number): string {
     // Ajusta '/users/' según el prefix de tu backend (user o users)
-    return `${this.apiUrl}/users/${userId}/image`;
+    return `${this.apiUrl}/user/${userId}/image`;
   }
 }
