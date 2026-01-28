@@ -1,46 +1,66 @@
-<div class="min-h-screen flex flex-col lg:flex-row items-center justify-center px-6 py-12 bg-white">
-  <!-- Left Content -->
-  <div class="flex flex-col items-center lg:items-start text-center lg:text-left w-full lg:w-1/2 max-w-md mb-10 lg:mb-0">
-    <h1 class="text-4xl font-bold mb-4">ActivAmigos</h1>
-    <p class="text-gray-600 mb-8">
-      Conecta con todos tus amigos y conoce a nuevos amigos mediante actividades juntos
+<div class="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-white flex flex-col relative overflow-hidden">
+  
+  <div class="absolute top-0 left-0 w-64 h-64 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+  <div class="absolute top-0 right-0 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+
+  <nav class="w-full max-w-6xl mx-auto px-6 py-6 flex justify-between items-center z-10">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">🚀</span>
+      <span class="font-black text-indigo-900 tracking-tight">ActivAmigos</span>
+    </div>
+    <button (click)="navigateToLogin()" class="text-sm font-bold text-gray-500 hover:text-indigo-600 transition-colors">
+      Entrar
+    </button>
+  </nav>
+
+  <main class="flex-1 flex flex-col items-center justify-center px-4 text-center z-10 pb-10">
+    
+    <div class="inline-flex items-center gap-2 bg-white border border-indigo-50 px-3 py-1 rounded-full shadow-sm mb-8 animate-fade-in-up">
+        <div class="flex -space-x-2">
+            <div class="w-6 h-6 rounded-full bg-blue-100 border-2 border-white"></div>
+            <div class="w-6 h-6 rounded-full bg-green-100 border-2 border-white"></div>
+            <div class="w-6 h-6 rounded-full bg-yellow-100 border-2 border-white"></div>
+        </div>
+        <span class="text-xs font-bold text-gray-500">¡Únete a la comunidad!</span>
+    </div>
+
+    <h1 class="text-5xl md:text-6xl font-black text-gray-900 mb-6 tracking-tight leading-tight animate-fade-in-up delay-100">
+      Planes reales con <br>
+      <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">gente como tú</span>
+    </h1>
+
+    <p class="text-lg text-gray-500 mb-10 max-w-lg mx-auto leading-relaxed animate-fade-in-up delay-200">
+      Deja las pantallas y empieza a vivir. Encuentra grupos, apúntate a actividades y diviértete.
     </p>
 
-    <!-- Buttons -->
-    <div class="flex flex-col gap-4 w-full">
-      <button
-        (click)="navigateToLogin()"
-        class="w-full py-5 rounded-xl bg-blue-500 text-white font-semibold text-lg shadow-sm hover:bg-blue-600 transition"
-      >
-        Iniciar Sesión
+    <div class="flex flex-col sm:flex-row gap-4 w-full max-w-sm animate-fade-in-up delay-300">
+      <button (click)="navigateToRegister()" 
+              class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-1 transition-all">
+        Empezar Ahora
       </button>
-      <button
-        (click)="navigateToRegister()"
-        class="w-full py-5 rounded-xl bg-gray-100 text-gray-800 font-semibold text-lg border border-gray-300 hover:bg-gray-200 transition"
-      >
-        Registrarse
+      <button (click)="navigateToLogin()" 
+              class="flex-1 py-4 bg-white text-gray-700 border border-gray-200 rounded-2xl font-bold text-lg hover:bg-gray-50 transition-all">
+        Ya tengo cuenta
       </button>
     </div>
-  </div>
 
-  <!-- Right Hero Illustration -->
-  <div class="w-full lg:w-1/2 flex justify-center slide-up">
-    <div class="relative">
-      <div class="bg-blue-200 rounded-2xl p-8 h-72 flex items-center justify-center shadow-md">
-        <div class="text-center">
-          <div class="text-6xl mb-4">🤝</div>
-          <p class="text-blue-800 font-medium text-lg">
-            Encuentra tu comunidad activa
-          </p>
+    <div class="grid grid-cols-3 gap-4 md:gap-12 mt-16 max-w-3xl mx-auto w-full animate-fade-in-up delay-500 border-t border-gray-100 pt-10">
+        <div class="flex flex-col items-center">
+            <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-2xl mb-3 text-blue-600">👥</div>
+            <span class="font-bold text-gray-800 text-sm">Grupos</span>
+            <span class="text-xs text-gray-400 mt-1">Conecta por aficiones</span>
         </div>
-      </div>
-      <!-- Floating elements -->
-      <div class="absolute -top-4 -right-4 bg-blue-500 text-white p-3 rounded-full shadow-lg">
-        🏃‍♀️
-      </div>
-      <div class="absolute -bottom-4 -left-4 bg-green-500 text-white p-3 rounded-full shadow-lg">
-        🧘‍♂️
-      </div>
+        <div class="flex flex-col items-center">
+            <div class="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-2xl mb-3 text-green-600">📅</div>
+            <span class="font-bold text-gray-800 text-sm">Actividades</span>
+            <span class="text-xs text-gray-400 mt-1">Planes cerca de ti</span>
+        </div>
+        <div class="flex flex-col items-center">
+            <div class="w-12 h-12 bg-yellow-50 rounded-2xl flex items-center justify-center text-2xl mb-3 text-yellow-600">🏆</div>
+            <span class="font-bold text-gray-800 text-sm">Logros</span>
+            <span class="text-xs text-gray-400 mt-1">Sube de nivel</span>
+        </div>
     </div>
-  </div>
+
+  </main>
 </div>

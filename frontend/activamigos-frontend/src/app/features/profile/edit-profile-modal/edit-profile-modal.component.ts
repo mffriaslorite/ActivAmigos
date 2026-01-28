@@ -5,11 +5,12 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
 import { User } from '../../../core/models/user.model';
+import { ConfirmationModalComponent } from '../../../shared/components/confirmation-modal/confirmation-modal.component';
 
 @Component({
   selector: 'app-profile-edit-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ConfirmationModalComponent], // ✅ Añadido a imports
   templateUrl: './edit-profile-modal.component.html',
   styleUrls: ['./edit-profile-modal.component.scss']
 })
@@ -20,8 +21,13 @@ export class ProfileEditModalComponent implements OnInit, OnDestroy {
   @Output() profileUpdated = new EventEmitter<User>();
 
   profileForm: FormGroup;
-  isLoading = false;
-  isUploading = false;
+  isLoading = false;     // Para guardar cambios generales
+  isUploading = false;   // Para subir foto
+  
+  // ✅ Nuevas variables para el modal de borrado
+  showDeleteConfirmation = false;
+  isDeleting = false;    // Para spinner del modal de borrado
+
   errorMessage = '';
   successMessage = '';
   private destroy$ = new Subject<void>();
@@ -61,18 +67,14 @@ export class ProfileEditModalComponent implements OnInit, OnDestroy {
   onImageSelected(event: any) {
     const file = event.target.files[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         this.errorMessage = 'Por favor selecciona un archivo de imagen válido';
         return;
       }
-
-      // Validate file size (16MB)
       if (file.size > 16 * 1024 * 1024) {
         this.errorMessage = 'El archivo es demasiado grande. El tamaño máximo es 16MB';
         return;
       }
-
       this.uploadImage(file);
     }
   }
@@ -102,11 +104,14 @@ export class ProfileEditModalComponent implements OnInit, OnDestroy {
     return this.authService.getProfileImageSrc ? this.authService.getProfileImageSrc() : null;
   }
 
+  // ✅ Modificado: Solo abre el modal
   onDeleteImage() {
-    const confirmDelete = confirm('¿Seguro que quieres eliminar tu foto de perfil?');
-    if (!confirmDelete) return;
+    this.showDeleteConfirmation = true;
+  }
 
-    this.isLoading = true;
+  // ✅ Nuevo: Ejecuta el borrado cuando el usuario confirma en el modal
+  onConfirmDelete() {
+    this.isDeleting = true;
     this.errorMessage = '';
     this.successMessage = '';
 
@@ -117,15 +122,18 @@ export class ProfileEditModalComponent implements OnInit, OnDestroy {
           this.currentUser = updatedUser;
           this.profileUpdated.emit(updatedUser);
           this.successMessage = 'Foto de perfil eliminada';
-          this.isLoading = false;
-          // Limpia el <input type="file"> si lo hubiera
+          
+          this.isDeleting = false;
+          this.showDeleteConfirmation = false; // Cierra el modal de confirmación
+          
           if (this.fileInputRef) {
             this.fileInputRef.nativeElement.value = '';
           }
         },
         error: (error) => {
           this.errorMessage = error.message || 'No se pudo eliminar la foto';
-          this.isLoading = false;
+          this.isDeleting = false;
+          this.showDeleteConfirmation = false;
         }
       });
   }

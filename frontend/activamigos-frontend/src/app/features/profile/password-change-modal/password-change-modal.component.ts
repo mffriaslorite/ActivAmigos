@@ -25,7 +25,6 @@ export class PasswordChangeModalComponent implements OnDestroy {
   showCurrentPassword = false;
   showNewPassword = false;
   showConfirmPassword = false;
-  showPasswordHint = true; // Siempre mostrar la pista
   passwordHint: PasswordHint | null = null;
   animalsList: string[] = [];
   private destroy$ = new Subject<void>();
@@ -36,26 +35,23 @@ export class PasswordChangeModalComponent implements OnDestroy {
   ) {
     this.passwordForm = this.fb.group({
       current_password: ['', [Validators.required]],
-      new_password: ['', [Validators.required, Validators.minLength(8), this.passwordValidator]],
+      // ✅ CAMBIO: Eliminada la validación compleja. Solo mínimo 2 caracteres.
+      new_password: ['', [Validators.required, Validators.minLength(2)]],
       confirm_password: ['', [Validators.required]]
     }, { validators: this.passwordMatchValidator });
   }
 
   ngOnInit() {
-    // Load animals list for password hints
     this.authService.getAnimalsList().subscribe({
       next: (response) => {
         this.animalsList = response.animals;
-        // Set up the password hint to show animals by default
         this.passwordHint = {
           hint_available: true,
           hint_type: 'ANIMAL_LIST',
           animals: response.animals
         };
       },
-      error: (err) => {
-        console.error('Error loading animals list:', err);
-      }
+      error: (err) => console.error('Error loading animals list:', err)
     });
   }
 
@@ -64,17 +60,7 @@ export class PasswordChangeModalComponent implements OnDestroy {
     this.destroy$.complete();
   }
 
-  passwordValidator(control: AbstractControl) {
-    const password = control.value;
-    if (!password) return null;
-
-    const hasNumber = /[0-9]/.test(password);
-    const hasUpper = /[A-Z]/.test(password);
-    const hasLower = /[a-z]/.test(password);
-    const valid = hasNumber && hasUpper && hasLower && password.length >= 8;
-
-    return valid ? null : { passwordStrength: true };
-  }
+  // ✅ ELIMINADO: passwordValidator (ya no se usa)
 
   passwordMatchValidator(group: AbstractControl) {
     const newPassword = group.get('new_password');
@@ -83,16 +69,6 @@ export class PasswordChangeModalComponent implements OnDestroy {
     if (!newPassword || !confirmPassword) return null;
     
     return newPassword.value === confirmPassword.value ? null : { passwordMismatch: true };
-  }
-
-  getPasswordStrength() {
-    const password = this.passwordForm.get('new_password')?.value || '';
-    return {
-      length: password.length >= 8,
-      hasNumber: /[0-9]/.test(password),
-      hasUpperCase: /[A-Z]/.test(password),
-      hasLowerCase: /[a-z]/.test(password)
-    };
   }
 
   onSubmit() {

@@ -1,148 +1,107 @@
-<div class="fixed inset-0 bg-gray-300 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50" *ngIf="isVisible">
-    <div class="bg-white rounded-xl p-6 m-4 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-6">
+<div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" *ngIf="isVisible">
+    
+    <div class="bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in" (click)="$event.stopPropagation()">
+        
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-10">
             <h2 class="text-xl font-bold text-gray-900">Editar Perfil</h2>
-            <button 
-                class="text-gray-400 hover:text-gray-600 p-2"
-                (click)="closeModal()"
-            >
-            ✕
-            </button>
+            <button class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors" (click)="closeModal()">✕</button>
         </div>
 
-        <!-- Profile Image Section -->
-        <div class="text-center mb-6">
-            <div class="relative inline-block">
-                <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 overflow-hidden">
-                    <img 
-                        *ngIf="getProfileImageUrl()" 
-                        [src]="getProfileImageUrl()" 
-                        alt="Profile" 
-                        class="w-full h-full object-cover"
-                    >
-                    <span *ngIf="!getProfileImageUrl()" class="text-3xl">👤</span>
+        <div class="p-6">
+            
+            <div class="flex flex-col items-center mb-8">
+                <div class="relative group cursor-pointer" (click)="triggerFileInput()">
+                    <div class="w-28 h-28 bg-indigo-50 rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
+                        <img *ngIf="getProfileImageUrl()" [src]="getProfileImageUrl()" alt="Profile" class="w-full h-full object-cover">
+                        <span *ngIf="!getProfileImageUrl()" class="text-4xl">👤</span>
+                    </div>
+                    
+                    <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span class="text-2xl">📷</span>
+                    </div>
+                    
+                    <div class="absolute bottom-0 right-0 bg-indigo-600 text-white rounded-full w-8 h-8 flex items-center justify-center border-2 border-white shadow-sm">
+                        <span class="text-xs">✏️</span>
+                    </div>
                 </div>
-                <button 
-                    type="button"
-                    class="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 transition-colors"
-                    (click)="triggerFileInput()"
-                    [disabled]="isUploading"
-                >
-                    <span *ngIf="!isUploading">📷</span>
-                    <span *ngIf="isUploading" class="inline-block animate-spin">⏳</span>
-                </button>
+
+                <input #fileInput type="file" class="hidden" accept="image/*" (change)="onImageSelected($event)">
+                
+                <div class="mt-4 flex gap-3" *ngIf="getProfileImageUrl()">
+                    <button type="button" 
+                            class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors"
+                            (click)="triggerFileInput()"
+                            [disabled]="isUploading">
+                        {{ isUploading ? 'Subiendo...' : 'Cambiar foto' }}
+                    </button>
+                    <button type="button" 
+                            class="text-xs font-bold text-red-500 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors"
+                            (click)="onDeleteImage()"
+                            [disabled]="isUploading || isLoading">
+                        Eliminar
+                    </button>
+                </div>
             </div>
-            <input 
-                #fileInput
-                type="file" 
-                class="hidden" 
-                accept="image/*"
-                (change)="onImageSelected($event)"
-            >
-            <p class="text-sm text-gray-500 mt-2">
-                {{ isUploading ? 'Subiendo imagen...' : 'Haz clic en el ícono de cámara para cambiar la foto' }}
-            </p>
-            <div class="mt-2" *ngIf="getProfileImageUrl()">
-                <button
-                    type="button"
-                    class="mt-2 text-sm text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    (click)="onDeleteImage()"
-                    [disabled]="isUploading || isLoading || !getProfileImageUrl()"
-                >
-                    Eliminar foto de perfil
-                </button>
-            </div>
+
+            <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="space-y-5">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Nombre</label>
+                        <input type="text" formControlName="first_name" class="input-field" placeholder="Tu nombre">
+                        <p *ngIf="profileForm.get('first_name')?.invalid && profileForm.get('first_name')?.touched" class="text-xs text-red-500 mt-1 pl-1">Campo requerido</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Apellido</label>
+                        <input type="text" formControlName="last_name" class="input-field" placeholder="Tu apellido">
+                        <p *ngIf="profileForm.get('last_name')?.invalid && profileForm.get('last_name')?.touched" class="text-xs text-red-500 mt-1 pl-1">Campo requerido</p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Biografía</label>
+                    <textarea formControlName="bio" rows="3" class="input-field resize-none" placeholder="Cuéntanos algo sobre ti..." maxlength="500"></textarea>
+                    <div class="flex justify-between mt-1 px-1">
+                        <p *ngIf="profileForm.get('bio')?.invalid" class="text-xs text-red-500">Máximo 500 caracteres</p>
+                        <span class="text-xs text-gray-400 ml-auto">{{ profileForm.get('bio')?.value?.length || 0 }}/500</span>
+                    </div>
+                </div>
+
+                <div *ngIf="errorMessage" class="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-medium flex items-center gap-2 animate-fade-in">
+                    <span>⚠️</span> {{ errorMessage }}
+                </div>
+                <div *ngIf="successMessage" class="bg-green-50 text-green-700 p-3 rounded-xl text-sm font-medium flex items-center gap-2 animate-fade-in">
+                    <span>✅</span> {{ successMessage }}
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" 
+                            class="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                            (click)="closeModal()" 
+                            [disabled]="isLoading || isUploading">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="flex-[2] py-3 px-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex justify-center items-center gap-2"
+                            [disabled]="isLoading || isUploading || profileForm.invalid">
+                        <span *ngIf="!isLoading">Guardar Cambios</span>
+                        <span *ngIf="isLoading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    </button>
+                </div>
+            </form>
         </div>
-
-        <!-- Edit Form -->
-        <form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
-            <!-- First Name -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre
-                </label>
-                <input
-                    type="text"
-                    formControlName="first_name"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Tu nombre"
-                >
-                <div *ngIf="profileForm.get('first_name')?.invalid && profileForm.get('first_name')?.touched" 
-                        class="text-red-500 text-xs mt-1">
-                    El nombre es requerido y debe tener al menos 2 caracteres
-                </div>
-            </div>
-
-            <!-- Last Name -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Apellido
-                </label>
-                <input
-                    type="text"
-                    formControlName="last_name"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Tu apellido"
-                >
-                <div *ngIf="profileForm.get('last_name')?.invalid && profileForm.get('last_name')?.touched" 
-                        class="text-red-500 text-xs mt-1">
-                    El apellido es requerido y debe tener al menos 2 caracteres
-                </div>
-            </div>
-
-            <!-- Bio -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Biografía
-                </label>
-                <textarea
-                    formControlName="bio"
-                    rows="3"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Cuéntanos algo sobre ti..."
-                    maxlength="500"
-                ></textarea>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ profileForm.get('bio')?.value?.length || 0 }}/500 caracteres
-                </div>
-                <div *ngIf="profileForm.get('bio')?.invalid && profileForm.get('bio')?.touched" 
-                        class="text-red-500 text-xs mt-1">
-                    La biografía no puede exceder 500 caracteres
-                </div>
-            </div>
-
-            <!-- Error/Success Messages -->
-            <div *ngIf="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                {{ errorMessage }}
-            </div>
-            <div *ngIf="successMessage" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                {{ successMessage }}
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex space-x-3">
-                <button
-                    type="button"
-                    class="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                    (click)="closeModal()"
-                    [disabled]="isLoading || isUploading"
-                >
-                    Cancelar
-                </button>
-                <button
-                    type="submit"
-                    class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-                    [disabled]="isLoading || isUploading || profileForm.invalid"
-                    [attr.aria-busy]="isLoading"
-                >
-                    <span *ngIf="!isLoading">Guardar Cambios</span>
-                    <span *ngIf="isLoading" class="inline-flex items-center">
-                        <span class="animate-spin mr-2">⏳</span> Guardando...
-                    </span>
-                </button>
-            </div>
-        </form>
     </div>
-</div>
 
+    <app-confirmation-modal
+      [isOpen]="showDeleteConfirmation"
+      title="¿Eliminar foto?"
+      message="¿Estás seguro de que quieres eliminar tu foto de perfil? Volverás a tener el avatar por defecto."
+      confirmText="Sí, eliminar"
+      cancelText="Cancelar"
+      type="danger"
+      [isLoading]="isDeleting"
+      (confirm)="onConfirmDelete()"
+      (cancel)="showDeleteConfirmation = false">
+    </app-confirmation-modal>
+
+</div>
