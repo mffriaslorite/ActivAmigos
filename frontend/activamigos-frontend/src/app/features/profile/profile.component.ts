@@ -19,6 +19,7 @@ import { LevelProgressBarComponent } from '../../shared/components/level-progres
 import { SemaphoreBadgeComponent } from '../../shared/components/semaphore-badge/semaphore-badge.component';
 import { ProfileEditModalComponent } from './edit-profile-modal/edit-profile-modal.component';
 import { PasswordChangeModalComponent } from './password-change-modal/password-change-modal.component';
+import { AchievementNotificationsSimpleService } from '../../core/services/achievement-notifications-simple.service';
 
 @Component({
     selector: 'app-profile',
@@ -56,10 +57,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
     private groupsService: GroupsService,
     private activitiesService: ActivitiesService,
     private achievementsService: AchievementService,
-    private userStatusService: UserStatusService
+    private userStatusService: UserStatusService,
+    private notificationService: AchievementNotificationsSimpleService
   ) {}
 
   ngOnInit() {
+    this.notificationService.clearNotification();
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => this.currentUser = user);

@@ -16,6 +16,7 @@ import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-na
 import { DesktopLayoutComponent } from '../../shared/components/desktop-layout/desktop-layout.component';
 import { AttendanceModalComponent, ActivityToConfirm } from '../../shared/components/attendance-modal/attendance-modal.component';
 import { SemaphoreBadgeComponent } from '../../shared/components/semaphore-badge/semaphore-badge.component';
+import { AchievementNotificationsSimpleService } from '../../core/services/achievement-notifications-simple.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -53,6 +54,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   userWarningCount = 0;
 
   today = new Date();
+  hasUnreadNotifications = false;
 
   constructor(
     private authService: AuthService,
@@ -61,7 +63,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private userStatusService: UserStatusService,
     private router: Router,
     private groupsService: GroupsService,
-    private activitiesService: ActivitiesService
+    private activitiesService: ActivitiesService,
+    private notificationService: AchievementNotificationsSimpleService
   ) {}
 
   ngOnInit() {
@@ -83,6 +86,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .subscribe(status => {
         this.userSemaphoreColor = status.overall_semaphore_color;
         this.userWarningCount = status.total_warnings;
+      });
+
+    this.notificationService.hasUnreadAchievements$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(hasUnread => {
+        this.hasUnreadNotifications = hasUnread;
       });
 
     this.generateWeekCalendar();
@@ -266,5 +275,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /**
+   * Calcula el Nivel Siguiente al que aspira el usuario.
+   * Fórmula: (Puntos / 100) + 1 es el nivel actual, así que + 2 es el siguiente.
+   */
+  get nextLevel(): number {
+    return Math.floor(this.currentPoints / 100) + 2;
+  }
+
+  /**
+   * Calcula los puntos que faltan para subir.
+   * Fórmula: 100 - (Puntos sobrantes del nivel actual).
+   */
+  get pointsToNextLevel(): number {
+    return 100 - (this.currentPoints % 100);
   }
 }

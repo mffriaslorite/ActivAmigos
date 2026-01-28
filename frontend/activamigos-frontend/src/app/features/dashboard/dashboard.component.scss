@@ -388,6 +388,19 @@
   }
 }
 
+// Animación personalizada de flotación
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px); // Se mueve solo 4px hacia arriba
+  }
+}
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .activity-card, .quick-action-button, .mobile-calendar-day .activity-item {

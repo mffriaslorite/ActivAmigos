@@ -24,24 +24,16 @@
                aria-label="Estado de conducta">
              </app-semaphore-badge>
 
-             <div class="bg-yellow-100 px-3 py-1 rounded-full flex items-center gap-1 border border-yellow-200">
-                <span class="text-lg">⭐</span>
-                <span class="font-bold text-yellow-800">{{ currentPoints }}</span>
-             </div>
-
-            <button 
-              class="w-10 h-10 rounded-full bg-gray-100 overflow-hidden border-2 border-white shadow-sm focus:ring-2 focus:ring-blue-400 transition-transform active:scale-95"
-              (click)="navigateTo('/profile')"
-              aria-label="Ir a mi perfil"
-            >
-              <img 
-                *ngIf="getProfileImageUrl()" 
-                [src]="getProfileImageUrl()" 
-                alt="Foto perfil" 
-                class="w-full h-full object-cover"
-              >
-              <span *ngIf="!getProfileImageUrl()" class="text-xl flex items-center justify-center h-full">👤</span>
-            </button>
+             <div class="bg-indigo-50 px-3 py-1 rounded-full flex items-center gap-2 border border-indigo-100 shadow-sm transition-all hover:bg-indigo-100 cursor-help"
+                title="Tienes {{ currentPoints }} puntos en total">
+              
+              <span class="text-lg animate-float">🚀</span>
+              
+              <div class="flex flex-col leading-none">
+                  <span class="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">Próximo Nivel {{ nextLevel }}</span>
+                  <span class="font-bold text-indigo-700 text-sm">Faltan {{ pointsToNextLevel }} XP</span>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -66,6 +58,7 @@
               <div *ngFor="let activity of todaysActivitiesJoined" 
                    class="bg-white border-l-4 border-green-500 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer active:bg-gray-50"
                    (click)="goToActivities(activity.id)">
+                
                 <div class="flex justify-between items-start gap-2">
                   <div class="flex gap-3 items-start">
                     <span class="text-3xl mt-1">{{ getActivityEmoji(activity.title) }}</span>
@@ -78,23 +71,19 @@
                   </div>
                   
                   <div class="flex flex-col items-end gap-1">
-                    
                     <div *ngIf="getActivityStatus(activity) === 'confirmed'" 
                          class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap border border-green-200 flex items-center gap-1">
                       <span>✅</span> Voy a ir
                     </div>
-
                     <div *ngIf="getActivityStatus(activity) === 'declined'" 
                          class="bg-red-100 text-red-500 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap border border-gray-200 flex items-center gap-1 opacity-75">
                       <span>❌</span> No asisto
                     </div>
-                    
                     <button *ngIf="getActivityStatus(activity) === 'pending'"
                             class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-bold animate-pulse whitespace-nowrap border border-yellow-200 hover:bg-yellow-200 transition-colors"
                             (click)="openAttendanceModal(activity); $event.stopPropagation()">
                       ❓ Confirmar
                     </button>
-
                   </div>
                 </div>
               </div>

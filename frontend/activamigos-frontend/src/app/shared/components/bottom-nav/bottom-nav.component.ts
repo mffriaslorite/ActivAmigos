@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { NavItem } from '../../../core/models/navitem.model';
 import { AchievementNotificationsSimpleService } from '../../../core/services/achievement-notifications-simple.service';
-
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
     selector: 'app-bottom-nav',
@@ -12,34 +12,38 @@ import { AchievementNotificationsSimpleService } from '../../../core/services/ac
     templateUrl: './bottom-nav.component.html',
     styleUrls: ['./bottom-nav.component.scss'],
 })
-export class BottomNavComponent {
+export class BottomNavComponent implements OnInit {
   navItems: NavItem[] = [
     { path: '/dashboard', icon: '🏠', label: 'Inicio' },
     { path: '/activities', icon: '📅', label: 'Actividades' },
     { path: '/groups', icon: '👥', label: 'Grupos' },
     { path: '/achievements', icon: '🏆', label: 'Logros' },
-    { path: '/help', icon: '❓', label: 'Ayuda' }
+    { path: '/profile', icon: '👤', label: 'Perfil' }
   ];
 
-  // Estado del punto rojo
   hasNewNotification = false;
+  userProfileImage: string | null = null;
 
   constructor(
     private router: Router,
-    private notificationService: AchievementNotificationsSimpleService
+    private notificationService: AchievementNotificationsSimpleService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
-    // Escuchamos si hay novedades para encender el punto rojo
+    // 1. Notificaciones (Punto Rojo)
     this.notificationService.hasUnreadAchievements$.subscribe(hasUnread => {
       this.hasNewNotification = hasUnread;
+    });
+
+    // 2. Foto de Perfil (Suscribirse a cambios)
+    this.authService.currentUser$.subscribe(() => {
+        this.userProfileImage = this.authService.getProfileImageSrc();
     });
   }
 
   isActive(route: string): boolean {
     const active = this.router.url === route;
-    
-    // Si el usuario entra en el perfil, apagamos la notificación
     if (active && route === '/profile' && this.hasNewNotification) {
       this.notificationService.clearNotification();
     }
