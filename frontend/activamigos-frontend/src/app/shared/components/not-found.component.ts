@@ -7,91 +7,29 @@ import { RouterLink } from '@angular/router';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <!-- Skip link for keyboard navigation -->
-      <a href="#main-content" class="skip-link">
-        Skip to main content
-      </a>
-
-      <div class="max-w-md w-full text-center" id="main-content">
-        <!-- 404 Icon -->
-        <div class="text-6xl mb-6" aria-hidden="true">🤔</div>
+    <div class="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 text-center">
+      <div class="bg-white p-8 rounded-3xl shadow-xl max-w-sm w-full border border-gray-100 transform hover:scale-105 transition-transform duration-300">
+        <div class="text-8xl mb-4 animate-bounce">🙈</div>
         
-        <!-- Header -->
-        <h1 class="text-3xl font-bold text-gray-900 mb-4">
-          Page Not Found
-        </h1>
+        <h1 class="text-4xl font-black text-gray-900 mb-2 tracking-tight">404</h1>
+        <h2 class="text-xl font-bold text-gray-700 mb-4">¡Vaya! Te has perdido</h2>
         
-        <p class="text-lg text-gray-600 mb-8">
-          Sorry, we couldn't find the page you're looking for.
+        <p class="text-gray-500 mb-8 leading-relaxed">
+          La página que buscas no existe o ha sido movida. Mejor volvamos a terreno conocido.
         </p>
 
-        <!-- Helpful Navigation -->
-        <div class="card space-y-4">
-          <h2 class="text-lg font-medium text-gray-900 mb-4">
-            Where would you like to go?
-          </h2>
-          
-          <div class="space-y-3">
-            <a 
-              routerLink="/dashboard" 
-              class="btn-primary w-full"
-            >
-              🏠 Go to Dashboard
-            </a>
-            
-            <a 
-              routerLink="/auth/login" 
-              class="btn-secondary w-full"
-            >
-              🔐 Sign In
-            </a>
-            
-            <button 
-              (click)="goBack()" 
-              class="btn-secondary w-full"
-            >
-              ⬅️ Go Back
-            </button>
-          </div>
-        </div>
-
-        <!-- Help Text -->
-        <div class="mt-8 text-sm text-gray-500">
-          <p>
-            If you think this is an error, please
-            <a 
-              href="mailto:support@activamigos.com" 
-              class="text-primary-600 hover:text-primary-500 underline"
-            >
-              contact support
-            </a>
-          </p>
-        </div>
-
-        <!-- Accessibility Notice -->
-        <div class="mt-6 text-xs text-gray-500">
-          <p>
-            Need help with accessibility features? 
-            <a 
-              routerLink="/help/accessibility" 
-              class="text-primary-600 hover:text-primary-500 underline"
-            >
-              Learn more
-            </a>
-          </p>
-        </div>
+        <a routerLink="/dashboard" 
+           class="block w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95">
+          🏠 Volver al Inicio
+        </a>
       </div>
+      
+      <p class="mt-8 text-sm text-gray-400 font-medium">
+        ActivAmigos © 2026
+      </p>
     </div>
   `,
-  styles: [`
-    /* High contrast mode adjustments */
-    @media (prefers-contrast: high) {
-      .card {
-        border: 2px solid black;
-      }
-    }
-  `]
+  styles: []
 })
 export class NotFoundComponent {
   

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 class ActivityCreateSchema(Schema):
     title = fields.Str(required=True, validate=validate.Length(min=1, max=100))
     description = fields.Str(validate=validate.Length(max=500), allow_none=True)
+    activity_type = fields.Str(validate=validate.Length(max=50), allow_none=True)
     location = fields.Str(validate=validate.Length(max=255), allow_none=True)
     date = fields.DateTime(required=True)
     rules = fields.Str(allow_none=True)
@@ -26,6 +27,7 @@ class ActivityCreateSchema(Schema):
 class ActivityUpdateSchema(Schema):
     title = fields.Str(validate=validate.Length(min=1, max=100))
     description = fields.Str(validate=validate.Length(max=500), allow_none=True)
+    activity_type = fields.Str(validate=validate.Length(max=50), allow_none=True)
     location = fields.Str(validate=validate.Length(max=255), allow_none=True)
     date = fields.DateTime()
     rules = fields.Str(allow_none=True)
@@ -48,6 +50,7 @@ class ActivityResponseSchema(Schema):
     id = fields.Int(dump_only=True)
     title = fields.Str()
     description = fields.Str(allow_none=True)
+    activity_type = fields.Str(allow_none=True)
     location = fields.Str(allow_none=True)
     date = fields.DateTime()
     rules = fields.Str(allow_none=True)
@@ -62,6 +65,7 @@ class ActivityListSchema(Schema):
     id = fields.Int()
     title = fields.Str()
     description = fields.Str(allow_none=True)
+    activity_type = fields.Str(allow_none=True)
     location = fields.Str(allow_none=True)
     date = fields.DateTime()
     participant_count = fields.Int()

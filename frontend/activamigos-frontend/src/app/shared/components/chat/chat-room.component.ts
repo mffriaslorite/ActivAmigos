@@ -24,6 +24,7 @@ export interface ChatMessage {
     first_name?: string;
     last_name?: string;
     profile_image?: string;
+    avatarError?: boolean;
   };
   is_system?: boolean;
 }
@@ -115,6 +116,9 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     // Suscribirse a mensajes en tiempo real
     this.chatService.messages$.pipe(takeUntil(this.destroy$)).subscribe(newMessages => {
+      // Si está baneado, no procesar mensajes nuevos
+      if (this.isBanned) return;
+
       newMessages.forEach(message => {
         if (message.context_type === this.contextType && message.context_id === this.contextId) {
           if (!this.messages.some(existing => existing.id === message.id)) {
@@ -140,6 +144,9 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   private loadMessages() {
+    // Si ya sabemos que está baneado, no cargar historial
+    if (this.isBanned) return;
+
     this.isLoading = true;
     this.chatService.getMessageHistory(this.contextType, this.contextId)
       .pipe(
@@ -148,8 +155,10 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
       )
       .subscribe({
         next: (messages) => {
-          this.messages = messages;
-          this.needsScrollToBottom = true;
+          if (!this.isBanned) {
+             this.messages = messages;
+             this.needsScrollToBottom = true;
+          }
         },
         error: (error) => console.error('Error history:', error)
       });
@@ -169,6 +178,7 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
           
           if (this.isBanned) {
             this.messageForm.disable(); // Desactivar input si está baneado
+            this.messages = []; // Borrar mensajes si había cargado algo
           }
         },
         error: (err) => console.warn('No se pudo cargar estado moderación', err)

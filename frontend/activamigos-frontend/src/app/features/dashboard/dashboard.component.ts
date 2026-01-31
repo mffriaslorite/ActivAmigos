@@ -17,11 +17,12 @@ import { DesktopLayoutComponent } from '../../shared/components/desktop-layout/d
 import { AttendanceModalComponent, ActivityToConfirm } from '../../shared/components/attendance-modal/attendance-modal.component';
 import { SemaphoreBadgeComponent } from '../../shared/components/semaphore-badge/semaphore-badge.component';
 import { AchievementNotificationsSimpleService } from '../../core/services/achievement-notifications-simple.service';
+import { TutorialModalComponent } from '../../shared/components/tutorial-modal/tutorial-modal.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, BottomNavComponent, DesktopLayoutComponent, AttendanceModalComponent, SemaphoreBadgeComponent],
+  imports: [CommonModule, BottomNavComponent, DesktopLayoutComponent, AttendanceModalComponent, SemaphoreBadgeComponent, TutorialModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -47,6 +48,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   
   // Modales
   showAttendanceModal = false;
+  showTutorialModal = false;
   activityToConfirm: ActivityToConfirm | null = null;
   
   // Status
@@ -291,5 +293,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
    */
   get pointsToNextLevel(): number {
     return 100 - (this.currentPoints % 100);
+  }
+
+  get pointsInCurrentLevel(): number {
+    return this.currentPoints % 100;
   }
 }

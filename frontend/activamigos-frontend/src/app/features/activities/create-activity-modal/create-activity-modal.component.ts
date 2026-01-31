@@ -24,6 +24,14 @@ export class CreateActivityModalComponent implements OnInit {
   currentStep: 1 | 2 = 1;
   selectedRuleIds: number[] = [];
   
+  activityTypes = [
+    { value: 'sport', label: 'Deporte', icon: '⚽' },
+    { value: 'social', label: 'Social', icon: '🍻' },
+    { value: 'culture', label: 'Cultura', icon: '🎭' },
+    { value: 'academic', label: 'Estudios', icon: '📚' },
+    { value: 'other', label: 'Otro', icon: '🌈' }
+  ];
+
   // Feedback
   errorMessage = '';
   successMessage = '';
@@ -48,6 +56,7 @@ export class CreateActivityModalComponent implements OnInit {
     return this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]], // Títulos cortos y claros
       description: ['', [Validators.maxLength(200)]], // Descripciones concisas
+      activity_type: ['', [Validators.required]],
       location: ['', [Validators.maxLength(50)]],
       date: [localIsoString, [Validators.required]],
     });
@@ -94,6 +103,7 @@ export class CreateActivityModalComponent implements OnInit {
     const activityData: ActivityCreate = {
       title: formValue.title.trim(),
       description: formValue.description?.trim(),
+      activity_type: formValue.activity_type,
       location: formValue.location?.trim(),
       date: new Date(formValue.date).toISOString(), // Convertir a UTC
       rule_ids: this.selectedRuleIds
@@ -155,5 +165,9 @@ export class CreateActivityModalComponent implements OnInit {
     if (event.target === event.currentTarget) {
       this.closeModal();
     }
+  }
+
+  selectActivityType(type: string) {
+    this.activityForm.patchValue({ activity_type: type });
   }
 }

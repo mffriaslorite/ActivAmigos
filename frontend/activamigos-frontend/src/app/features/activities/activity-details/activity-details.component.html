@@ -1,6 +1,6 @@
 <div class="min-h-screen bg-gray-50 flex flex-col">
   
-  <div class="relative bg-blue-600 text-white pb-6 pt-4 px-4 shadow-md">
+  <div class="sticky top-0 z-20 bg-blue-600 text-white pb-6 pt-4 px-4 shadow-md">
     <div class="max-w-4xl mx-auto">
       <button (click)="goBack()" class="mb-4 flex items-center gap-2 hover:bg-white/20 px-3 py-1 rounded-full transition-colors w-fit">
         <span>←</span> <span>Volver</span>
@@ -41,12 +41,12 @@
 
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
       <div *ngIf="activityDetails.is_participant && mySemaphoreColor" 
-         class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between mb-2">
+         class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-wrap items-center justify-between gap-2 mb-2">
        <div class="flex items-center gap-2">
          <span class="text-sm text-gray-500 font-medium">Tu comportamiento:</span>
          <app-semaphore-badge [color]="mySemaphoreColor" [warningCount]="myWarningCount" [showText]="true"></app-semaphore-badge>
        </div>
-       <span *ngIf="isBanned" class="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded">🚫 Baneado</span>
+       <span *ngIf="isBanned" class="flex-shrink-0 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded border border-red-100">🚫 Baneado</span>
     </div>
 
        <div *ngIf="!activityDetails.is_participant" class="text-center">
@@ -102,16 +102,17 @@
        </div>
     </div>
 
-    <div class="flex border-b border-gray-200 mb-4 sticky top-0 bg-gray-50 z-10 pt-2">
+    <div class="flex border-b border-gray-200 mb-4 bg-gray-50 pt-2">
       <button (click)="setTab('info')" 
               class="flex-1 pb-3 font-medium text-sm transition-colors border-b-2"
               [ngClass]="activeTab === 'info' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'">
         Información y Participantes
       </button>
       <button (click)="setTab('chat')" 
-              class="flex-1 pb-3 font-medium text-sm transition-colors border-b-2"
+              class="flex-1 pb-3 font-medium text-sm transition-colors border-b-2 flex items-center justify-center gap-2"
               [ngClass]="activeTab === 'chat' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'">
         Chat
+        <span *ngIf="!activityDetails.is_participant" class="text-[10px] bg-gray-200 px-1.5 rounded text-gray-500">🔒</span>
       </button>
     </div>
 
@@ -120,6 +121,9 @@
        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
          <h3 class="font-bold text-gray-800 mb-2 text-lg">📝 Descripción</h3>
          <p class="text-gray-600 leading-relaxed">{{ activityDetails.description || 'Sin descripción detallada.' }}</p>
+         <p *ngIf="activityDetails.activity_type" class="mt-2 inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
+            <span>🏷️</span> {{ activityDetails.activity_type | titlecase }}
+         </p>
        </div>
 
        <div *ngIf="activityRules.length > 0 || parseRules().length > 0" class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
@@ -192,12 +196,26 @@
     </div>
 
     <div *ngIf="activeTab === 'chat'" class="h-[600px] animate-fade-in flex flex-col">
-       <app-chat-room 
-          *ngIf="chatRoom" 
-          [contextType]="'ACTIVITY'" 
-          [contextId]="chatRoom.id"
-          class="flex-1">
-       </app-chat-room>
+       <ng-container *ngIf="activityDetails.is_participant; else lockedChat">
+         <app-chat-room 
+            *ngIf="chatRoom" 
+            [contextType]="'ACTIVITY'" 
+            [contextId]="chatRoom.id"
+            class="flex-1">
+         </app-chat-room>
+       </ng-container>
+
+       <ng-template #lockedChat>
+         <div class="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
+            <div class="text-5xl mb-4">🔒</div>
+            <h3 class="text-lg font-bold text-gray-600 mb-2">Chat Bloqueado</h3>
+            <p class="mb-6 max-w-xs mx-auto">Debes apuntarte a la actividad para poder leer y escribir mensajes.</p>
+            <button (click)="joinActivity()" 
+                    class="bg-blue-600 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:bg-blue-700">
+              ¡Me apunto! 🙋‍♂️
+            </button>
+         </div>
+       </ng-template>
     </div>
 
   </main>

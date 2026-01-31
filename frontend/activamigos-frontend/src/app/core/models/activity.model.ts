@@ -2,6 +2,7 @@ export interface Activity {
   id: number;
   title: string;
   description?: string;
+  activity_type?: string;
   location?: string;
   date: string;
   rules?: string;
@@ -35,6 +36,7 @@ export interface ActivityDetails extends Activity {
 export interface ActivityCreate {
   title: string;
   description?: string;
+  activity_type?: string;
   location?: string;
   date: string;
   rules?: string;

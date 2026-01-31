@@ -4,6 +4,9 @@ from models.points.points import PointsLedger
 from models.associations.achievement_associations import UserPoints
 from models.user.user import User, db
 from utils.decorators import login_required
+import logging
+
+logger = logging.getLogger(__name__)
 
 blp = Blueprint("Points", "points", url_prefix="/api/points", description="Points management routes")
 
@@ -21,44 +24,74 @@ class PointsService:
             user_points = UserPoints(user_id=user_id, points=0)
             db.session.add(user_points)
         
-        # Actualizamos el saldo (evitamos negativos totales en el nivel si lo prefieres)
-        # max(0, ...) asegura que la barra de nivel no sea negativa, aunque el historial registre la resta
-        user_points.points = max(0, user_points.points + points_delta)
+        # Actualizamos el saldo (evitamos negativos totales en el nivel)
+        new_points = max(0, user_points.points + points_delta)
+        
+        # Log para depuración
+        logger.info(f"Updating points for user {user_id}: {user_points.points} -> {new_points} (Delta: {points_delta})")
+        
+        user_points.points = new_points
         return user_points
 
     @staticmethod
     def award_points(user_id, points, reason, context_type=None, context_id=None):
-        """Dar puntos: Guarda en historial Y suma al nivel"""
-        # 1. Historial
-        PointsLedger.award_points(user_id, points, reason, context_type, context_id)
-        
-        # 2. Nivel
-        PointsService._update_user_level_balance(user_id, abs(points))
-        
-        db.session.commit()
-        
-        # ✅ TRIGGER: Verificar logro "Gran Experto" (Nivel 5)
+        """Dar puntos: Guarda en historial Y suma al nivel de forma atómica"""
         try:
-            from utils.achievement_engine_simple import trigger_points_update
-            trigger_points_update(user_id)
-        except ImportError:
-            pass # Evitar error si hay ciclo de importación
-        except Exception as e:
-            print(f"Error checking level achievements: {e}")
+            # 1. Crear entrada en Historial (Directamente, sin commit intermedio)
+            ledger_entry = PointsLedger(
+                user_id=user_id,
+                points=abs(points),
+                reason=reason,
+                context_type=context_type,
+                context_id=context_id
+            )
+            db.session.add(ledger_entry)
             
-        return True
+            # 2. Actualizar Nivel (UserPoints)
+            PointsService._update_user_level_balance(user_id, abs(points))
+            
+            # 3. Commit ÚNICO para todo
+            db.session.commit()
+            
+            # 4. Triggers de Logros (fuera de la transacción crítica)
+            try:
+                from utils.achievement_engine_simple import trigger_points_update
+                trigger_points_update(user_id)
+            except Exception as e:
+                logger.error(f"Error checking level achievements: {e}")
+                
+            return True
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error awarding points: {e}")
+            raise e
     
     @staticmethod
     def deduct_points(user_id, points, reason, context_type=None, context_id=None):
-        """Quitar puntos: Guarda en historial Y resta al nivel (Penalización)"""
-        # 1. Historial (se guarda como negativo)
-        PointsLedger.deduct_points(user_id, points, reason, context_type, context_id)
-        
-        # 2. Nivel
-        PointsService._update_user_level_balance(user_id, -abs(points))
-        
-        db.session.commit()
-        return True
+        """Quitar puntos: Guarda en historial Y resta al nivel de forma atómica"""
+        try:
+            # 1. Crear entrada en Historial (Negativa)
+            ledger_entry = PointsLedger(
+                user_id=user_id,
+                points=-abs(points),  # Aseguramos que sea negativo
+                reason=reason,
+                context_type=context_type,
+                context_id=context_id
+            )
+            db.session.add(ledger_entry)
+            
+            # 2. Actualizar Nivel (Restando)
+            PointsService._update_user_level_balance(user_id, -abs(points))
+            
+            # 3. Commit ÚNICO para todo
+            db.session.commit()
+            
+            logger.info(f"Deducted {points} points from user {user_id} for: {reason}")
+            return True
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error deducting points: {e}")
+            raise e
     
     @staticmethod
     def get_user_points(user_id):

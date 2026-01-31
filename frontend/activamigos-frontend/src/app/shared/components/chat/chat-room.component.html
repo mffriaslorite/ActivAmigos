@@ -1,6 +1,6 @@
 <div class="flex flex-col h-full bg-gray-50 rounded-2xl overflow-hidden border border-gray-200 shadow-inner">
   
-  <div class="bg-white px-4 py-2 border-b border-gray-100 flex items-center justify-between text-xs text-gray-500">
+  <div class="bg-white px-4 py-2 border-b border-gray-100 flex items-center justify-between text-xs text-gray-500 sticky top-0 z-10">
     <div class="flex items-center gap-2">
       <div class="w-2 h-2 rounded-full" 
            [ngClass]="isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'"></div>
@@ -14,73 +14,86 @@
 
   <div #messagesContainer class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
     
-    <div *ngIf="isLoading" class="space-y-4 opacity-50">
-       <div class="flex gap-2">
-         <div class="w-8 h-8 bg-gray-300 rounded-full"></div>
-         <div class="h-10 bg-gray-200 rounded-xl w-2/3"></div>
-       </div>
-       <div class="flex gap-2 flex-row-reverse">
-         <div class="h-10 bg-blue-100 rounded-xl w-1/2"></div>
-       </div>
+    <div *ngIf="isBanned" class="h-full flex flex-col items-center justify-center p-8 text-center animate-fade-in bg-white/50">
+        <div class="bg-red-50 p-4 rounded-full mb-4">
+            <span class="text-4xl">🚫</span>
+        </div>
+        <h3 class="text-xl font-bold text-red-800 mb-2">Acceso Restringido</h3>
+        <p class="text-gray-600 max-w-sm mx-auto leading-relaxed">
+            Tu cuenta ha sido suspendida en este chat debido a incumplimiento de las normas. No puedes leer ni enviar mensajes.
+        </p>
     </div>
 
-    <div *ngIf="!isLoading && messages.length === 0" class="h-full flex flex-col items-center justify-center text-gray-400">
-      <span class="text-4xl mb-2">👋</span>
-      <p>No hay mensajes aún.</p>
-      <p class="text-sm">¡Sé el primero en saludar!</p>
-    </div>
-
-    <ng-container *ngFor="let msg of messages">
-      
-      <div *ngIf="msg.is_system" class="flex justify-center my-2">
-        <span class="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full border border-gray-200">
-          🔔 {{ msg.content }}
-        </span>
-      </div>
-
-      <div *ngIf="!msg.is_system" 
-           class="flex gap-3 group" 
-           [ngClass]="isMyMessage(msg) ? 'flex-row-reverse' : 'flex-row'">
-        
-        <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm"
-             [ngClass]="isMyMessage(msg) ? 'bg-blue-500' : 'bg-gray-400'">
-          <img *ngIf="getUserAvatarUrl(msg.sender.id); else showInitial" 
-               [src]="getUserAvatarUrl(msg.sender.id)" 
-               alt="Avatar" 
-               class="w-10 h-10 rounded-full object-cover">
-          <ng-template #showInitial>
-            {{ getAvatarInitial(msg.sender) }}
-          </ng-template>
+    <ng-container *ngIf="!isBanned">
+        <div *ngIf="isLoading" class="space-y-4 opacity-50">
+           <div class="flex gap-2">
+             <div class="w-8 h-8 bg-gray-300 rounded-full"></div>
+             <div class="h-10 bg-gray-200 rounded-xl w-2/3"></div>
+           </div>
+           <div class="flex gap-2 flex-row-reverse">
+             <div class="h-10 bg-blue-100 rounded-xl w-1/2"></div>
+           </div>
         </div>
 
-        <div class="flex flex-col max-w-[75%]" 
-             [ngClass]="isMyMessage(msg) ? 'items-end' : 'items-start'">
+        <div *ngIf="!isLoading && messages.length === 0" class="h-full flex flex-col items-center justify-center text-gray-400">
+          <span class="text-4xl mb-2">👋</span>
+          <p>No hay mensajes aún.</p>
+          <p class="text-sm">¡Sé el primero en saludar!</p>
+        </div>
+
+        <ng-container *ngFor="let msg of messages">
           
-          <div class="px-4 py-2 rounded-2xl shadow-sm text-sm relative transition-all"
-               [ngClass]="{
-                 'bg-blue-600 text-white rounded-tr-none': isMyMessage(msg),
-                 'bg-white text-gray-800 border border-gray-100 rounded-tl-none hover:bg-gray-50 cursor-pointer': !isMyMessage(msg)
-               }"
-               (click)="onMessageClick(msg)">
-            
-            <p *ngIf="!isMyMessage(msg)" class="text-xs font-bold text-blue-600 mb-1">
-              {{ getSenderName(msg.sender) }}
-            </p>
-            
-            <p class="whitespace-pre-wrap leading-relaxed">{{ msg.content }}</p>
-            
-            <p class="text-[10px] mt-1 text-right opacity-70"
-               [ngClass]="isMyMessage(msg) ? 'text-blue-100' : 'text-gray-400'">
-              {{ formatTimestamp(msg.created_at) }}
-            </p>
+          <div *ngIf="msg.is_system" class="flex justify-center my-2">
+            <span class="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full border border-gray-200">
+              🔔 {{ msg.content }}
+            </span>
           </div>
-          
-          <span *ngIf="canModerate && !isMyMessage(msg)" class="text-[12px] text-black-400 group-hover:opacity-100 transition-opacity mt-1">
-           ⚠️ Clica el mensaje para advertir al usuario
-          </span>
-        </div>
-      </div>
 
+          <div *ngIf="!msg.is_system" 
+               class="flex gap-3 group" 
+               [ngClass]="isMyMessage(msg) ? 'flex-row-reverse' : 'flex-row'">
+            
+            <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm"
+                 [ngClass]="isMyMessage(msg) ? 'bg-blue-500' : 'bg-gray-400'">
+              <img *ngIf="getUserAvatarUrl(msg.sender.id) && !msg.sender.avatarError; else showInitial" 
+                   [src]="getUserAvatarUrl(msg.sender.id)" 
+                   (error)="msg.sender.avatarError = true"
+                   alt="Avatar" 
+                   class="w-10 h-10 rounded-full object-cover">
+              <ng-template #showInitial>
+                {{ getAvatarInitial(msg.sender) }}
+              </ng-template>
+            </div>
+
+            <div class="flex flex-col max-w-[75%]" 
+                 [ngClass]="isMyMessage(msg) ? 'items-end' : 'items-start'">
+              
+              <div class="px-4 py-2 rounded-2xl shadow-sm text-sm relative transition-all"
+                   [ngClass]="{
+                     'bg-blue-600 text-white rounded-tr-none': isMyMessage(msg),
+                     'bg-white text-gray-800 border border-gray-100 rounded-tl-none hover:bg-gray-50 cursor-pointer': !isMyMessage(msg)
+                   }"
+                   (click)="onMessageClick(msg)">
+                
+                <p *ngIf="!isMyMessage(msg)" class="text-xs font-bold text-blue-600 mb-1">
+                  {{ getSenderName(msg.sender) }}
+                </p>
+                
+                <p class="whitespace-pre-wrap leading-relaxed">{{ msg.content }}</p>
+                
+                <p class="text-[10px] mt-1 text-right opacity-70"
+                   [ngClass]="isMyMessage(msg) ? 'text-blue-100' : 'text-gray-400'">
+                  {{ formatTimestamp(msg.created_at) }}
+                </p>
+              </div>
+              
+              <span *ngIf="canModerate && !isMyMessage(msg)" class="text-[12px] text-black-400 group-hover:opacity-100 transition-opacity mt-1">
+               ⚠️ Clica el mensaje para advertir al usuario
+              </span>
+            </div>
+          </div>
+
+        </ng-container>
     </ng-container>
   </div>
 
