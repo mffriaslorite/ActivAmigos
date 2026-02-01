@@ -37,11 +37,17 @@ EXPOSE 5000
 
 # Variables típicas de Flask (puedes ajustar)
 ENV FLASK_APP=app.py \
-    FLASK_ENV=development
+    FLASK_ENV=production
 
-# Por defecto no arrancamos el server; así puedes usar este contenedor para jobs (migraciones/seed)
-# Si quieres servir la API aquí, cambia el CMD por gunicorn/flask run.
-CMD ["tail", "-f", "/dev/null"]
+# Install Gunicorn for production
+RUN pip install --no-cache-dir gunicorn gevent
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["gunicorn", "--worker-class", "gevent", "--workers", "1", "--bind", "0.0.0.0:5000", "app:app"]
 
 
 

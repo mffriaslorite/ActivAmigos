@@ -5,12 +5,13 @@ import { map, catchError, tap } from 'rxjs/operators';
 import { User } from '../models/user.model';
 import { LoginRequest, RegisterRequest, AuthResponse, PasswordHint, AnimalListResponse } from '../models/auth.model';
 
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly API_BASE_URL = 'http://localhost:5000/api';
+  private readonly API_BASE_URL = `${environment.apiUrl}/api`;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
 

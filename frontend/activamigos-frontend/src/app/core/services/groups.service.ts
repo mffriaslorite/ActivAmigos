@@ -4,12 +4,13 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { Group, GroupCreate, GroupUpdate, JoinLeaveResponse, GroupDetails } from '../models/group.model';
 import { AchievementNotificationsSimpleService } from './achievement-notifications-simple.service';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GroupsService {
-  private readonly API_BASE_URL = 'http://localhost:5000/api';
+  private readonly API_BASE_URL = `${environment.apiUrl}/api`;
   private groupsSubject = new BehaviorSubject<Group[]>([]);
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
 

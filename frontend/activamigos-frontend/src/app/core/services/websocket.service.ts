@@ -56,7 +56,7 @@ export class WebSocketService {
       return;
     }
 
-    const backendUrl = environment?.apiUrl || 'http://localhost:5000';
+    const backendUrl = environment?.apiUrl ?? 'http://localhost:5000';
     
     this.socket = io(backendUrl, {
       withCredentials: true,

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
 
 export interface WarningRequest {
   target_user_id: number;
@@ -28,7 +29,7 @@ export interface ModerationStatus {
   providedIn: 'root'
 })
 export class ModerationService {
-  private readonly API_BASE_URL = 'http://localhost:5000/api';
+  private readonly API_BASE_URL = `${environment.apiUrl}/api`;
 
   constructor(private http: HttpClient) {}
 

@@ -1,0 +1,42 @@
+name: Deploy to Oracle Cloud
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch: # Permite lanzar manual desde GitHub
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ORACLE_HOST }}
+          username: ${{ secrets.ORACLE_USER }}
+          key: ${{ secrets.ORACLE_KEY }}
+          port: 22
+          script: |
+            # Parar si hay errores
+            set -e
+
+            echo "🚀 Iniciando despliegue automático..."
+
+            # Navegar al directorio (ajusta si la carpeta se llama diferente)
+            cd ActivAmigos
+
+            # 1. Obtener últimos cambios
+            echo "📥 Bajando código..."
+            git fetch --all
+            git reset --hard origin/main
+
+            # 2. Reconstruir contendores
+            # Usamos 'docker compose' (V2) que es el estándar actual
+            echo "🏗️ Construyendo y levantando contenedores..."
+            docker compose up --build -d
+
+            # 3. Limpieza (Opcional pero recomendado)
+            # Borra imágenes 'dangling' (sin uso) para ahorrar espacio
+            docker image prune -f
+
+            echo "✅ Despliegue completado con éxito!"

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
 
 export interface RuleTemplate {
   id: number;
@@ -27,7 +28,7 @@ export interface RulesResponse {
   providedIn: 'root'
 })
 export class RulesService {
-  private readonly API_BASE_URL = 'http://localhost:5000/api';
+  private readonly API_BASE_URL = `${environment.apiUrl}/api`;
 
   constructor(private http: HttpClient) {}
 

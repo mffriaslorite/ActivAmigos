@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   db:
@@ -32,17 +32,34 @@ services:
   backend:
     build: ./backend
     environment:
+      FLASK_ENV: production
       DATABASE_URL: postgresql+psycopg2://activamigos:activamigos123@db:5432/activamigos_db
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: activamigos
       MINIO_SECRET_KEY: activamigos123
       MINIO_SECURE: "false"
+      MINIO_BUCKET_NAME: activamigos
     depends_on:
       - db
       - minio
     volumes:
       - ./backend:/app
+    # In production, we don't expose 5000 directly to host, only to internal network
+    # ports:
+    #   - "5000:5000"
 
+  frontend:
+    build:
+      context: ./frontend/activamigos-frontend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      # Map our custom Nginx config
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { AuthService } from './auth.service';
+import { environment } from 'src/environments/environment';
 
 export interface UserOverallStatus {
   overall_semaphore_color: 'grey' | 'light_green' | 'dark_green' | 'yellow' | 'red';
@@ -16,7 +17,7 @@ export interface UserOverallStatus {
   providedIn: 'root'
 })
 export class UserStatusService {
-  private readonly API_BASE_URL = 'http://localhost:5000/api';
+  private readonly API_BASE_URL = `${environment.apiUrl}/api`;
   
   private userStatusSubject = new BehaviorSubject<UserOverallStatus>({
     overall_semaphore_color: 'grey',

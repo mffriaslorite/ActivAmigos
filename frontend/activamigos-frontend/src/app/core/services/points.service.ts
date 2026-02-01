@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
 
 export interface PointsEntry {
   id: number;
@@ -24,7 +25,7 @@ export interface PointsHistory {
   providedIn: 'root'
 })
 export class PointsService {
-  private readonly API_BASE_URL = 'http://localhost:5000/api';
+  private readonly API_BASE_URL = `${environment.apiUrl}/api`;
   private currentPointsSubject = new BehaviorSubject<number>(0);
 
   public currentPoints$ = this.currentPointsSubject.asObservable();

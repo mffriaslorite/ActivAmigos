@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { io, Socket } from 'socket.io-client';
 import { Message } from '../models/message.model';
+import { environment } from 'src/environments/environment';
 
 export interface ModerationStatus {
   warning_count: number;
@@ -32,7 +33,7 @@ export interface ChatMessage {
   providedIn: 'root'
 })
 export class ChatService {
-  private readonly API_BASE_URL = 'http://localhost:5000/api';
+  private readonly API_BASE_URL = `${environment.apiUrl}/api`;
   private socket: Socket | null = null;
   
   private messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
@@ -46,11 +47,13 @@ export class ChatService {
   }
 
   private initializeSocket() {
-    this.socket = io('http://localhost:5000', {
+    const socketUrl = environment.apiUrl || '';
+    this.socket = io(socketUrl, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
       forceNew: true,
-      timeout: 10000
+      timeout: 10000,
+      path: '/socket.io'
     });
 
     this.socket.on('connect', () => {

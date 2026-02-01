@@ -4,12 +4,13 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { Activity, ActivityCreate, ActivityUpdate, JoinLeaveActivityResponse, ActivityDetails } from '../models/activity.model';
 import { AchievementNotificationsSimpleService } from './achievement-notifications-simple.service';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ActivitiesService {
-  private readonly API_BASE_URL = 'http://localhost:5000/api';
+  private readonly API_BASE_URL = `${environment.apiUrl}/api`;
   private activitiesSubject = new BehaviorSubject<Activity[]>([]);
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
 

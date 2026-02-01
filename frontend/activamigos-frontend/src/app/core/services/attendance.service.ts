@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
 
 export interface AttendanceRecord {
   id: number;
@@ -53,7 +54,7 @@ export interface AttendanceMarkingData {
   providedIn: 'root'
 })
 export class AttendanceService {
-  private readonly API_BASE_URL = 'http://localhost:5000/api';
+  private readonly API_BASE_URL = `${environment.apiUrl}/api`;
   
   private pendingActivitiesSubject = new BehaviorSubject<PendingActivity[]>([]);
   public pendingActivities$ = this.pendingActivitiesSubject.asObservable();
