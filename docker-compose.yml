@@ -31,14 +31,12 @@ services:
 
   backend:
     build: ./backend
+    env_file:
+      - ./backend/.env
     environment:
       FLASK_ENV: production
       DATABASE_URL: postgresql+psycopg2://activamigos:activamigos123@db:5432/activamigos_db
       MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: activamigos
-      MINIO_SECRET_KEY: activamigos123
-      MINIO_SECURE: "false"
-      MINIO_BUCKET_NAME: activamigos
     depends_on:
       - db
       - minio

@@ -17,11 +17,15 @@ class Config:
     SESSION_COOKIE_DOMAIN = None
     SESSION_COOKIE_PATH = "/"
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SECURE = False  # False para HTTP en desarrollo
-    SESSION_COOKIE_SAMESITE = "Lax"  # Lax para desarrollo local
+    # SESSION_COOKIE_SECURE should be True in production (HTTPS)
+    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true"
+    SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
 
-    # Mejorar configuración de sesiones para WebSocket
-    PERMANENT_SESSION_LIFETIME = 3600  # 1 hora
+    # CORS configuration
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:4200").split(",")
+
+    # Better configuration for sessions for WebSocket
+    PERMANENT_SESSION_LIFETIME = int(os.getenv("PERMANENT_SESSION_LIFETIME", "3600"))
     SESSION_REFRESH_EACH_REQUEST = True
 
     # MinIO Configuration

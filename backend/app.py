@@ -24,10 +24,10 @@ def create_app():
     # Configure file upload limits
     app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH
 
-    # Configuración CORS
+    # CORS Configuration
     CORS(app, 
         supports_credentials=True, 
-        origins=['http://localhost:4200'],
+        origins=Config.CORS_ORIGINS,
         allow_headers=['Content-Type', 'Authorization'],
         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
     )
@@ -35,8 +35,8 @@ def create_app():
     # Initialize SocketIO
     socketio = SocketIO(
         app, 
-        cors_allowed_origins="http://localhost:4200",
-        manage_session=False,  # We'll handle sessions manually
+        cors_allowed_origins=Config.CORS_ORIGINS,
+        manage_session=False,
         logger=True,
         engineio_logger=True
     )
