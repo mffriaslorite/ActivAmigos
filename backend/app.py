@@ -1,5 +1,5 @@
-import eventlet
-eventlet.monkey_patch()
+from gevent import monkey
+monkey.patch_all()
 
 from flask import Flask
 from flask_smorest import Api
@@ -44,7 +44,7 @@ def create_app():
         manage_session=False,
         logger=True,
         engineio_logger=True,
-        async_mode='eventlet'
+        async_mode='gevent'
     )
 
     # Inicializar Session (la configuración ya está en Config)
