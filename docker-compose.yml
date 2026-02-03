@@ -39,6 +39,7 @@ services:
     environment:
       FLASK_ENV: production
       DATABASE_URL: postgresql+psycopg2://activamigos:${DB_PASSWORD}@db:5432/activamigos_db
+      CORS_ORIGINS: ${CORS_ORIGINS}
       MINIO_ENDPOINT: minio:9000
     depends_on:
       - db
