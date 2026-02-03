@@ -1,5 +1,7 @@
 from gevent import monkey
 monkey.patch_all()
+from psycogreen.gevent import patch_psycopg
+patch_psycopg()
 
 from flask import Flask
 from flask_smorest import Api
@@ -43,8 +45,7 @@ def create_app():
         cors_allowed_origins=Config.CORS_ORIGINS,
         manage_session=False,
         logger=True,
-        engineio_logger=True,
-        async_mode='gevent'
+        engineio_logger=True
     )
 
     # Inicializar Session (la configuración ya está en Config)
