@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask
 from flask_smorest import Api
 from flask_cors import CORS
@@ -40,7 +43,8 @@ def create_app():
         cors_allowed_origins=Config.CORS_ORIGINS,
         manage_session=False,
         logger=True,
-        engineio_logger=True
+        engineio_logger=True,
+        async_mode='eventlet'
     )
 
     # Inicializar Session (la configuración ya está en Config)
