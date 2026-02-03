@@ -4,6 +4,7 @@ from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_session import Session
 from flask_socketio import SocketIO
+from werkzeug.middleware.proxy_fix import ProxyFix
 from config.config import Config
 from models.user.user import db
 from services.auth_service import blp as auth_blp
@@ -19,6 +20,7 @@ from services.rules_service import blp as rules_blp
 
 def create_app():
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
     app.config.from_object(Config)
 
     # Configure file upload limits

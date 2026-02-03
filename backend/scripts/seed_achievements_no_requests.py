@@ -86,7 +86,7 @@ def main():
     """Main function to run the seeding process"""
     print("🌱 Starting simplified achievements seeding...")
     
-    app = create_app()
+    app, _ = create_app()
     
     with app.app_context():
         # Seed achievements

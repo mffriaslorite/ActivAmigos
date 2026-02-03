@@ -102,7 +102,7 @@ def backfill_missing_icons():
 
 def main():
     print("🌱 Starting achievements seeding...")
-    app = create_app()
+    app, _ = create_app()
     with app.app_context():
         # Tu wrapper ya crea el bucket configurado si no existe al inicializarse
         minio_client._ensure_initialized()
