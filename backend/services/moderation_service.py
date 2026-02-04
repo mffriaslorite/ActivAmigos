@@ -32,7 +32,14 @@ class WarningHistorySchema(Schema):
     context_type = fields.Str()
 
 # --- Service Logic ---
+socketio = None
+
 class ModerationService:
+    
+    @staticmethod
+    def init_socketio(socketio_instance):
+        global socketio
+        socketio = socketio_instance
     
     @staticmethod
     def issue_warning(context_type, context_id, target_user_id, issued_by, reason):
@@ -94,15 +101,18 @@ class ModerationService:
                 context_type,
                 context_id
             )
+
+            target_user = User.query.get(target_user_id)
+            target_username = target_user.username if target_user else f"Usuario {target_user_id}"
             
             # 4. Auto-Ban (3 strikes)
             if new_warning_count >= 3:
                 ModerationService.ban_user(context_type, context_id, target_user_id)
                 is_banned = True
                 
-                msg_content = "El usuario ha sido expulsado automáticamente tras 3 avisos."
+                msg_content = f"El usuario {target_username} ha sido expulsado automáticamente tras 3 avisos."
             else:
-                msg_content = f"El usuario ha recibido un aviso: {reason}"
+                msg_content = f"El usuario {target_username} ha recibido un aviso: {reason}"
 
             # Enviar mensaje al chat
             sys_message = Message(
@@ -113,8 +123,12 @@ class ModerationService:
                 is_system=True
             )
             db.session.add(sys_message)
-            
             db.session.commit()
+
+            # Enviar por Socket.IO en tiempo real
+            if socketio:
+                room_name = f"{context_type.lower()}:{context_id}"
+                socketio.emit('new_message', sys_message.to_dict(), room=room_name)
             
             # 5. Calcular nuevo color del semáforo
             new_color = 'red' if is_banned else ('yellow' if new_warning_count > 0 else 'light_green')

@@ -19,7 +19,7 @@ from services.activity_service import blp as activity_blp
 from services.achievement_service import blp as achievement_blp
 from services.chat_service import blp as chat_blp, init_socketio
 from services.points_service import blp as points_blp
-from services.moderation_service import blp as moderation_blp
+from services.moderation_service import blp as moderation_blp, ModerationService
 from services.attendance_service import blp as attendance_blp
 from services.rules_service import blp as rules_blp
 
@@ -88,6 +88,7 @@ def create_app():
 
     # Initialize SocketIO with chat handlers
     init_socketio(app, socketio)
+    ModerationService.init_socketio(socketio)
 
     return app, socketio
 
