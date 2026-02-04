@@ -6,54 +6,28 @@
 
   <div *ngIf="!isLoading && group">
     
-    <!-- Barra pegajosa adaptativa -->
+    <!-- Barra pegajosa adaptativa minimalista -->
     <div class="sticky top-0 z-20 px-4 py-2 shadow-sm transition-all duration-300"
-         [ngClass]="activeTab === 'info' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800 border-b border-gray-100'">
+         [ngClass]="activeTab === 'info' ? 'bg-indigo-600 border-indigo-500' : 'bg-white border-gray-100 border-b'">
       <div class="max-w-2xl mx-auto flex items-center gap-3">
         <button (click)="goBack()" 
                 class="p-2 -ml-2 rounded-full text-xl transition-colors"
                 [ngClass]="activeTab === 'info' ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 text-gray-800'">←</button>
-        <h1 *ngIf="activeTab === 'chat' && group" class="font-bold text-lg truncate animate-fade-in flex-1">{{ group.name }}</h1>
-        
-        <button *ngIf="activeTab === 'chat' && !group.is_member" 
-                (click)="joinGroup()"
-                [disabled]="isActionLoading"
-                class="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-sm">
-           Unirme
-        </button>
+        <h1 *ngIf="activeTab === 'chat' && group" class="font-bold text-lg truncate animate-fade-in flex-1 text-gray-800">{{ group.name }}</h1>
+        <h1 *ngIf="activeTab === 'info' && group" class="font-bold text-lg truncate animate-fade-in flex-1 text-white">Detalles del Grupo</h1>
       </div>
     </div>
 
-    <!-- Cabecera estilo Actividad (Solo en pestaña Info) -->
-    <div *ngIf="activeTab === 'info' && group" class="bg-indigo-600 text-white pb-8 pt-2 px-4 shadow-md animate-fade-in">
-      <div class="max-w-2xl mx-auto flex flex-col items-center text-center">
-        <div class="text-6xl mb-4 bg-white/20 p-4 rounded-3xl backdrop-blur-sm">{{ getGroupIcon() }}</div>
-        <h1 class="text-3xl font-extrabold tracking-tight mb-2">{{ group.name }}</h1>
-        <p class="text-indigo-100 max-w-md opacity-90">{{ group.description || 'Sin descripción' }}</p>
-        
-        <div class="flex flex-wrap justify-center gap-3 mt-6">
-          <span class="bg-white/20 px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm">👥 {{ group.member_count }} miembros</span>
-          <span class="bg-white/20 px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm">📅 Creado el {{ group.created_at | date:'dd-MM-yyyy' }}</span>
-        </div>
-
-        <button *ngIf="!group.is_member" 
-                (click)="joinGroup()"
-                [disabled]="isActionLoading"
-                class="mt-6 bg-white text-indigo-600 px-8 py-3 rounded-2xl font-bold hover:bg-indigo-50 transition-all shadow-lg active:scale-95">
-           ¡Unirme al Grupo!
-        </button>
-      </div>
-    </div>
-
-    <header class="bg-white shadow-sm">
-      <div class="flex border-b border-gray-100 max-w-2xl mx-auto">
+    <!-- Pestañas fijas debajo del botón Volver -->
+    <div class="bg-white border-b border-gray-100 sticky top-[52px] z-10 shadow-sm">
+      <div class="flex max-w-2xl mx-auto">
         <button (click)="setTab('info')" 
                 class="flex-1 py-3 text-xs font-bold border-b-2 transition-colors uppercase tracking-wider"
                 [class.border-indigo-600]="activeTab === 'info'"
                 [class.text-indigo-600]="activeTab === 'info'"
                 [class.border-transparent]="activeTab !== 'info'"
                 [class.text-gray-400]="activeTab !== 'info'">
-          Info
+          Información
         </button>
         <button (click)="setTab('chat')" 
                 class="flex-1 py-3 text-xs font-bold border-b-2 transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
@@ -61,33 +35,53 @@
                 [class.text-indigo-600]="activeTab === 'chat'"
                 [class.border-transparent]="activeTab !== 'chat'"
                 [class.text-gray-400]="activeTab !== 'chat'">
-          Chat 
+          Chat del Grupo
           <span *ngIf="!group.is_member" class="text-[10px] bg-gray-100 px-1.5 rounded text-gray-400">🔒</span>
         </button>
       </div>
-    </header>
+    </div>
 
     <main class="max-w-2xl mx-auto p-4">
 
       <div *ngIf="activeTab === 'info'" class="space-y-4 animate-fade-in">
         
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
-          <div class="text-6xl mb-4">{{ getGroupIcon() }}</div>
-          <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ group.name }}</h2>
-          <p class="text-gray-500 mb-4">{{ group.description || 'Sin descripción' }}</p>
-          
-          <div class="flex justify-center gap-4 text-sm text-gray-500">
-            <span class="bg-gray-50 px-3 py-1 rounded-lg">👥 {{ group.member_count }} miembros</span>
-            <span class="bg-gray-50 px-3 py-1 rounded-lg">📅 Creado el {{ group.created_at | date:'dd-MM-yyyy' }}</span>
-          </div>
+        <!-- Hero Card: Punto medio entre sosa e invasiva -->
+        <div class="relative overflow-hidden bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl p-6 text-white shadow-xl mb-6">
+           <!-- Decoración de fondo -->
+           <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+           <div class="absolute -left-5 -bottom-5 w-24 h-24 bg-indigo-400/20 rounded-full blur-xl"></div>
+
+           <div class="relative flex flex-col items-center text-center">
+              <div class="text-6xl mb-4 bg-white/20 p-4 rounded-3xl backdrop-blur-md shadow-inner">
+                {{ getGroupIcon() }}
+              </div>
+              <h2 class="text-2xl font-black mb-1 drop-shadow-sm">{{ group.name }}</h2>
+              <p class="text-indigo-100 text-sm opacity-90 mb-5 italic">"{{ group.description || 'Sin descripción' }}"</p>
+              
+              <div class="flex flex-wrap justify-center gap-2 w-full">
+                <div class="bg-white/15 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2">
+                   <span>👥</span> {{ group.member_count }} miembros
+                </div>
+                <div class="bg-white/15 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2">
+                   <span>📅</span> {{ group.created_at | date:'dd-MM-yyyy' }}
+                </div>
+              </div>
+
+              <button *ngIf="!group.is_member" 
+                      (click)="joinGroup()"
+                      [disabled]="isActionLoading"
+                      class="mt-6 w-full py-3 bg-white text-indigo-700 rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-indigo-50 transition-all shadow-lg active:scale-95">
+                 ¡Unirme ahora! 🙋‍♂️
+              </button>
+           </div>
         </div>
 
         <button *ngIf="group.is_member"
                 (click)="setTab('chat')"
-                class="w-full py-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-2xl font-bold text-lg border-2 border-indigo-100 shadow-sm transition-all flex items-center justify-center gap-3 active:scale-95">
-            <span class="text-3xl">💬</span>
-            <span>Entrar al Chat del Grupo</span>
-            <span class="text-2xl">→</span>
+                class="w-full py-4 bg-white hover:bg-indigo-50 text-indigo-600 rounded-2xl font-bold text-lg border border-indigo-100 shadow-sm transition-all flex items-center justify-center gap-3 active:scale-95 group">
+            <span class="text-3xl transition-transform group-hover:scale-110">💬</span>
+            <span>Entrar al Chat</span>
+            <span class="text-2xl transition-transform group-hover:translate-x-1">→</span>
         </button>
 
         <div *ngIf="group.is_member && mySemaphoreColor" 
@@ -100,15 +94,17 @@
         </div>
 
         <div *ngIf="group.rules" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-          <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">📋 Normas del Grupo</h3>
-          <div class="text-gray-600 text-sm whitespace-pre-line leading-relaxed pl-2 border-l-4 border-indigo-100">
+          <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2 text-lg">
+             <span class="p-1.5 bg-indigo-50 rounded-lg">📋</span> Normas del Grupo
+          </h3>
+          <div class="text-gray-600 text-sm whitespace-pre-line leading-relaxed pl-2 border-l-4 border-indigo-200">
             {{ group.rules }}
           </div>
         </div>
 
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-          <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
-            👥 Participantes <span class="text-sm font-normal text-gray-500">({{ group.members.length }})</span>
+          <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2 text-lg">
+             <span class="p-1.5 bg-indigo-50 rounded-lg">👥</span> Participantes <span class="text-sm font-normal text-gray-500">({{ group.members.length }})</span>
           </h3>
           
           <div class="space-y-4">
@@ -116,7 +112,6 @@
                
                <div class="flex items-center gap-3">
                   <div class="relative w-10 h-10 flex-shrink-0">
-                    
                     <img [src]="getUserAvatarUrl(member.id)" 
                          class="w-full h-full rounded-full object-cover border border-gray-100"
                          (error)="member.profile_image = undefined"
@@ -126,15 +121,14 @@
                          class="absolute inset-0 w-full h-full rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 font-bold border border-indigo-100">
                       {{ member.username.charAt(0).toUpperCase() }}
                     </div>
-
-                    <span *ngIf="member.is_admin" class="absolute -top-1 -right-1 bg-yellow-400 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full shadow-sm z-10" title="Organizador">👑</span>
+                    <span *ngIf="member.is_admin" class="absolute -top-1 -right-1 bg-yellow-400 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full shadow-sm z-10" title="Admin">👑</span>
                   </div>
                   
                   <div>
                      <p class="text-sm font-bold text-gray-900 leading-none">
                        {{ member.first_name ? (member.first_name + ' ' + (member.last_name || '')) : member.username }}
                      </p>
-                     <p *ngIf="member.is_admin" class="text-xs text-indigo-600 font-medium mt-0.5">Organizador</p>
+                     <p *ngIf="member.is_admin" class="text-[10px] text-indigo-600 font-bold mt-1 uppercase tracking-tighter">Administrador</p>
                   </div>
                </div>
 
@@ -143,10 +137,10 @@
           </div>
         </div>
 
-        <div *ngIf="group.is_member" class="pt-4">
+        <div *ngIf="group.is_member" class="pt-6">
            <button (click)="onLeaveClick()"
                    [disabled]="isActionLoading"
-                   class="w-full py-3 text-red-500 font-bold bg-red-50 rounded-xl hover:bg-red-100 transition-colors">
+                   class="w-full py-3 text-red-500 font-bold bg-white border border-red-100 rounded-2xl hover:bg-red-50 transition-colors">
              {{ isActionLoading ? 'Procesando...' : 'Salir del Grupo' }}
            </button>
         </div>

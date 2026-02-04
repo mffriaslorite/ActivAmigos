@@ -53,6 +53,7 @@ export class ChatRoomComponent implements OnInit, OnDestroy, OnChanges, AfterVie
   needsScrollToBottom = false;
 
   currentUserId: number | null = null;
+  currentUserRole: string | null = null;
   
   // Semáforo personal en este chat
   userSemaphoreColor: string | null = null;
@@ -82,6 +83,7 @@ export class ChatRoomComponent implements OnInit, OnDestroy, OnChanges, AfterVie
   ngOnInit() {
     this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.currentUserId = user?.id || null;
+      this.currentUserRole = user?.role || null;
       this.initComponent();
     });
   }
@@ -101,30 +103,31 @@ export class ChatRoomComponent implements OnInit, OnDestroy, OnChanges, AfterVie
   }
 
   private checkModerationPermissions() {
-    this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
-      if (!user) {
-        this.canModerate = false;
-        return;
-      }
+    if (!this.currentUserId) return;
 
-      // 1. Permisos globales (Admin/Organizador)
-      this.canModerate = user.role === 'ORGANIZER' || user.role === 'SUPERADMIN';
-      
-      // 2. Permisos específicos del contexto (Creador de actividad o admin de grupo)
-      if (this.contextType === 'ACTIVITY') {
-        this.activitiesService.getUserRoleInActivity(this.contextId)
-          .pipe(takeUntil(this.destroy$))
-          .subscribe(res => {
+    // 1. Permisos globales (Admin/Organizador)
+    this.canModerate = this.currentUserRole === 'ORGANIZER' || this.currentUserRole === 'SUPERADMIN';
+    
+    // 2. Permisos específicos del contexto (Creador de actividad o admin de grupo)
+    if (this.contextType === 'ACTIVITY') {
+      this.activitiesService.getUserRoleInActivity(this.contextId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (res) => {
             if (res.role === 'organizer') this.canModerate = true;
-          });
-      } else if (this.contextType === 'GROUP') {
-        this.groupsService.getUserRoleInGroup(this.contextId)
-          .pipe(takeUntil(this.destroy$))
-          .subscribe(res => {
+          },
+          error: () => console.warn('Error checking activity roles')
+        });
+    } else if (this.contextType === 'GROUP') {
+      this.groupsService.getUserRoleInGroup(this.contextId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (res) => {
             if (res.role === 'admin') this.canModerate = true;
-          });
-      }
-    });
+          },
+          error: () => console.warn('Error checking group roles')
+        });
+    }
   }
 
   ngAfterViewChecked() {
