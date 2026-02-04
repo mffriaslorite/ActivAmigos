@@ -6,25 +6,47 @@
 
   <div *ngIf="!isLoading && group">
     
-    <div class="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-2 shadow-sm">
-      <div class="max-w-2xl mx-auto">
-        <button (click)="goBack()" class="p-2 -ml-2 hover:bg-gray-100 rounded-full text-xl transition-colors">←</button>
-      </div>
-    </div>
-
-    <header class="bg-white shadow-sm">
-      <div class="px-4 py-3 flex items-center gap-3 max-w-2xl mx-auto">
-        <h1 class="font-bold text-lg truncate flex-1 uppercase tracking-tight text-gray-800">{{ group.name }}</h1>
+    <!-- Barra pegajosa adaptativa -->
+    <div class="sticky top-0 z-20 px-4 py-2 shadow-sm transition-all duration-300"
+         [ngClass]="activeTab === 'info' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800 border-b border-gray-100'">
+      <div class="max-w-2xl mx-auto flex items-center gap-3">
+        <button (click)="goBack()" 
+                class="p-2 -ml-2 rounded-full text-xl transition-colors"
+                [ngClass]="activeTab === 'info' ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 text-gray-800'">←</button>
+        <h1 *ngIf="activeTab === 'chat' && group" class="font-bold text-lg truncate animate-fade-in flex-1">{{ group.name }}</h1>
         
-        <button *ngIf="!group.is_member" 
+        <button *ngIf="activeTab === 'chat' && !group.is_member" 
                 (click)="joinGroup()"
                 [disabled]="isActionLoading"
                 class="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-sm">
            Unirme
         </button>
       </div>
+    </div>
 
-      <div class="flex border-t border-gray-100">
+    <!-- Cabecera estilo Actividad (Solo en pestaña Info) -->
+    <div *ngIf="activeTab === 'info' && group" class="bg-indigo-600 text-white pb-8 pt-2 px-4 shadow-md animate-fade-in">
+      <div class="max-w-2xl mx-auto flex flex-col items-center text-center">
+        <div class="text-6xl mb-4 bg-white/20 p-4 rounded-3xl backdrop-blur-sm">{{ getGroupIcon() }}</div>
+        <h1 class="text-3xl font-extrabold tracking-tight mb-2">{{ group.name }}</h1>
+        <p class="text-indigo-100 max-w-md opacity-90">{{ group.description || 'Sin descripción' }}</p>
+        
+        <div class="flex flex-wrap justify-center gap-3 mt-6">
+          <span class="bg-white/20 px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm">👥 {{ group.member_count }} miembros</span>
+          <span class="bg-white/20 px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm">📅 Creado el {{ group.created_at | date:'dd-MM-yyyy' }}</span>
+        </div>
+
+        <button *ngIf="!group.is_member" 
+                (click)="joinGroup()"
+                [disabled]="isActionLoading"
+                class="mt-6 bg-white text-indigo-600 px-8 py-3 rounded-2xl font-bold hover:bg-indigo-50 transition-all shadow-lg active:scale-95">
+           ¡Unirme al Grupo!
+        </button>
+      </div>
+    </div>
+
+    <header class="bg-white shadow-sm">
+      <div class="flex border-b border-gray-100 max-w-2xl mx-auto">
         <button (click)="setTab('info')" 
                 class="flex-1 py-3 text-xs font-bold border-b-2 transition-colors uppercase tracking-wider"
                 [class.border-indigo-600]="activeTab === 'info'"

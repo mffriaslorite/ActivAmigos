@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Subject, Subscription } from 'rxjs';
@@ -37,7 +37,7 @@ export interface ChatMessage {
   templateUrl: `./chat-room.component.html`,
   styleUrls: ['./chat-room.component.scss']
 })
-export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
+export class ChatRoomComponent implements OnInit, OnDestroy, OnChanges, AfterViewChecked {
   @Input() contextType: 'GROUP' | 'ACTIVITY' = 'GROUP';
   @Input() contextId!: number;
   @ViewChild('messagesContainer') messagesContainer!: ElementRef;
@@ -49,7 +49,7 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
   isLoading = true;
   isSending = false;
   isBanned = false;
-  isConnected = true; // Asumimos conectado al inicio
+  isConnected = true; 
   needsScrollToBottom = false;
 
   currentUserId: number | null = null;
@@ -82,37 +82,47 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
   ngOnInit() {
     this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.currentUserId = user?.id || null;
-      
-      // Permisos básicos globales
-      this.canModerate = user?.role === 'ORGANIZER' || user?.role === 'SUPERADMIN';
-      
-      if (user && this.contextId) {
-        this.loadUserModerationStatus();
-        this.initializeChat();
+      this.initComponent();
+    });
+  }
 
-        // Si es actividad, verificar si es el organizador específico
-        if (this.contextType === 'ACTIVITY') {
-          this.activitiesService.getUserRoleInActivity(this.contextId)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe({
-              next: (response) => {
-                if (response.role === 'organizer') this.canModerate = true;
-              },
-              error: (e) => console.warn('Role check failed', e)
-            });
-        }
+  ngOnChanges(changes: SimpleChanges) {
+    if ((changes['contextId'] || changes['contextType']) && !changes['contextId']?.firstChange) {
+      this.initComponent();
+    }
+  }
 
-        // Si es grupo, verificar si es el administrador/creador específico
-        if (this.contextType === 'GROUP') {
-          this.groupsService.getUserRoleInGroup(this.contextId)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe({
-              next: (response: { role: string | null }) => {
-                if (response.role === 'admin') this.canModerate = true;
-              },
-              error: (e: any) => console.warn('Group role check failed', e)
-            });
-        }
+  private initComponent() {
+    if (!this.currentUserId || !this.contextId) return;
+
+    this.checkModerationPermissions();
+    this.loadUserModerationStatus();
+    this.initializeChat();
+  }
+
+  private checkModerationPermissions() {
+    this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
+      if (!user) {
+        this.canModerate = false;
+        return;
+      }
+
+      // 1. Permisos globales (Admin/Organizador)
+      this.canModerate = user.role === 'ORGANIZER' || user.role === 'SUPERADMIN';
+      
+      // 2. Permisos específicos del contexto (Creador de actividad o admin de grupo)
+      if (this.contextType === 'ACTIVITY') {
+        this.activitiesService.getUserRoleInActivity(this.contextId)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(res => {
+            if (res.role === 'organizer') this.canModerate = true;
+          });
+      } else if (this.contextType === 'GROUP') {
+        this.groupsService.getUserRoleInGroup(this.contextId)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(res => {
+            if (res.role === 'admin') this.canModerate = true;
+          });
       }
     });
   }
@@ -130,24 +140,22 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     // Suscribirse a mensajes en tiempo real
     this.chatService.messages$.pipe(takeUntil(this.destroy$)).subscribe(newMessages => {
-      // Si está baneado, no procesar mensajes nuevos
       if (this.isBanned) return;
 
       newMessages.forEach(message => {
         if (message.context_type === this.contextType && message.context_id === this.contextId) {
           if (!this.messages.some(existing => existing.id === message.id)) {
             this.messages.push(message);
-            this.needsScrollToBottom = true; // Marcar para scroll
+            this.needsScrollToBottom = true;
           }
         }
       });
     });
 
-    // Monitorizar conexión para mostrar aviso visual
+    // Monitorizar conexión
     this.chatService.connectionStatus$.pipe(takeUntil(this.destroy$)).subscribe(connected => {
       this.isConnected = connected;
       if (connected && this.currentUserId) {
-        // Reconexión silenciosa
         setTimeout(() => this.connectToRoom(), 500);
       }
     });
@@ -158,7 +166,6 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   private loadMessages() {
-    // Si ya sabemos que está baneado, no cargar historial
     if (this.isBanned) return;
 
     this.isLoading = true;
@@ -179,9 +186,8 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   private loadUserModerationStatus() {
-    if (!this.currentUserId) return;
+    if (!this.currentUserId || !this.contextId) return;
     
-    // Usamos ModerationService en lugar de ChatService
     this.moderationService.getMyStatus(this.contextType, this.contextId, this.currentUserId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -191,11 +197,13 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
           this.isBanned = status.status === 'BANNED';
           
           if (this.isBanned) {
-            this.messageForm.disable(); // Desactivar input si está baneado
-            this.messages = []; // Borrar mensajes si había cargado algo
+            this.messageForm.disable();
+            this.messages = [];
+          } else {
+            this.messageForm.enable();
           }
         },
-        error: (err) => console.warn('No se pudo cargar estado moderación', err)
+        error: (err) => console.warn('Error loading moderation status', err)
       });
   }
 
@@ -204,7 +212,6 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (!content || this.isBanned || this.isSending) return;
 
     this.isSending = true;
-    
     this.chatService.sendMessage(this.contextType, this.contextId, content)
       .pipe(
         takeUntil(this.destroy$),
@@ -215,10 +222,7 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
           this.messageForm.reset();
           this.needsScrollToBottom = true;
         },
-        error: () => {
-          // Feedback visual sutil en el input (podría ser un borde rojo temporal)
-          console.error('Failed to send'); 
-        }
+        error: () => console.error('Failed to send')
       });
   }
 
@@ -230,8 +234,6 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
       } catch(err) { }
     }
   }
-
-  // --- Visual Helpers ---
 
   getSenderName(sender: any): string {
     return sender.first_name || sender.username;
@@ -249,13 +251,9 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
   formatTimestamp(timestamp: string): string {
     const date = new Date(timestamp + (timestamp.endsWith('Z') ? '' : 'Z'));
     const now = new Date();
-    
-    // Si es hoy, solo hora
     if (date.toDateString() === now.toDateString()) {
       return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     }
-    
-    // Si no, fecha corta
     return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   }
 
@@ -263,17 +261,14 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
     return message.sender_id === this.currentUserId;
   }
 
-  // --- Moderation ---
-
   onMessageClick(message: ChatMessage) {
-    // Solo permitir moderar si tienes permisos Y no es tu mensaje Y no es del sistema
     if (this.canModerate && !this.isMyMessage(message) && !message.is_system) {
       this.selectedUserToWarn = {
         id: message.sender.id,
         username: message.sender.username,
         first_name: message.sender.first_name,
         last_name: message.sender.last_name,
-        warning_count: 0 // Se cargará en el modal
+        warning_count: 0
       };
       this.showModerationModal = true;
     }
@@ -282,7 +277,6 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
   onWarningIssued() {
     this.showModerationModal = false;
     this.selectedUserToWarn = null;
-    // Recargar estado por si acaso nos auto-afecta (raro pero posible)
     this.loadUserModerationStatus();
   }
 
