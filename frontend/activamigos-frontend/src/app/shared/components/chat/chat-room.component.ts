@@ -8,6 +8,7 @@ import { ActivitiesService } from '../../../core/services/activities.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ModerationService } from '../../../core/services/moderation.service';
 import { UserService } from '../../../core/services/user.service';
+import { GroupsService } from '../../../core/services/groups.service';
 import { SemaphoreBadgeComponent } from '../semaphore-badge/semaphore-badge.component';
 import { ModerationModalComponent, UserToWarn } from '../moderation-modal/moderation-modal.component';
 
@@ -69,6 +70,7 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
     private chatService: ChatService,
     private authService: AuthService,
     private activitiesService: ActivitiesService,
+    private groupsService: GroupsService,
     private moderationService: ModerationService,
     private userService: UserService
   ) {
@@ -97,6 +99,18 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
                 if (response.role === 'organizer') this.canModerate = true;
               },
               error: (e) => console.warn('Role check failed', e)
+            });
+        }
+
+        // Si es grupo, verificar si es el administrador/creador específico
+        if (this.contextType === 'GROUP') {
+          this.groupsService.getUserRoleInGroup(this.contextId)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: (response: { role: string | null }) => {
+                if (response.role === 'admin') this.canModerate = true;
+              },
+              error: (e: any) => console.warn('Group role check failed', e)
             });
         }
       }

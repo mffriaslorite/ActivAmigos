@@ -284,4 +284,16 @@ export class GroupsService {
       map(groups => groups.filter(group => !group.is_member))
     );
   }
+
+  /**
+   * Get user's role in a specific group
+   */
+  getUserRoleInGroup(groupId: number): Observable<{ role: string | null }> {
+    return this.http.get<{ role: string | null }>(
+      `${this.API_BASE_URL}/groups/${groupId}/user-role`,
+      { withCredentials: true }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
 }

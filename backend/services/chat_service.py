@@ -437,6 +437,12 @@ def get_chat_history(query_args):
         context_type=message_context,
         context_id=context_id
     )
+
+    # Privacy filtering for banned users
+    if not can_user_chat(context_type, context_id, user_id):
+        # Banned user can only see system messages or messages they sent
+        from sqlalchemy import or_
+        query = query.filter(or_(Message.is_system == True, Message.sender_id == user_id))
     
     # Apply cursor pagination if provided
     if cursor:

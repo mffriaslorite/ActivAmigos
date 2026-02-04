@@ -6,36 +6,41 @@
 
   <div *ngIf="!isLoading && group">
     
-    <header class="bg-white shadow-sm sticky top-0 z-10">
+    <div class="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-2 shadow-sm">
+      <div class="max-w-2xl mx-auto">
+        <button (click)="goBack()" class="p-2 -ml-2 hover:bg-gray-100 rounded-full text-xl transition-colors">←</button>
+      </div>
+    </div>
+
+    <header class="bg-white shadow-sm">
       <div class="px-4 py-3 flex items-center gap-3 max-w-2xl mx-auto">
-        <button (click)="goBack()" class="p-2 -ml-2 hover:bg-gray-100 rounded-full text-xl">←</button>
-        <h1 class="font-bold text-lg truncate flex-1">{{ group.name }}</h1>
+        <h1 class="font-bold text-lg truncate flex-1 uppercase tracking-tight text-gray-800">{{ group.name }}</h1>
         
         <button *ngIf="!group.is_member" 
                 (click)="joinGroup()"
                 [disabled]="isActionLoading"
-                class="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-indigo-700 disabled:opacity-50">
+                class="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-sm">
            Unirme
         </button>
       </div>
 
       <div class="flex border-t border-gray-100">
         <button (click)="setTab('info')" 
-                class="flex-1 py-3 text-sm font-bold border-b-2 transition-colors"
+                class="flex-1 py-3 text-xs font-bold border-b-2 transition-colors uppercase tracking-wider"
                 [class.border-indigo-600]="activeTab === 'info'"
                 [class.text-indigo-600]="activeTab === 'info'"
                 [class.border-transparent]="activeTab !== 'info'"
-                [class.text-gray-500]="activeTab !== 'info'">
+                [class.text-gray-400]="activeTab !== 'info'">
           Info
         </button>
         <button (click)="setTab('chat')" 
-                class="flex-1 py-3 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2"
+                class="flex-1 py-3 text-xs font-bold border-b-2 transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
                 [class.border-indigo-600]="activeTab === 'chat'"
                 [class.text-indigo-600]="activeTab === 'chat'"
                 [class.border-transparent]="activeTab !== 'chat'"
-                [class.text-gray-500]="activeTab !== 'chat'">
+                [class.text-gray-400]="activeTab !== 'chat'">
           Chat 
-          <span *ngIf="!group.is_member" class="text-[10px] bg-gray-200 px-1.5 rounded text-gray-500">🔒</span>
+          <span *ngIf="!group.is_member" class="text-[10px] bg-gray-100 px-1.5 rounded text-gray-400">🔒</span>
         </button>
       </div>
     </header>

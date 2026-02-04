@@ -306,3 +306,26 @@ def get_group_details(group_id):
         'is_member': group.is_member(current_user.id),
         'members': members_data
     }
+
+@blp.route("/<int:group_id>/user-role", methods=["GET"])
+def get_user_group_role(group_id):
+    """Get current user's role in the group"""
+    current_user = get_current_user()
+    group = Group.query.get_or_404(group_id)
+    
+    # If the user is the creator, they are definitely an 'admin'
+    if group.created_by == current_user.id:
+        return {'role': 'admin'}, 200
+        
+    # Check roles in membership table
+    link = db.session.execute(
+        group_members.select().where(
+            (group_members.c.user_id == current_user.id) & 
+            (group_members.c.group_id == group_id)
+        )
+    ).first()
+    
+    if link:
+        return {'role': link.role}, 200
+    else:
+        return {'role': None}, 200
