@@ -7,7 +7,6 @@ import { ActivityDetails, ActivityParticipant } from '../../../core/models/activ
 import { ChatRoomComponent } from '../../../shared/components/chat/chat-room.component';
 import { SemaphoreBadgeComponent } from '../../../shared/components/semaphore-badge/semaphore-badge.component';
 import { ModerationModalComponent, UserToWarn } from '../../../shared/components/moderation-modal/moderation-modal.component';
-import { RulesSelectorComponent } from '../../../shared/components/rules-selector/rules-selector.component';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { RulesService } from '../../../core/services/rules.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -17,7 +16,7 @@ import { AttendanceModalComponent } from '../../../shared/components/attendance-
 @Component({
   selector: 'app-activity-details',
   standalone: true,
-  imports: [CommonModule, ChatRoomComponent, SemaphoreBadgeComponent, RulesSelectorComponent, ModerationModalComponent, AttendanceModalComponent],
+  imports: [CommonModule, ChatRoomComponent, SemaphoreBadgeComponent, ModerationModalComponent, AttendanceModalComponent],
   templateUrl: './activity-details.component.html',
   styleUrls: ['./activity-details.component.scss']
 })
