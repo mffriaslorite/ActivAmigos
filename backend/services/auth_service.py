@@ -4,13 +4,39 @@ from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta, timezone
 from models.user.user import User, PasswordHintType, db
 from models.user.user_schema import UserSchema
-from schemas.auth_schema import RegisterSchema, LoginSchema, PasswordHintSchema
+from schemas.auth_schema import RegisterSchema, LoginSchema, PasswordHintSchema, ForgotPasswordSchema
 from utils.validators import validate_password, validate_username
 from utils.constants import ANIMAL_LIST, REFRESH_TOKEN_EXPIRE_DAYS
+from utils.email_service import send_password_reset_email
 import jwt
 import os
+import secrets
+
 
 blp = Blueprint("Auth", "auth", url_prefix="/api/auth", description="Authentication routes")
+
+@blp.route("/forgot-password", methods=["POST"])
+@blp.arguments(ForgotPasswordSchema)
+def forgot_password(args):
+    """Generar y enviar una nueva contraseña temporal por correo"""
+    email = args["email"]
+    user = User.query.filter_by(email=email).first()
+    
+    # Para evitar enumeración de usuarios, siempre devolvemos éxito incluso si el correo no existe
+    if not user:
+        return {"message": "Si el correo está registrado, se enviará una nueva contraseña temporal."}, 200
+        
+    new_password = secrets.token_urlsafe(8)
+    user.set_password(new_password)
+    
+    if send_password_reset_email(email, new_password):
+        db.session.commit()
+    else:
+        db.session.rollback()
+        abort(500, message="Hubo un problema al enviar el correo. Por favor, intenta de nuevo más tarde.")
+        
+    return {"message": "Si el correo está registrado, se enviará una nueva contraseña temporal."}, 200
+
 
 # ✅ Register
 @blp.route("/register", methods=["POST"])

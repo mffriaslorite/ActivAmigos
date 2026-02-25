@@ -22,6 +22,13 @@ export class LoginComponent implements OnInit {
   // Variables para pistas
   animalsList: string[] = [];
 
+  // Variables para recuperación de contraseña
+  showForgotModal = false;
+  forgotEmail = '';
+  forgotMessage = '';
+  forgotError = '';
+  isForgotLoading = false;
+
   constructor(
     private fb: FormBuilder,
     private router: Router,
@@ -77,5 +84,38 @@ export class LoginComponent implements OnInit {
 
   goBack() {
     this.router.navigate(['/']);
+  }
+
+  openForgotModal() {
+    this.showForgotModal = true;
+    this.forgotEmail = '';
+    this.forgotMessage = '';
+    this.forgotError = '';
+  }
+
+  closeForgotModal() {
+    this.showForgotModal = false;
+  }
+
+  onForgotPassword() {
+    if (!this.forgotEmail || !this.forgotEmail.includes('@')) {
+      this.forgotError = 'Por favor, introduce un correo electrónico válido.';
+      return;
+    }
+
+    this.isForgotLoading = true;
+    this.forgotError = '';
+    this.forgotMessage = '';
+
+    this.authService.forgotPassword(this.forgotEmail).subscribe({
+      next: (res) => {
+        this.isForgotLoading = false;
+        this.forgotMessage = res.message;
+      },
+      error: (err) => {
+        this.isForgotLoading = false;
+        this.forgotError = 'Ha ocurrido un error al intentar restablecer la contraseña. Inténtalo más tarde.';
+      }
+    });
   }
 }

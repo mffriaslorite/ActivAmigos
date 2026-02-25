@@ -77,6 +77,19 @@ export class AuthService {
   }
 
   /**
+   * Request password reset
+   */
+  forgotPassword(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(
+      `${this.API_BASE_URL}/auth/forgot-password`,
+      { email },
+      { withCredentials: true }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
    * ✅ Check current session
    */
   checkSession(): Observable<{ authenticated: boolean; user?: User }> {

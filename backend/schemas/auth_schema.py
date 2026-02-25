@@ -34,3 +34,9 @@ class ChangePasswordSchema(Schema):
 
 class PasswordHintSchema(Schema):
     email = fields.Email(required=True)
+
+class ForgotPasswordSchema(Schema):
+    email = fields.Email(
+        required=True,
+        validate=validate.Email(error="El formato del correo no es válido")
+    )

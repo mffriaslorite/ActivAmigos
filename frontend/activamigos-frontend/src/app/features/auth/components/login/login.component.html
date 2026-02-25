@@ -61,16 +61,25 @@
       </div>
     </div>
 
-    <div class="flex items-center py-2">
-      <input
-        type="checkbox"
-        id="remember_me"
-        class="w-6 h-6 text-blue-600 rounded-md border-gray-300 focus:ring-blue-500"
-        formControlName="remember_me"
-      />
-      <label for="remember_me" class="ml-3 text-gray-700 text-base">
-        No cerrar mi sesión
-      </label>
+    <div class="flex items-center justify-between py-2">
+      <div class="flex items-center">
+        <input
+          type="checkbox"
+          id="remember_me"
+          class="w-6 h-6 text-blue-600 rounded-md border-gray-300 focus:ring-blue-500"
+          formControlName="remember_me"
+        />
+        <label for="remember_me" class="ml-3 text-gray-700 text-base">
+          No cerrar mi sesión
+        </label>
+      </div>
+      <button 
+        type="button" 
+        class="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
+        (click)="openForgotModal()"
+      >
+        ¿Olvidaste tu contraseña?
+      </button>
     </div>
 
     <button 
@@ -82,4 +91,59 @@
       <span>{{ isLoading ? 'Entrando...' : 'Entrar' }}</span>
     </button>
   </form>
+</div>
+
+<!-- Modal Recuperar Contraseña -->
+<div *ngIf="showForgotModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-fade-in">
+  <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative">
+    <button (click)="closeForgotModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+      <span class="text-2xl">×</span>
+    </button>
+    
+    <div class="p-6">
+      <div class="text-4xl mb-3">🔑</div>
+      <h2 class="text-xl font-bold text-gray-900 mb-2">Recuperar Contraseña</h2>
+      <p class="text-gray-600 text-sm mb-6">
+        Introduce tu correo electrónico y te enviaremos una nueva contraseña temporal.
+      </p>
+
+      <div *ngIf="forgotMessage" class="mb-4 p-3 bg-green-50 text-green-800 text-sm rounded-lg flex items-start gap-2 border border-green-200">
+        <span>✅</span> {{ forgotMessage }}
+      </div>
+
+      <div *ngIf="forgotError" class="mb-4 p-3 bg-red-50 text-red-800 text-sm rounded-lg flex items-start gap-2 border border-red-200">
+        <span>❌</span> {{ forgotError }}
+      </div>
+
+      <div *ngIf="!forgotMessage" class="space-y-4">
+        <div>
+          <label class="block mb-2 text-gray-700 text-sm font-bold">Correo Electrónico</label>
+          <input 
+            type="email" 
+            [(ngModel)]="forgotEmail" 
+            placeholder="ejemplo@correo.com"
+            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-gray-800"
+          >
+        </div>
+
+        <button 
+          (click)="onForgotPassword()" 
+          [disabled]="isForgotLoading || !forgotEmail"
+          class="w-full py-3 rounded-xl bg-blue-600 text-white font-bold shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+        >
+          <span *ngIf="isForgotLoading" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          <span>Enviar Nueva Contraseña</span>
+        </button>
+      </div>
+
+      <div *ngIf="forgotMessage" class="mt-4">
+        <button 
+          (click)="closeForgotModal()" 
+          class="w-full py-3 rounded-xl bg-gray-100 text-gray-800 font-bold hover:bg-gray-200 transition-colors"
+        >
+          Volver al Login
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
