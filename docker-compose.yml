@@ -41,6 +41,11 @@ services:
       DATABASE_URL: postgresql+psycopg2://activamigos:${DB_PASSWORD}@db:5432/activamigos_db
       CORS_ORIGINS: ${CORS_ORIGINS}
       MINIO_ENDPOINT: minio:9000
+      SMTP_SERVER: ${SMTP_SERVER}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL}
     depends_on:
       - db
       - minio
