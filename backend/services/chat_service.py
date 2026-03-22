@@ -53,7 +53,7 @@ def can_user_chat(context_type, context_id, user_id):
             )
         ).first()
     
-    return membership and membership.status == MembershipStatus.ACTIVE
+    return membership and (membership.status is None or membership.status == MembershipStatus.ACTIVE)
 
 def init_socketio(app, socketio_instance):
     """Initialize SocketIO with the app and set up event handlers"""

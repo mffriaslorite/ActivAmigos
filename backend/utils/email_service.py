@@ -3,7 +3,7 @@ import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-def send_password_reset_email(to_email, new_password, is_bulk=False):
+def send_password_reset_email(to_email, new_password, username=None, is_bulk=False):
     smtp_server = os.getenv('SMTP_SERVER')
     smtp_port = int(os.getenv('SMTP_PORT', 587))
     smtp_user = os.getenv('SMTP_USERNAME')
@@ -20,10 +20,11 @@ def send_password_reset_email(to_email, new_password, is_bulk=False):
     msg['Subject'] = "Nueva Contraseña Temporal - ActivAmigos" if is_bulk else "Recuperación de Contraseña - ActivAmigos"
 
     if is_bulk:
-        body = f"""Hola,
+        body = f"""Hola{f' {username}' if username else ''},
 
 Por motivos de seguridad y mejoras en la plataforma ActivAmigos, hemos restablecido todas las contraseñas.
 
+Tu nombre de usuario es: {username if username else 'Desconocido'}
 Tu nueva contraseña temporal es: {new_password}
 
 Por favor, inicia sesión con esta contraseña y dirígete a tu perfil para cambiarla por una segura lo antes posible.
@@ -32,10 +33,11 @@ Atentamente,
 El equipo de ActivAmigos
 """
     else:
-        body = f"""Hola,
+        body = f"""Hola{f' {username}' if username else ''},
 
 Has solicitado restablecer tu contraseña en ActivAmigos.
 
+Tu nombre de usuario es: {username if username else 'Desconocido'}
 Tu nueva contraseña temporal es: {new_password}
 
 Por favor, inicia sesión con esta contraseña y dirígete a tu perfil para cambiarla por una segura lo antes posible.

@@ -116,7 +116,7 @@ export class SemaphoreBadgeComponent {
   getStatusText(): string {
     switch (this.color) {
       case 'grey':
-        return 'Sin participar';
+        return 'Sin mensajes';
       case 'light_green':
         return 'Nuevo miembro';
       case 'dark_green':

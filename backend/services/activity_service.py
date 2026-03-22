@@ -68,6 +68,14 @@ def create_activity(args):
         # Add creator as an organizer
         activity.add_organizer(current_user)
         
+        # Auto-confirm the creator's attendance
+        attendance = ActivityAttendance(
+            user_id=current_user.id,
+            activity_id=activity.id,
+            confirmed_at=datetime.now(timezone.utc)
+        )
+        db.session.add(attendance)
+        
         db.session.commit()
         
         # ✅ TRIGGER: Verificar logro "Soy Organizador"
@@ -164,29 +172,27 @@ def get_activity(activity_id):
     
     activity = Activity.query.get_or_404(activity_id)
     
-    # Check if user has confirmed attendance
+    # Init attendance variables
     attendance_confirmed = False
-    if activity.is_participant(current_user.id):
-        attendance = ActivityAttendance.query.filter_by(
-            activity_id=activity.id,
-            user_id=current_user.id
-        ).first()
-        
-
-        attendance_confirmed = attendance is not None and attendance.is_confirmed
-        
-        attendance_status = 'pending'  # Default
-        if attendance:
-            if attendance.confirmed_at and attendance.present is None:
-                attendance_status = 'confirmed'  # Confirmed but not yet marked by organizer
-            elif attendance.confirmed_at and attendance.present is True:
-                attendance_status = 'attended'  # Confirmed and marked as present
-            elif attendance.confirmed_at and attendance.present is False:
+    attendance_status = 'pending'
+    
+    attendance = ActivityAttendance.query.filter_by(
+        activity_id=activity.id,
+        user_id=current_user.id
+    ).first()
+    
+    if attendance:
+        attendance_confirmed = attendance.is_confirmed
+        if attendance.confirmed_at and attendance.present is None:
+            attendance_status = 'confirmed'
+        elif attendance.confirmed_at and attendance.present is True:
+            attendance_status = 'attended'
+        elif attendance.confirmed_at and attendance.present is False:
             # Declined if confirmed before activity date and present is False
-                if attendance.confirmed_at < activity.date:
-                    attendance_status = 'declined'
-                else:
-                    attendance_status = 'absent'  # Marked absent by organizer after activity date
+            if attendance.confirmed_at < activity.date:
+                attendance_status = 'declined'
+            else:
+                attendance_status = 'absent'
     
     response_data = {
         'id': activity.id,
@@ -216,12 +222,24 @@ def get_activity_details(activity_id):
 
     # Check if current user has confirmed attendance
     current_user_attendance_confirmed = False
-    if activity.is_participant(current_user.id):
-        attendance = ActivityAttendance.query.filter_by(
-            activity_id=activity.id,
-            user_id=current_user.id
-        ).first()
-        current_user_attendance_confirmed = attendance is not None and attendance.is_confirmed
+    current_user_attendance_status = 'pending'
+    
+    attendance = ActivityAttendance.query.filter_by(
+        activity_id=activity.id,
+        user_id=current_user.id
+    ).first()
+    
+    if attendance:
+        current_user_attendance_confirmed = attendance.is_confirmed
+        if attendance.confirmed_at and attendance.present is None:
+            current_user_attendance_status = 'confirmed'
+        elif attendance.confirmed_at and attendance.present is True:
+            current_user_attendance_status = 'attended'
+        elif attendance.confirmed_at and attendance.present is False:
+            if attendance.confirmed_at < activity.date:
+                current_user_attendance_status = 'declined'
+            else:
+                current_user_attendance_status = 'absent'
 
     # Load participants with extended information including attendance status and semaphore
     participants = []
@@ -279,11 +297,10 @@ def get_activity_details(activity_id):
         'rules': activity.rules,
         'created_by': activity.created_by,
         'created_at': activity.created_at,
-        'participant_count': activity.participant_count,
         'is_participant': activity.is_participant(current_user.id),
         'attendance_confirmed': current_user_attendance_confirmed,
         'participants': participants,
-        'attendance_status': attendance_status
+        'attendance_status': current_user_attendance_status
     }
 
 @blp.route("/<int:activity_id>", methods=["PUT"])
@@ -364,6 +381,23 @@ def join_activity(activity_id):
     
     try:
         if activity.add_participant(current_user):
+            # Auto-confirmar asistencia al apuntarse (#2.10)
+            try:
+                attendance = ActivityAttendance.query.filter_by(
+                    activity_id=activity.id,
+                    user_id=current_user.id
+                ).first()
+                if not attendance:
+                    attendance = ActivityAttendance(
+                        activity_id=activity.id,
+                        user_id=current_user.id
+                    )
+                    db.session.add(attendance)
+                attendance.confirmed_at = datetime.now(timezone.utc)
+                attendance.present = None  # Confirmed but not yet marked by organizer
+            except Exception as e:
+                print(f"Warning: Could not auto-confirm attendance: {e}")
+
             db.session.commit()
             
             # ✅ TRIGGER: Verificar logro "¡Me Apunto!" y "Súper Activo"

@@ -1,11 +1,11 @@
 <div *ngIf="isOpen" 
-     class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
+     class="fixed inset-0 bg-white flex flex-col items-center justify-center z-50 p-6 animate-fade-in"
      (click)="onBackdropClick($event)">
   
-  <div class="bg-white rounded-2xl w-full max-w-sm shadow-xl overflow-hidden transform transition-all scale-100"
+  <div class="w-full max-w-md flex flex-col items-center"
        (click)="$event.stopPropagation()">
     
-    <div class="p-6 text-center">
+    <div class="text-center w-full">
       <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full mb-4"
            [ngClass]="{
              'bg-red-100 text-red-600': type === 'danger',
@@ -20,26 +20,26 @@
       <h3 class="text-lg font-bold text-gray-900 mb-2">{{ title }}</h3>
       <p class="text-sm text-gray-500 mb-6 leading-relaxed">{{ message }}</p>
 
-      <div class="flex gap-3">
+      <div class="flex flex-col gap-3 w-full">
         <button *ngIf="type === 'info'"
                 (click)="cancel.emit()"
-                class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
+                class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all active:scale-95 shadow-lg">
           Entendido
         </button>
 
         <ng-container *ngIf="type !== 'info'">
-          <button (click)="cancel.emit()"
-                  [disabled]="isLoading"
-                  class="flex-1 py-2.5 px-4 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50">
-            {{ cancelText }}
-          </button>
-          
           <button (click)="confirm.emit()"
                   [disabled]="isLoading"
-                  class="flex-1 py-2.5 px-4 text-white font-semibold rounded-xl shadow-sm transition-all flex justify-center items-center gap-2"
+                  class="w-full py-4 text-white font-bold rounded-xl shadow-lg transition-all flex justify-center items-center gap-2 active:scale-95 text-lg"
                   [ngClass]="type === 'danger' ? 'bg-red-500 hover:bg-red-600' : 'bg-yellow-500 hover:bg-yellow-600'">
-            <span *ngIf="isLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <span *ngIf="isLoading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             <span *ngIf="!isLoading">{{ confirmText }}</span>
+          </button>
+
+          <button (click)="cancel.emit()"
+                  [disabled]="isLoading"
+                  class="w-full py-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-all active:scale-95 text-lg disabled:opacity-50">
+            {{ cancelText }}
           </button>
         </ng-container>
       </div>

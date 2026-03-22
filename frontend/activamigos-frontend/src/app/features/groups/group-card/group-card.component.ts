@@ -13,6 +13,7 @@ import { Group } from '../../../core/models/group.model';
 export class GroupCardComponent {
   @Input() group!: Group;
   @Input() isLoading = false;
+  @Input() currentUserId?: number;
   
   @Output() joinGroup = new EventEmitter<number>();
   @Output() leaveGroup = new EventEmitter<number>();

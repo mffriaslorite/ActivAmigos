@@ -26,7 +26,7 @@ export class CreateActivityModalComponent implements OnInit {
   
   activityTypes = [
     { value: 'sport', label: 'Deporte', icon: '⚽' },
-    { value: 'social', label: 'Social', icon: '🍻' },
+    { value: 'social', label: 'Social', icon: '👥' },
     { value: 'culture', label: 'Cultura', icon: '🎭' },
     { value: 'academic', label: 'Estudios', icon: '📚' },
     { value: 'other', label: 'Otro', icon: '🌈' }
@@ -67,6 +67,12 @@ export class CreateActivityModalComponent implements OnInit {
   nextStep() {
     if (this.activityForm.invalid) {
       this.activityForm.markAllAsTouched();
+      return;
+    }
+    // Validar que la fecha no sea pasada (#2.9)
+    const selectedDate = new Date(this.activityForm.get('date')?.value);
+    if (selectedDate < new Date()) {
+      this.errorMessage = 'La fecha no puede ser en el pasado. Elige una fecha futura.';
       return;
     }
     this.currentStep = 2;

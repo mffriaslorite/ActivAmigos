@@ -106,7 +106,7 @@ DEFAULT_RULE_TEMPLATES = [
         'rule_type': RuleType.BOTH
     },
     {
-        'title': 'Mantén el tema',
+        'title': 'Mantén solo conversaciones sobre el tema',
         'description': 'Mantén las conversaciones relacionadas con el grupo o actividad',
         'icon': '🎯',
         'rule_type': RuleType.BOTH

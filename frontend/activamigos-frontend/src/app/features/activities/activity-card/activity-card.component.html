@@ -38,9 +38,10 @@
 
           <button (click)="onLeave($event)"
                   [disabled]="isLoading"
-                  class="text-xs text-red-400 hover:text-red-600 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                  class="text-xs text-red-500 font-bold px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition-colors flex items-center gap-1"
                   title="Darse de baja">
-             {{ isLoading ? '...' : 'Salir' }}
+             <span>🚪</span>
+             <span>{{ isLoading ? '...' : 'Salir' }}</span>
           </button>
         </ng-container>
 

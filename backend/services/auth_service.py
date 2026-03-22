@@ -29,7 +29,7 @@ def forgot_password(args):
     new_password = secrets.token_urlsafe(8)
     user.set_password(new_password)
     
-    if send_password_reset_email(email, new_password):
+    if send_password_reset_email(email, new_password, user.username):
         db.session.commit()
     else:
         db.session.rollback()

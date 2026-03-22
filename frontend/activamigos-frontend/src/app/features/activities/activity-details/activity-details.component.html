@@ -7,7 +7,7 @@
       <button (click)="goBack()" 
               class="flex items-center gap-2 px-3 py-1 rounded-full transition-colors w-fit"
               [ngClass]="activeTab === 'info' ? 'hover:bg-white/20' : 'hover:bg-gray-100'">
-        <span>←</span> <span [class.hidden]="activeTab === 'chat'">Volver</span>
+        <span class="text-2xl">⬅️</span> <span [class.hidden]="activeTab === 'chat'">Volver</span>
       </button>
       <h1 *ngIf="activeTab === 'chat' && activityDetails" class="font-bold text-lg truncate animate-fade-in py-1">{{ activityDetails.title }}</h1>
     </div>
@@ -50,15 +50,8 @@
 
   <main class="flex-1 px-4 py-6 max-w-4xl w-full mx-auto space-y-6" *ngIf="!isLoading && activityDetails">
 
-    <div *ngIf="activeTab === 'info'" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 animate-fade-in">
-      <div *ngIf="activityDetails.is_participant && mySemaphoreColor" 
-         class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-wrap items-center justify-between gap-2 mb-2">
-       <div class="flex items-center gap-2">
-         <span class="text-sm text-gray-500 font-medium">Tu comportamiento:</span>
-         <app-semaphore-badge [color]="mySemaphoreColor" [warningCount]="myWarningCount" [showText]="true"></app-semaphore-badge>
-       </div>
-       <span *ngIf="isBanned" class="flex-shrink-0 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded border border-red-100">🚫 Baneado</span>
-    </div>
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+      <!-- #1.8: Sección "Tu comportamiento" eliminada según feedback de usuarios -->
 
        <div *ngIf="!activityDetails.is_participant" class="text-center">
           <p class="text-gray-600 mb-3">¿Te apetece ir a esta actividad?</p>
@@ -93,23 +86,23 @@
              
              <button *ngIf="activityDetails.attendance_status === 'pending'"
                      (click)="openAttendanceConfirmation()"
-                     class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-lg text-sm font-bold border border-yellow-200 animate-pulse hover:bg-yellow-200 transition-colors">
-                ❓ Responder
-             </button>
+                      class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg text-sm font-bold border border-yellow-200 animate-pulse hover:bg-yellow-200 transition-colors min-h-[40px]">
+                 ❓ ¿Vas a ir?
+              </button>
 
              <button *ngIf="activityDetails.attendance_status === 'confirmed' || activityDetails.attendance_status === 'declined' || activityDetails.attendance_status === 'absent'"
                      (click)="openAttendanceConfirmation()"
                      class="text-xs text-blue-600 hover:text-blue-800 underline font-medium ml-2">
-                Cambiar respuesta
+                Modificar mi asistencia a la actividad
              </button>
 
           </div>
-          
-          <button (click)="leaveActivity()" 
-                  [disabled]="isActionLoading"
-                  class="text-red-500 text-sm font-medium hover:text-red-700 py-2 text-center w-full hover:bg-red-50 rounded-lg transition-colors">
-              {{ isActionLoading ? 'Procesando...' : 'Darme de baja de la actividad' }}
-          </button>
+                    <button (click)="leaveActivity()" 
+                   [disabled]="isActionLoading"
+                   class="w-full py-3 px-4 border-2 border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
+               <span>🚪</span>
+               <span>{{ isActionLoading ? 'Procesando...' : 'Darme de baja de la actividad' }}</span>
+           </button>
        </div>
     </div>
 

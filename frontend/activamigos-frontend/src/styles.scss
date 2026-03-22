@@ -22,9 +22,13 @@ body {
   transition: all 0.2s ease-in-out;
 }
 
+/* Force global light placeholders for cognitive accessibility */
+input::placeholder, 
+textarea::placeholder,
 .input-field::placeholder {
-  color: #9CA3AF;
+  color: #9CA3AF !important; /* Tailwind gray-400 - Light enough but readable */
   font-size: 15px;
+  opacity: 1; 
 }
 
 .input-field:focus {

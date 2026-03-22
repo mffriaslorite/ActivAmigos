@@ -106,6 +106,10 @@ export class RulesSelectorComponent implements OnInit {
 
   onSave() {
     if (this.isSaving) return;
+    if (this.selectedRuleIds.length === 0) {
+      // Return early; the HTML will display a disabled state or we handle standard validation
+      return;
+    }
 
     this.isSaving = true;
     this.save.emit(this.selectedRuleIds);

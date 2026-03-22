@@ -11,8 +11,8 @@
          [ngClass]="activeTab === 'info' ? 'bg-indigo-600 border-indigo-500' : 'bg-white border-gray-100 border-b'">
       <div class="max-w-2xl mx-auto flex items-center gap-3">
         <button (click)="goBack()" 
-                class="p-2 -ml-2 rounded-full text-xl transition-colors"
-                [ngClass]="activeTab === 'info' ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 text-gray-800'">←</button>
+                class="p-3 -ml-2 hover:bg-gray-100 rounded-full text-2xl min-w-[48px] min-h-[48px] flex items-center justify-center transition-colors"
+                [ngClass]="activeTab === 'info' ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 text-gray-800'">⬅️</button>
         <h1 *ngIf="activeTab === 'chat' && group" class="font-bold text-lg truncate animate-fade-in flex-1 text-gray-800">{{ group.name }}</h1>
         <h1 *ngIf="activeTab === 'info' && group" class="font-bold text-lg truncate animate-fade-in flex-1 text-white">Detalles del Grupo</h1>
       </div>
@@ -84,14 +84,7 @@
             <span class="text-2xl transition-transform group-hover:translate-x-1">→</span>
         </button>
 
-        <div *ngIf="group.is_member && mySemaphoreColor" 
-             class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-           <div class="flex items-center gap-3">
-             <span class="text-sm text-gray-600 font-medium">Tu comportamiento:</span>
-             <app-semaphore-badge [color]="mySemaphoreColor" [warningCount]="myWarningCount" [showText]="true"></app-semaphore-badge>
-           </div>
-           <span *ngIf="isBanned" class="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded">🚫 Baneado</span>
-        </div>
+        <!-- #1.8: Sección "Tu comportamiento" eliminada según feedback de usuarios -->
 
         <div *ngIf="group.rules" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
           <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2 text-lg">
@@ -137,12 +130,13 @@
           </div>
         </div>
 
-        <div *ngIf="group.is_member" class="pt-6">
+        <div *ngIf="group.is_member && group.created_by !== currentUserId" class="pt-6">
            <button (click)="onLeaveClick()"
-                   [disabled]="isActionLoading"
-                   class="w-full py-3 text-red-500 font-bold bg-white border border-red-100 rounded-2xl hover:bg-red-50 transition-colors">
-             {{ isActionLoading ? 'Procesando...' : 'Salir del Grupo' }}
-           </button>
+                    [disabled]="isActionLoading"
+                    class="w-full py-3 px-4 border-2 border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
+              <span>🚪</span>
+              <span>{{ isActionLoading ? 'Procesando...' : 'Salir del Grupo' }}</span>
+            </button>
         </div>
 
       </div>
@@ -162,7 +156,7 @@
             <p class="mb-6 max-w-xs mx-auto">Debes unirte al grupo para poder leer y escribir mensajes.</p>
             <button (click)="joinGroup()" 
                     class="bg-indigo-600 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:bg-indigo-700">
-              Unirme al Grupo
+              <span>➕</span> Unirme al Grupo
             </button>
           </div>
         </ng-template>

@@ -1,6 +1,6 @@
 <div class="min-h-screen flex flex-col px-6 py-10 bg-white">
   <div class="mb-6">
-    <button class="text-2xl mb-4 p-2" (click)="goBack()" aria-label="Volver atrás">←</button>
+    <button class="text-3xl mb-4 p-3 min-w-[48px] min-h-[48px] rounded-full hover:bg-gray-100 transition-colors" (click)="goBack()" aria-label="Volver atrás">⬅️</button>
     <h1 class="text-2xl font-bold text-gray-900">Iniciar Sesión</h1>
   </div>
 
@@ -37,7 +37,7 @@
         />
         <button
           type="button"
-          class="absolute inset-y-0 right-3 flex items-center text-gray-500 px-2"
+          class="absolute inset-y-0 right-3 flex items-center text-gray-500 px-3 text-3xl"
           (click)="togglePasswordVisibility()"
           aria-label="Mostrar u ocultar contraseña"
         >
@@ -53,7 +53,7 @@
         <div class="flex flex-wrap gap-2">
           <span 
             *ngFor="let animal of animalsList" 
-            class="bg-white px-3 py-1 rounded-full text-sm text-blue-700 border border-blue-100 shadow-sm"
+            class="text-sm text-blue-700 font-medium"
           >
             {{ animal }}
           </span>
@@ -88,7 +88,7 @@
       class="w-full py-4 rounded-full bg-blue-500 text-white font-bold text-lg shadow-lg active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed flex justify-center items-center gap-2"
     >
       <span *ngIf="isLoading" class="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-      <span>{{ isLoading ? 'Entrando...' : 'Entrar' }}</span>
+      <span>{{ isLoading ? 'Entrando...' : '👋 Entrar' }}</span>
     </button>
   </form>
 </div>
@@ -102,9 +102,9 @@
     
     <div class="p-6">
       <div class="text-4xl mb-3">🔑</div>
-      <h2 class="text-xl font-bold text-gray-900 mb-2">Recuperar Contraseña</h2>
+      <h2 class="text-xl font-bold text-gray-900 mb-2">Recuperar Datos</h2>
       <p class="text-gray-600 text-sm mb-6">
-        Introduce tu correo electrónico y te enviaremos una nueva contraseña temporal.
+        Introduce tu correo y te enviaremos <b>tu nombre de usuario</b> y una <b>nueva contraseña temporal</b>.
       </p>
 
       <div *ngIf="forgotMessage" class="mb-4 p-3 bg-green-50 text-green-800 text-sm rounded-lg flex items-start gap-2 border border-green-200">
@@ -132,7 +132,7 @@
           class="w-full py-3 rounded-xl bg-blue-600 text-white font-bold shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
         >
           <span *ngIf="isForgotLoading" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-          <span>Enviar Nueva Contraseña</span>
+          <span>✉️ Enviar Nueva Contraseña</span>
         </button>
       </div>
 
