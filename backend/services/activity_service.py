@@ -431,10 +431,6 @@ def leave_activity(activity_id):
     
     activity = Activity.query.get_or_404(activity_id)
     
-    # Prevent creator from leaving their own activity
-    if activity.created_by == current_user.id:
-        abort(400, message="Activity creator cannot leave the activity. Transfer ownership or delete the activity instead.")
-
     try:
         if activity.remove_participant(current_user):
             db.session.commit()

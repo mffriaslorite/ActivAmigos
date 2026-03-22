@@ -126,24 +126,17 @@ export class ActivitiesComponent implements OnInit, OnDestroy {
 
     this.activityToLeave = activity;
 
-    // CASO 1: Soy el Creador (Bloqueante)
-    if (this.currentUserId === activity.created_by) {
-      this.leaveModalConfig = {
-        title: 'No puedes salir',
-        message: 'Eres el organizador de esta actividad. No puedes salir de la actividad, pero puedes editarla desde los detalles.',
-        type: 'info',
-        confirmText: 'Entendido'
-      };
-    } 
-    // CASO 2: Participante normal (Confirmación)
-    else {
-      this.leaveModalConfig = {
-        title: `¿Quieres salir de la actividad "${activity.title}"?`,
-        message: `¿Seguro que quieres dejar de participar en "${activity.title}"? Perderás tu plaza.`,
-        type: 'danger',
-        confirmText: 'Sí, quiero salir'
-      };
-    }
+    // Confirmación para todos
+    const isCreator = this.currentUserId === activity.created_by;
+    
+    this.leaveModalConfig = {
+      title: isCreator ? '¿Quieres dejar de asistir?' : `¿Quieres salir de la actividad "${activity.title}"?`,
+      message: isCreator 
+        ? `Eres el organizador. Si sales, dejarás de aparecer en la lista de asistentes. ¿Seguro que quieres salir?`
+        : `¿Seguro que quieres dejar de participar en "${activity.title}"? Perderás tu plaza.`,
+      type: isCreator ? 'warning' : 'danger',
+      confirmText: 'Sí, quiero salir'
+    };
 
     this.showLeaveModal = true;
   }

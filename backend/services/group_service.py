@@ -109,6 +109,7 @@ def list_groups():
             'description': group.description,
             'member_count': group.member_count,
             'is_member': group.is_member(current_user.id),
+            'created_by': group.created_by,
             'created_at': group.created_at
         })
     
