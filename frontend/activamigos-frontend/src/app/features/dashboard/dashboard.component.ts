@@ -28,30 +28,22 @@ import { TutorialModalComponent } from '../../shared/components/tutorial-modal/t
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
-  
-  // Estado de carga específico para el contenido (para mostrar skeletons)
   isLoadingContent = true;
-  
   currentPoints = 0;
   private destroy$ = new Subject<void>();
-  
-  // Actividades
+
   todaysActivitiesNotJoined: Activity[] = [];
   todaysActivitiesJoined: Activity[] = [];
   upcomingActivities: Activity[] = [];
-  
-  // Grupos
   availableGroups: Group[] = [];
-  
-  // Calendario
+
   weekDays: { date: Date; dayName: string; dayNumber: number; activities: Activity[] }[] = [];
-  
-  // Modales
+  selectedWeekDayIndex = 0;
+
   showAttendanceModal = false;
   showTutorialModal = false;
   activityToConfirm: ActivityToConfirm | null = null;
-  
-  // Status
+
   userSemaphoreColor: 'grey' | 'light_green' | 'dark_green' | 'yellow' | 'red' = 'light_green';
   userWarningCount = 0;
 
@@ -82,7 +74,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.pointsService.currentPoints$
       .pipe(takeUntil(this.destroy$))
       .subscribe(points => this.currentPoints = points);
-    
+
     this.userStatusService.userStatus$
       .pipe(takeUntil(this.destroy$))
       .subscribe(status => {
@@ -99,10 +91,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.generateWeekCalendar();
   }
 
-  /**
-   * Carga todos los datos en paralelo y maneja errores individualmente
-   * para que una fallo no deje el dashboard vacío.
-   */
   private loadAllDashboardData() {
     this.isLoadingContent = true;
     const today = new Date();
@@ -114,38 +102,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
       groups: this.groupsService.getAvailableGroups().pipe(catchError(() => of([]))),
       pendingConfirmations: this.attendanceService.getPendingConfirmations().pipe(catchError(() => of(null)))
     })
-    .pipe(
-      takeUntil(this.destroy$),
-      finalize(() => this.isLoadingContent = false) // Siempre apagar el loading al final
-    )
-    .subscribe(({ todaysActivities, upcoming, groups, pendingConfirmations }) => {
-      this.todaysActivitiesJoined = todaysActivities.filter(a => a.is_participant);
-      this.todaysActivitiesNotJoined = todaysActivities.filter(a => !a.is_participant);
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isLoadingContent = false)
+      )
+      .subscribe(({ todaysActivities, upcoming, groups, pendingConfirmations }) => {
+        this.todaysActivitiesJoined = todaysActivities.filter(a => a.is_participant);
+        this.todaysActivitiesNotJoined = todaysActivities.filter(a => !a.is_participant);
 
-      this.upcomingActivities = upcoming;
-      this.updateWeekCalendar();
+        this.upcomingActivities = upcoming;
+        this.updateWeekCalendar();
 
-      this.availableGroups = groups;
+        this.availableGroups = groups;
 
-      if (pendingConfirmations) {
-        this.checkAttendance(pendingConfirmations);
-      }
-    });
+        if (pendingConfirmations) {
+          this.checkAttendance(pendingConfirmations);
+        }
+      });
   }
 
-  // --- Helpers de Calendario ---
   private generateWeekCalendar() {
     const today = new Date();
     this.weekDays = [];
-    
+
     const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
     for (let i = 0; i < 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      
+
       this.weekDays.push({
-        date: date,
+        date,
         dayName: dayNames[date.getDay()],
         dayNumber: date.getDate(),
         activities: []
@@ -166,7 +153,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return date.toDateString() === this.today.toDateString();
   }
 
-  // --- Navegación y Acciones ---
+  selectWeekDay(index: number) {
+    this.selectedWeekDayIndex = index;
+  }
+
+  isSelectedWeekDay(index: number): boolean {
+    return this.selectedWeekDayIndex === index;
+  }
+
+  get selectedWeekDay() {
+    return this.weekDays[this.selectedWeekDayIndex] || null;
+  }
+
   navigateTo(path: string) {
     this.router.navigate([path]);
   }
@@ -179,17 +177,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.router.navigate(id ? ['/groups', id] : ['/groups']);
   }
 
-  // --- Helpers Visuales ---
   formatActivityDate(dateString: string): string {
     if (!dateString) return '';
-    const targetDate = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+    const targetDate = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
     const date = new Date(targetDate);
     return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   }
 
   formatFullDate(dateString: string): string {
     if (!dateString) return '';
-    const targetDate = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+    const targetDate = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
     const date = new Date(targetDate);
     return date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
   }
@@ -209,7 +206,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return this.authService.getProfileImageSrc ? this.authService.getProfileImageSrc() : null;
   }
 
-  // --- Lógica de Asistencia ---
   openAttendanceModal(activity: Activity) {
     this.activityToConfirm = {
       id: activity.id,
@@ -230,10 +226,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private checkAttendance(response: any) {
-    const activityToShow = response.activities.find((item: any) => 
+    const activityToShow = response.activities.find((item: any) =>
       this.attendanceService.shouldShowAttendanceModal(item.activity.id, item.activity.date)
     );
-    
+
     if (activityToShow) {
       const activityId = activityToShow.activity.id;
       const hasSeenModal = sessionStorage.getItem(`seen_attendance_${activityId}`);
@@ -247,11 +243,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getActivityStatus(activity: any): string {
     if (!activity.is_participant) return 'not_participant';
-    
-    if (activity.attendance_status) {
-      return activity.attendance_status;
-    }
-    
+    if (activity.attendance_status) return activity.attendance_status;
     return 'pending';
   }
 
@@ -262,13 +254,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     if (activityId) {
       const activity = this.todaysActivitiesJoined.find(a => a.id === activityId);
-      
+
       if (activity) {
         activity.attendance_confirmed = true;
         (activity as any).attendance_status = willAttend ? 'confirmed' : 'declined';
       }
     }
-    
+
     setTimeout(() => {
       this.loadAllDashboardData();
     }, 1000);
@@ -279,18 +271,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  /**
-   * Calcula el Nivel Siguiente al que aspira el usuario.
-   * Fórmula: (Puntos / 100) + 1 es el nivel actual, así que + 2 es el siguiente.
-   */
   get nextLevel(): number {
     return Math.floor(this.currentPoints / 100) + 2;
   }
 
-  /**
-   * Calcula los puntos que faltan para subir.
-   * Fórmula: 100 - (Puntos sobrantes del nivel actual).
-   */
   get pointsToNextLevel(): number {
     return 100 - (this.currentPoints % 100);
   }

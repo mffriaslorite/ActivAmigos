@@ -45,6 +45,7 @@ def create_activity(args):
         activity = Activity(
             title=args['title'],
             description=args.get('description'),
+            activity_type=args.get('activity_type'),
             location=args.get('location'),
             date=args['date'],
             rules=args.get('rules'),
@@ -93,6 +94,7 @@ def create_activity(args):
             'id': activity.id,
             'title': activity.title,
             'description': activity.description,
+            'activity_type': activity.activity_type,
             'location': activity.location,
             'date': activity.date,
             'rules': activity.rules,
@@ -152,6 +154,7 @@ def list_activities():
             'id': activity.id,
             'title': activity.title,
             'description': activity.description,
+            'activity_type': activity.activity_type,
             'location': activity.location,
             'date': activity.date,
             'participant_count': activity.participant_count,
@@ -198,6 +201,7 @@ def get_activity(activity_id):
         'id': activity.id,
         'title': activity.title,
         'description': activity.description,
+        'activity_type': activity.activity_type,
         'location': activity.location,
         'date': activity.date,
         'rules': activity.rules,
@@ -292,6 +296,7 @@ def get_activity_details(activity_id):
         'id': activity.id,
         'title': activity.title,
         'description': activity.description,
+        'activity_type': activity.activity_type,
         'location': activity.location,
         'date': activity.date,
         'rules': activity.rules,
@@ -322,6 +327,8 @@ def update_activity(args, activity_id):
             activity.title = args['title']
         if 'description' in args:
             activity.description = args['description']
+        if 'activity_type' in args:
+            activity.activity_type = args['activity_type']
         if 'location' in args:
             activity.location = args['location']
         if 'date' in args:
@@ -335,6 +342,7 @@ def update_activity(args, activity_id):
             'id': activity.id,
             'title': activity.title,
             'description': activity.description,
+            'activity_type': activity.activity_type,
             'location': activity.location,
             'date': activity.date,
             'rules': activity.rules,

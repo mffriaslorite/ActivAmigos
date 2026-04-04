@@ -20,6 +20,68 @@
         <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-2xl">🔍</span>
       </div>
 
+      <section class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="p-4 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            (click)="toggleFilters()"
+            class="flex-1 flex items-center justify-between gap-3 text-left hover:bg-gray-50 transition-colors rounded-xl p-1 -m-1"
+            [attr.aria-expanded]="showFilters">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-2xl">🧭</span>
+              <div class="min-w-0">
+                <h2 class="font-bold text-gray-800">Filtrar actividades</h2>
+                <p class="text-sm text-gray-500" *ngIf="!hasActiveFilters">Pulsa para ver los filtros</p>
+                <p class="text-sm text-gray-500 flex items-center gap-2 flex-wrap" *ngIf="hasActiveFilters">
+                  <span *ngIf="selectedTypeOption" class="inline-flex items-center gap-1">
+                    {{ selectedTypeOption.icon }} {{ selectedTypeOption.label }}
+                  </span>
+                  <span *ngIf="selectedDate" class="inline-flex items-center gap-1">
+                    📅 {{ formattedSelectedDate }}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <span class="text-xl text-gray-500 flex-shrink-0">{{ showFilters ? '▴' : '▾' }}</span>
+          </button>
+
+          <button
+            *ngIf="searchTerm || selectedType || selectedDate"
+            type="button"
+            (click)="clearFilters()"
+            class="text-sm font-bold text-red-600 border border-red-200 rounded-full px-3 py-1.5 hover:bg-red-50 transition-colors flex-shrink-0">
+            Limpiar
+          </button>
+        </div>
+
+        <div *ngIf="showFilters" class="border-t border-gray-100 p-4 space-y-4 animate-fade-in">
+          <div>
+            <p class="text-sm font-bold text-gray-700 mb-2">Tipo</p>
+            <div class="flex flex-wrap gap-2">
+              <button
+                *ngFor="let option of activityTypeOptions"
+                type="button"
+                (click)="onTypeFilterChange(option.value)"
+                class="px-4 py-2 rounded-full border text-sm font-bold transition-colors inline-flex items-center gap-2"
+                [ngClass]="selectedType === option.value ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50'">
+                <span>{{ option.icon }}</span>
+                <span>{{ option.label }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label for="activity-date-filter" class="block text-sm font-bold text-gray-700 mb-2">Fecha</label>
+            <input
+              id="activity-date-filter"
+              type="date"
+              [value]="selectedDate"
+              (input)="onDateFilterChange($event)"
+              class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+          </div>
+        </div>
+      </section>
+
       <div *ngIf="errorMessage" class="bg-red-50 p-4 rounded-xl text-red-700 flex items-center justify-between">
         <span>{{ errorMessage }}</span>
         <button (click)="loadActivities()" class="underline font-bold">Reintentar</button>
@@ -64,7 +126,7 @@
 
         <div *ngIf="filteredActivities.length === 0 && !isLoading && !errorMessage" class="text-center py-12 text-gray-400">
           <div class="text-5xl mb-3">🤔</div>
-          <p class="text-lg">No encontramos nada...</p>
+          <p class="text-lg">No encontramos actividades con esos filtros.</p>
           <button (click)="createActivity()" class="mt-4 text-blue-600 font-bold underline">
             ¿Creas una actividad tú?
           </button>

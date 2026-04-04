@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { RulesService, RuleTemplate } from '../../../core/services/rules.service';
 
 @Component({
@@ -12,7 +12,7 @@ import { RulesService, RuleTemplate } from '../../../core/services/rules.service
 })
 export class RulesSelectorComponent implements OnInit {
   @Input() contextType: 'GROUP' | 'ACTIVITY' = 'GROUP';
-  @Input() contextId: number = 0; // Optional for creation mode
+  @Input() contextId: number = 0;
   @Input() preselectedRuleIds: number[] = [];
 
   @Output() cancel = new EventEmitter<void>();
@@ -38,7 +38,7 @@ export class RulesSelectorComponent implements OnInit {
 
   private loadAvailableTemplates() {
     this.isLoading = true;
-    
+
     this.rulesService.getRuleTemplates(this.contextType).subscribe({
       next: (response) => {
         this.availableTemplates = response.templates;
@@ -52,25 +52,27 @@ export class RulesSelectorComponent implements OnInit {
     });
   }
 
-  // ✅ CORREGIDO: Quitamos 'private' para que el HTML pueda llamarlo
   setupForm() {
-    const controls: any = {};
-    
+    const controls: Record<string, boolean[]> = {};
+
     this.availableTemplates.forEach((template, index) => {
       controls[index] = [this.selectedRuleIds.includes(template.id)];
     });
-    
+
     this.rulesForm = this.fb.group(controls);
   }
 
-  onRuleToggle(templateId: number, event: any) {
-    if (event.target.checked) {
+  onRuleToggle(templateId: number, event: Event) {
+    const checked = (event.target as HTMLInputElement).checked;
+
+    if (checked) {
       if (!this.selectedRuleIds.includes(templateId)) {
         this.selectedRuleIds.push(templateId);
       }
-    } else {
-      this.selectedRuleIds = this.selectedRuleIds.filter(id => id !== templateId);
+      return;
     }
+
+    this.selectedRuleIds = this.selectedRuleIds.filter(id => id !== templateId);
   }
 
   isRuleSelected(templateId: number): boolean {
@@ -78,7 +80,7 @@ export class RulesSelectorComponent implements OnInit {
   }
 
   getSelectedTemplates(): RuleTemplate[] {
-    return this.availableTemplates.filter(template => 
+    return this.availableTemplates.filter(template =>
       this.selectedRuleIds.includes(template.id)
     );
   }
@@ -107,7 +109,6 @@ export class RulesSelectorComponent implements OnInit {
   onSave() {
     if (this.isSaving) return;
     if (this.selectedRuleIds.length === 0) {
-      // Return early; the HTML will display a disabled state or we handle standard validation
       return;
     }
 
@@ -115,12 +116,10 @@ export class RulesSelectorComponent implements OnInit {
     this.save.emit(this.selectedRuleIds);
   }
 
-  // Method to be called by parent component when save is complete
   onSaveComplete() {
     this.isSaving = false;
   }
 
-  // Method to be called by parent component when save fails
   onSaveError() {
     this.isSaving = false;
   }

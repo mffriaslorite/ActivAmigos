@@ -135,43 +135,18 @@ export class ChatService {
    * Send a message
    */
   sendMessage(contextType: 'GROUP' | 'ACTIVITY', contextId: number, content: string): Observable<any> {
-    return new Observable(observer => {
-      if (!this.socket?.connected) {
-        observer.error(new Error('Socket not connected'));
-        return;
-      }
-
-      const messageData = {
-        context_type: contextType,
-        context_id: contextId,
-        content
-      };
-
-      this.socket.emit('send_message', messageData);
-      
-      // Listen for success/error
-      const successHandler = () => {
-        observer.next({ success: true });
-        observer.complete();
-      };
-
-      const errorHandler = (error: any) => {
-        observer.error(new Error(error.message || 'Failed to send message'));
-      };
-
-      this.socket.once('message_sent', successHandler);
-      this.socket.once('error', errorHandler);
-
-      // Cleanup listeners after timeout
-      setTimeout(() => {
-        this.socket?.off('message_sent', successHandler);
-        this.socket?.off('error', errorHandler);
-        if (!observer.closed) {
-          observer.next({ success: true }); // Assume success if no response
-          observer.complete();
-        }
-      }, 5000);
-    });
+    return this.http.post<ChatMessage>(`${this.API_BASE_URL}/chat/messages`, {
+      context_type: contextType,
+      context_id: contextId,
+      content
+    }, {
+      withCredentials: true
+    }).pipe(
+      tap(message => {
+        this.messagesSubject.next([message]);
+      }),
+      catchError(this.handleError)
+    );
   }
 
   /**

@@ -24,6 +24,17 @@ export class ActivitiesComponent implements OnInit, OnDestroy {
   activities: Activity[] = [];
   filteredActivities: Activity[] = [];
   searchTerm = '';
+  selectedType = '';
+  selectedDate = '';
+  showFilters = false;
+
+  readonly activityTypeOptions = [
+    { value: 'sport', label: 'Deporte', icon: '⚽' },
+    { value: 'social', label: 'Social', icon: '👥' },
+    { value: 'culture', label: 'Cultura', icon: '🎭' },
+    { value: 'academic', label: 'Estudios', icon: '📚' },
+    { value: 'other', label: 'Otro', icon: '🌈' }
+  ];
   
   isLoading = true; // Carga inicial global
   loadingActivityId: number | null = null; // Carga específica por tarjeta
@@ -92,16 +103,75 @@ export class ActivitiesComponent implements OnInit, OnDestroy {
   }
 
   filterActivities() {
-    if (!this.searchTerm.trim()) {
-      this.filteredActivities = this.activities;
-    } else {
-      const term = this.searchTerm.toLowerCase();
-      this.filteredActivities = this.activities.filter(a =>
+    const term = this.searchTerm.trim().toLowerCase();
+
+    this.filteredActivities = this.activities.filter(a => {
+      const matchesSearch = !term || (
         a.title.toLowerCase().includes(term) ||
         (a.description && a.description.toLowerCase().includes(term)) ||
         (a.location && a.location.toLowerCase().includes(term))
       );
-    }
+
+      const matchesType = !this.selectedType || a.activity_type === this.selectedType;
+
+      const matchesDate = !this.selectedDate || this.isSameCalendarDate(a.date, this.selectedDate);
+
+      return matchesSearch && matchesType && matchesDate;
+    });
+  }
+
+  onTypeFilterChange(type: string) {
+    this.selectedType = this.selectedType === type ? '' : type;
+    this.filterActivities();
+  }
+
+  onDateFilterChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    this.selectedDate = target.value;
+    this.filterActivities();
+  }
+
+  clearFilters() {
+    this.searchTerm = '';
+    this.selectedType = '';
+    this.selectedDate = '';
+    this.filterActivities();
+  }
+
+  toggleFilters() {
+    this.showFilters = !this.showFilters;
+  }
+
+  get hasActiveFilters(): boolean {
+    return !!(this.selectedType || this.selectedDate);
+  }
+
+  get selectedTypeOption() {
+    return this.activityTypeOptions.find(option => option.value === this.selectedType) || null;
+  }
+
+  get formattedSelectedDate(): string {
+    if (!this.selectedDate) return '';
+
+    const [year, month, day] = this.selectedDate.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  }
+
+  private isSameCalendarDate(activityDate: string, selectedDate: string): boolean {
+    const activity = new Date(activityDate.endsWith('Z') ? activityDate : `${activityDate}Z`);
+    const [year, month, day] = selectedDate.split('-').map(Number);
+
+    return (
+      activity.getUTCFullYear() === year &&
+      activity.getUTCMonth() + 1 === month &&
+      activity.getUTCDate() === day
+    );
   }
 
   // --- Acciones de Tarjeta ---

@@ -19,6 +19,15 @@ from utils.decorators import require_user, login_required
 blp = Blueprint("User", "user", url_prefix="/api/user", description="User profile management")
 
 
+def _count_active_memberships(table, user_id, status):
+    return len(db.session.execute(
+        table.select().where(
+            table.c.user_id == user_id,
+            table.c.status == status
+        )
+    ).fetchall())
+
+
 # ✅ Get profile (current user)
 @blp.route("/profile", methods=["GET"])
 @require_user
@@ -209,33 +218,16 @@ def get_user_overall_status():
     total_warnings = Warning.query.filter_by(target_user_id=user_id).count()
     
     # Count active groups
-    active_groups = db.session.execute(
-        group_members.select().where(
-            group_members.c.user_id == user_id,
-            group_members.c.status == MembershipStatus.ACTIVE
-        )
-    ).rowcount
+    active_groups = _count_active_memberships(group_members, user_id, MembershipStatus.ACTIVE)
     
     # Count active activities
-    active_activities = db.session.execute(
-        activity_participants.select().where(
-            activity_participants.c.user_id == user_id,
-            activity_participants.c.status == MembershipStatus.ACTIVE
-        )
-    ).rowcount
+    active_activities = _count_active_memberships(activity_participants, user_id, MembershipStatus.ACTIVE)
     
     # Count banned contexts
-    banned_contexts = db.session.execute(
-        group_members.select().where(
-            group_members.c.user_id == user_id,
-            group_members.c.status == MembershipStatus.BANNED
-        )
-    ).rowcount + db.session.execute(
-        activity_participants.select().where(
-            activity_participants.c.user_id == user_id,
-            activity_participants.c.status == MembershipStatus.BANNED
-        )
-    ).rowcount
+    banned_contexts = (
+        _count_active_memberships(group_members, user_id, MembershipStatus.BANNED) +
+        _count_active_memberships(activity_participants, user_id, MembershipStatus.BANNED)
+    )
     
     # Determine overall semaphore color
     if banned_contexts > 0:
@@ -266,33 +258,16 @@ def get_user_status_for_context(user_id, context_id=None, context_type=None):
     total_warnings = Warning.query.filter_by(target_user_id=user_id).count()
     
     # Count active groups
-    active_groups = db.session.execute(
-        group_members.select().where(
-            group_members.c.user_id == user_id,
-            group_members.c.status == MembershipStatus.ACTIVE
-        )
-    ).rowcount
+    active_groups = _count_active_memberships(group_members, user_id, MembershipStatus.ACTIVE)
     
     # Count active activities
-    active_activities = db.session.execute(
-        activity_participants.select().where(
-            activity_participants.c.user_id == user_id,
-            activity_participants.c.status == MembershipStatus.ACTIVE
-        )
-    ).rowcount
+    active_activities = _count_active_memberships(activity_participants, user_id, MembershipStatus.ACTIVE)
     
     # Count banned contexts
-    banned_contexts = db.session.execute(
-        group_members.select().where(
-            group_members.c.user_id == user_id,
-            group_members.c.status == MembershipStatus.BANNED
-        )
-    ).rowcount + db.session.execute(
-        activity_participants.select().where(
-            activity_participants.c.user_id == user_id,
-            activity_participants.c.status == MembershipStatus.BANNED
-        )
-    ).rowcount
+    banned_contexts = (
+        _count_active_memberships(group_members, user_id, MembershipStatus.BANNED) +
+        _count_active_memberships(activity_participants, user_id, MembershipStatus.BANNED)
+    )
     
     # Determine overall semaphore color
     if banned_contexts > 0:

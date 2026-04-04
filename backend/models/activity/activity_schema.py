@@ -97,6 +97,7 @@ class ActivityDetailsResponseSchema(Schema):
     id = fields.Int()
     title = fields.Str()
     description = fields.Str(allow_none=True)
+    activity_type = fields.Str(allow_none=True)
     location = fields.Str(allow_none=True)
     date = fields.DateTime()
     rules = fields.Str(allow_none=True)

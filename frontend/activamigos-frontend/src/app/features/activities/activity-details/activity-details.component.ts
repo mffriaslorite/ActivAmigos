@@ -208,12 +208,31 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
 
   getActivityIcon(): string {
     if (!this.activityDetails) return '🎯';
+    if (this.activityDetails.activity_type === 'sport') return '⚽';
+    if (this.activityDetails.activity_type === 'social') return '👥';
+    if (this.activityDetails.activity_type === 'culture') return '🎭';
+    if (this.activityDetails.activity_type === 'academic') return '📚';
+    if (this.activityDetails.activity_type === 'other') return '🌟';
+
     const t = this.activityDetails.title.toLowerCase();
     if (t.includes('fútbol') || t.includes('deporte')) return '⚽';
     if (t.includes('cocina')) return '🍳';
     if (t.includes('arte') || t.includes('pintar')) return '🎨';
     if (t.includes('música')) return '🎵';
     return '🌟';
+  }
+
+  getActivityTypeInfo() {
+    const activityType = this.activityDetails?.activity_type;
+
+    switch (activityType) {
+      case 'sport': return { icon: '⚽', label: 'Deporte' };
+      case 'social': return { icon: '👥', label: 'Social' };
+      case 'culture': return { icon: '🎭', label: 'Cultura' };
+      case 'academic': return { icon: '📚', label: 'Estudios' };
+      case 'other': return { icon: '🌈', label: 'Otro' };
+      default: return null;
+    }
   }
 
   getParticipantStatusLabel(status: string) {

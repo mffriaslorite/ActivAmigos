@@ -46,17 +46,17 @@
       </div>
 
       <div *ngIf="animalsList.length > 0" class="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-        <p class="text-sm text-blue-800 mb-3 font-bold flex items-center gap-2">
-          💡 ¿No te acuerdas?
-        </p>
-        <p class="text-sm text-blue-600 mb-3">Tu contraseña puede ser uno de estos animales:</p>
-        <div class="flex flex-wrap gap-2">
-          <span 
-            *ngFor="let animal of animalsList" 
-            class="text-sm text-blue-700 font-medium"
-          >
-            {{ animal }}
-          </span>
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/80 flex items-center justify-center text-xl border border-blue-100 flex-shrink-0">🐾</div>
+          <div class="min-w-0">
+            <p class="text-sm text-blue-800 mb-1 font-bold">¿No recuerdas tu contraseña?</p>
+            <p class="text-sm text-blue-700 mb-3">Puede que te ayudaras con el nombre de un animal. Algunos ejemplos son:</p>
+            <p class="text-sm text-blue-800 leading-relaxed bg-white/60 rounded-2xl px-4 py-3 border border-blue-100">
+              <span *ngFor="let animal of animalsList; let isLast = last">
+                {{ animal }}<span *ngIf="!isLast">, </span>
+              </span>
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -93,7 +93,6 @@
   </form>
 </div>
 
-<!-- Modal Recuperar Contraseña -->
 <div *ngIf="showForgotModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-fade-in">
   <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative">
     <button (click)="closeForgotModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">

@@ -32,6 +32,52 @@ blp = Blueprint(
 # SocketIO instance will be initialized in app.py
 socketio = None
 
+
+def resolve_chat_room(context_type, context_id, user_id):
+    """Validate access to a room and return its broadcast name."""
+    if context_type == 'GROUP':
+        group = Group.query.get(context_id)
+        if not group or not group.is_member(user_id):
+            raise PermissionError('Access denied to group chat')
+        return f"group:{context_id}"
+    if context_type == 'ACTIVITY':
+        activity = Activity.query.get(context_id)
+        if not activity or not activity.is_participant(user_id):
+            raise PermissionError('Access denied to activity chat')
+        return f"activity:{context_id}"
+    raise ValueError('Invalid context type')
+
+
+def create_message_and_broadcast(user_id, context_type, context_id, content):
+    room_name = resolve_chat_room(context_type, context_id, user_id)
+
+    if not can_user_chat(context_type, context_id, user_id):
+        raise PermissionError('You are banned from chatting in this context')
+
+    message_context = MessageContextType.GROUP if context_type == 'GROUP' else MessageContextType.ACTIVITY
+    message = Message(
+        content=content,
+        sender_id=user_id,
+        context_type=message_context,
+        context_id=context_id
+    )
+
+    db.session.add(message)
+    db.session.commit()
+
+    try:
+        from utils.achievement_engine_simple import trigger_message_sent
+        trigger_message_sent(message.sender_id)
+    except Exception as e:
+        print(f"Error checking chat achievements: {e}")
+
+    message_dict = message.to_dict()
+
+    if socketio:
+        socketio.emit('new_message', message_dict, room=room_name)
+
+    return message_dict
+
 def can_user_chat(context_type, context_id, user_id):
     """Check if user is allowed to chat in this context"""
     from models.associations.group_associations import group_members
@@ -120,22 +166,7 @@ def init_socketio(app, socketio_instance):
             elif context_type.lower() == 'activity':
                 context_type = 'ACTIVITY'
             
-            # Verify user has access to the chat room
-            if context_type == 'GROUP':
-                group = Group.query.get(context_id)
-                if not group or not group.is_member(user_id):
-                    emit('error', {'message': 'Access denied to group chat'})
-                    return
-                room_name = f"group:{context_id}"
-            elif context_type == 'ACTIVITY':
-                activity = Activity.query.get(context_id)
-                if not activity or not activity.is_participant(user_id):
-                    emit('error', {'message': 'Access denied to activity chat'})
-                    return
-                room_name = f"activity:{context_id}"
-            else:
-                emit('error', {'message': 'Invalid context type'})
-                return
+            room_name = resolve_chat_room(context_type, context_id, user_id)
             
             join_room(room_name)
             emit('joined_chat', {
@@ -209,62 +240,26 @@ def init_socketio(app, socketio_instance):
                 emit('error', {'message': 'Missing context information'})
                 return
             
-            # Verify user has access and is not banned
-            if context_type == 'GROUP':
-                group = Group.query.get(context_id)
-                if not group or not group.is_member(user_id):
-                    emit('error', {'message': 'Access denied to group chat'})
-                    return
-                room_name = f"group:{context_id}"
-            elif context_type == 'ACTIVITY':
-                activity = Activity.query.get(context_id)
-                if not activity or not activity.is_participant(user_id):
-                    emit('error', {'message': 'Access denied to activity chat'})
-                    return
-                room_name = f"activity:{context_id}"
-            else:
-                emit('error', {'message': 'Invalid context type'})
-                return
-            
-            # Check if user is banned from chatting
-            if not can_user_chat(context_type, context_id, user_id):
-                emit('error', {'message': 'You are banned from chatting in this context'})
-                return
-            
-            # Create and save the message
-            message_context = MessageContextType.GROUP if context_type == 'GROUP' else MessageContextType.ACTIVITY
-            message = Message(
-                content=message_data['content'],
-                sender_id=user_id,
-                context_type=message_context,
-                context_id=context_id
+            message_dict = create_message_and_broadcast(
+                user_id,
+                context_type,
+                context_id,
+                message_data['content']
             )
-            
-            db.session.add(message)
-            db.session.commit()
-
-            # ✅ TRIGGER: Verificar logro "¡Hola!"
-            try:
-                from utils.achievement_engine_simple import trigger_message_sent
-                trigger_message_sent(message.sender_id)
-            except Exception as e:
-                print(f"Error checking chat achievements: {e}")
-            
-            # Serialize message for broadcast
-            message_dict = message.to_dict()
-            
-            # Broadcast to all users in the room
-            socketio.emit('new_message', message_dict, room=room_name)
-            logger.info(f"✅ Message {message.id} sent to {room_name}")
+            logger.info(f"✅ Message {message_dict['id']} sent to {room_name}")
             
             # Confirm to sender
             emit('message_sent', {
-                'message_id': message.id,
+                'message_id': message_dict['id'],
                 'status': 'success'
             })
             
         except ValidationError as e:
             emit('error', {'message': f'Invalid message data: {e.messages}'})
+        except PermissionError as e:
+            emit('error', {'message': str(e)})
+        except ValueError as e:
+            emit('error', {'message': str(e)})
         except Exception as e:
             logger.error(f"Error sending message: {e}")
             db.session.rollback()
@@ -461,3 +456,28 @@ def get_chat_history(query_args):
         "messages": [message.to_dict() for message in messages],
         "has_more": len(messages) == 50
     }
+
+
+@blp.route("/messages", methods=["POST"])
+@blp.arguments(MessageCreateSchema)
+@require_authentication
+def post_chat_message(message_data):
+    """Send a chat message over HTTP and rebroadcast it to the socket room."""
+    user_id = session.get('user_id')
+
+    try:
+        message_dict = create_message_and_broadcast(
+            user_id,
+            message_data['context_type'],
+            message_data['context_id'],
+            message_data['content']
+        )
+        return message_dict, 201
+    except PermissionError as e:
+        blp.abort(403, message=str(e))
+    except ValueError as e:
+        blp.abort(400, message=str(e))
+    except Exception as e:
+        logger.error(f"Error posting message via HTTP: {e}")
+        db.session.rollback()
+        blp.abort(500, message="Failed to send message")

@@ -292,7 +292,7 @@ export class ActivitiesService {
       map(activities => {
         const now = new Date();
         return activities
-          .filter(activity => new Date(activity.date) > now)
+          .filter(activity => activity.is_participant && new Date(activity.date) > now)
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
           .slice(0, 3); // Get next 3 upcoming activities
       })

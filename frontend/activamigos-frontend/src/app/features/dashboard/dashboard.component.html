@@ -35,7 +35,6 @@
               </div>
             </div>
 
-            <!-- Mobile Compact Points Badge -->
             <div class="sm:hidden bg-indigo-50 px-3 py-1 rounded-full flex items-center gap-2 border border-indigo-100 shadow-sm"
                  title="Estás en Nivel {{ nextLevel - 1 }} y tienes {{ pointsInCurrentLevel }} de 100 XP">
                 <span class="text-base animate-float">🚀</span>
@@ -110,29 +109,61 @@
           <section class="overflow-hidden">
              <h2 class="text-lg font-bold text-gray-800 mb-4">Esta semana</h2>
              <div class="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 hide-scrollbar scroll-smooth">
-                <div *ngFor="let day of weekDays" 
-                     class="flex-shrink-0 w-20 h-24 rounded-xl flex flex-col items-center justify-center transition-all duration-200 cursor-default"
-                     [class.bg-blue-600]="isToday(day.date)"
-                     [class.text-white]="isToday(day.date)"
-                     [class.border-2]="isToday(day.date)"
-                     [class.border-blue-600]="isToday(day.date)"
-                     [class.shadow-lg]="isToday(day.date)"
-                     [class.scale-105]="isToday(day.date)"
-                     [class.bg-gray-50]="!isToday(day.date)"
-                     [class.text-gray-600]="!isToday(day.date)">
+                <button *ngFor="let day of weekDays; let i = index"
+                     type="button"
+                     (click)="selectWeekDay(i)"
+                     class="flex-shrink-0 w-20 h-24 rounded-xl flex flex-col items-center justify-center transition-all duration-200 border-2"
+                     [class.bg-blue-600]="isSelectedWeekDay(i)"
+                     [class.text-white]="isSelectedWeekDay(i)"
+                     [class.border-blue-600]="isSelectedWeekDay(i)"
+                     [class.shadow-lg]="isSelectedWeekDay(i)"
+                     [class.scale-105]="isSelectedWeekDay(i)"
+                     [class.bg-white]="!isSelectedWeekDay(i)"
+                     [class.text-gray-600]="!isSelectedWeekDay(i)"
+                     [class.border-gray-200]="!isSelectedWeekDay(i)"
+                     [attr.aria-pressed]="isSelectedWeekDay(i)">
                    <span class="text-sm font-medium uppercase tracking-wider">{{ day.dayName }}</span>
                    <span class="text-3xl font-bold mt-1">{{ day.dayNumber }}</span>
-                   <div *ngIf="day.activities.length > 0" 
+                   <div *ngIf="day.activities.length > 0"
                         class="w-2 h-2 rounded-full mt-2 transition-colors"
-                        [class.bg-white]="isToday(day.date)"
-                        [class.bg-blue-500]="!isToday(day.date)">
+                        [class.bg-white]="isSelectedWeekDay(i)"
+                        [class.bg-blue-500]="!isSelectedWeekDay(i)">
                    </div>
-                </div>
+                </button>
              </div>
              <p class="text-xs text-gray-400 mt-1 flex items-center gap-1">
                <span class="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
                Día con actividades
              </p>
+
+             <div *ngIf="selectedWeekDay" class="mt-4 bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+               <div class="flex items-center gap-2 mb-3">
+                 <span class="text-xl">📅</span>
+                 <h3 class="font-bold text-gray-800">
+                   {{ selectedWeekDay.dayName }} {{ selectedWeekDay.dayNumber }}
+                 </h3>
+               </div>
+
+               <div *ngIf="selectedWeekDay.activities.length > 0; else noSelectedDayActivities" class="space-y-3">
+                 <button
+                   *ngFor="let activity of selectedWeekDay.activities"
+                   type="button"
+                   (click)="goToActivities(activity.id)"
+                   class="w-full text-left rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 hover:bg-blue-100 transition-colors">
+                   <div class="flex items-center gap-3">
+                     <span class="text-2xl">{{ getActivityEmoji(activity.title) }}</span>
+                     <div>
+                       <p class="font-bold text-gray-900">{{ activity.title }}</p>
+                       <p class="text-sm text-gray-600">🕒 {{ formatActivityDate(activity.date) }}</p>
+                     </div>
+                   </div>
+                 </button>
+               </div>
+
+               <ng-template #noSelectedDayActivities>
+                 <p class="text-sm text-gray-500">No hay actividades para este día.</p>
+               </ng-template>
+             </div>
           </section>
 
           <section class="grid grid-cols-2 gap-4">

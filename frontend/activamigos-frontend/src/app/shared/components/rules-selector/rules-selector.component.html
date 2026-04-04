@@ -75,7 +75,6 @@
                     <span *ngIf="!isSaving">💾 Guardar Cambios</span>
                     <span *ngIf="isSaving" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 </div>
-                <!-- Mini warning tooltip if 0 rules selected -->
                 <span *ngIf="selectedRuleIds.length === 0" class="text-[10px] absolute -bottom-4 text-red-500 font-medium w-full text-center left-0 mt-1">Obligatorio 1 norma mínimo</span>
             </button>
         </div>

@@ -39,6 +39,12 @@ export class ActivityCardComponent {
   // --- Helpers Visuales ---
 
   getActivityIcon(): string {
+    if (this.activity.activity_type === 'sport') return '⚽';
+    if (this.activity.activity_type === 'social') return '👥';
+    if (this.activity.activity_type === 'culture') return '🎭';
+    if (this.activity.activity_type === 'academic') return '📚';
+    if (this.activity.activity_type === 'other') return '🌟';
+
     const t = this.activity.title.toLowerCase();
     if (t.includes('fútbol') || t.includes('deporte')) return '⚽';
     if (t.includes('cocina')) return '🍳';
@@ -49,6 +55,12 @@ export class ActivityCardComponent {
   }
 
   getIconBackground(): string {
+    if (this.activity.activity_type === 'sport') return 'bg-green-100 text-green-600';
+    if (this.activity.activity_type === 'social') return 'bg-sky-100 text-sky-600';
+    if (this.activity.activity_type === 'culture') return 'bg-violet-100 text-violet-600';
+    if (this.activity.activity_type === 'academic') return 'bg-amber-100 text-amber-700';
+    if (this.activity.activity_type === 'other') return 'bg-blue-100 text-blue-600';
+
     const t = this.activity.title.toLowerCase();
     if (t.includes('deporte')) return 'bg-green-100 text-green-600';
     if (t.includes('cocina')) return 'bg-orange-100 text-orange-600';

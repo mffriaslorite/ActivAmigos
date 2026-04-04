@@ -125,9 +125,11 @@
        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
          <h3 class="font-bold text-gray-800 mb-2 text-lg">📝 Descripción</h3>
          <p class="text-gray-600 leading-relaxed">{{ activityDetails.description || 'Sin descripción detallada.' }}</p>
-         <p *ngIf="activityDetails.activity_type" class="mt-2 inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
-            <span>🏷️</span> {{ activityDetails.activity_type | titlecase }}
-         </p>
+         <div *ngIf="getActivityTypeInfo() as activityTypeInfo" class="mt-4 flex items-center gap-2 text-sm text-gray-600">
+            <span class="text-base">{{ activityTypeInfo.icon }}</span>
+            <span>Tipo de actividad:</span>
+            <span class="font-bold text-gray-800">{{ activityTypeInfo.label }}</span>
+         </div>
        </div>
 
        <div *ngIf="activityRules.length > 0 || parseRules().length > 0" class="bg-blue-50 p-5 rounded-2xl border border-blue-100">

@@ -48,14 +48,17 @@
 
 
     <div *ngIf="animalsList.length > 0" class="mt-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
-        <p class="text-sm text-blue-800 mb-2 font-bold">💡 Idea: Usa tu animal favorito como contraseña</p>
-        <div class="flex flex-wrap gap-2">
-          <span 
-            *ngFor="let animal of animalsList" 
-            class="text-sm text-blue-700 font-medium"
-          >
-            {{ animal }}
-          </span>
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/80 flex items-center justify-center text-xl border border-blue-100 flex-shrink-0">🐾</div>
+          <div class="min-w-0">
+            <p class="text-sm text-blue-800 mb-1 font-bold">Idea para tu contraseña</p>
+            <p class="text-sm text-blue-700 mb-3">Puedes inspirarte en un animal que te guste. Algunos ejemplos son:</p>
+            <p class="text-sm text-blue-800 leading-relaxed bg-white/60 rounded-2xl px-4 py-3 border border-blue-100">
+              <span *ngFor="let animal of animalsList; let isLast = last">
+                {{ animal }}<span *ngIf="!isLast">, </span>
+              </span>
+            </p>
+          </div>
         </div>
     </div>
 
@@ -71,13 +74,14 @@
         />
         <button
           type="button"
-          class="absolute inset-y-0 right-3 flex items-center text-gray-500 px-3 text-3xl"
+          class="absolute inset-y-0 right-2 flex items-center justify-center text-gray-500 w-12 text-[2rem]"
           (click)="togglePasswordVisibility()"
           aria-label="Mostrar u ocultar contraseña"
         >
           {{ showPassword ? '🙈' : '👁️' }}
         </button>
         </div>
+      <p class="mt-2 text-sm text-gray-500">Si algún día olvidas tus datos, desde el acceso podrás recuperar tu nombre de usuario y una contraseña temporal con tu correo.</p>
     </div>
 
     <div>
