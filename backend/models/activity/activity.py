@@ -10,6 +10,7 @@ class Activity(db.Model):
     description = db.Column(db.String(500), nullable=True)
     activity_type = db.Column(db.String(50), nullable=True)
     location = db.Column(db.String(255), nullable=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('groups.id'), nullable=True)
     date = db.Column(db.DateTime, nullable=False)
     rules = db.Column(db.Text, nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -17,6 +18,7 @@ class Activity(db.Model):
 
     # Relationships
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_activities')
+    group = db.relationship('Group', backref='activities')
     participants = db.relationship('User', 
                                  secondary=activity_participants, 
                                  backref=db.backref('joined_activities', lazy='dynamic'),

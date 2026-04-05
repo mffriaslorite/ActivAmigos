@@ -5,7 +5,7 @@ class GroupCreateSchema(Schema):
     name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
     description = fields.Str(validate=validate.Length(max=500), allow_none=True)
     rules = fields.Str(allow_none=True)
-    rule_ids = fields.List(fields.Int(), allow_none=True)
+    rule_ids = fields.List(fields.Int(), required=True, validate=validate.Length(min=1), allow_none=False)
 
 class GroupUpdateSchema(Schema):
     name = fields.Str(validate=validate.Length(min=1, max=100))
@@ -47,6 +47,15 @@ class GroupMemberSchema(Schema):
     semaphore_color = fields.Str()
     warning_count = fields.Int()
 
+class GroupActivitySchema(Schema):
+    id = fields.Int()
+    title = fields.Str()
+    activity_type = fields.Str(allow_none=True)
+    location = fields.Str(allow_none=True)
+    date = fields.DateTime()
+    participant_count = fields.Int()
+    is_participant = fields.Bool()
+
 class GroupDetailsResponseSchema(Schema):
     id = fields.Int()
     name = fields.Str()
@@ -57,3 +66,4 @@ class GroupDetailsResponseSchema(Schema):
     member_count = fields.Int()
     is_member = fields.Bool()
     members = fields.List(fields.Nested(GroupMemberSchema))
+    activities = fields.List(fields.Nested(GroupActivitySchema))

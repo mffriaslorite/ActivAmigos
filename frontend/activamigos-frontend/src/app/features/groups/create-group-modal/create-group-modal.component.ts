@@ -19,12 +19,10 @@ export class CreateGroupModalComponent {
 
   groupForm: FormGroup;
   isSubmitting = false;
-  
-  // Gestión de Pasos
+
   currentStep: 1 | 2 = 1;
   selectedRuleIds: number[] = [];
-  
-  // Feedback
+
   errorMessage = '';
   successMessage = '';
 
@@ -42,13 +40,12 @@ export class CreateGroupModalComponent {
     });
   }
 
-  // --- Navegación ---
-
   nextStep() {
     if (this.groupForm.invalid) {
       this.groupForm.markAllAsTouched();
       return;
     }
+
     this.currentStep = 2;
     this.errorMessage = '';
   }
@@ -58,11 +55,13 @@ export class CreateGroupModalComponent {
     this.errorMessage = '';
   }
 
-  // --- Gestión de Reglas (Paso 2) ---
-
   onRulesSave(ruleIds: number[]) {
+    if (!ruleIds.length) {
+      this.errorMessage = 'Debes elegir al menos una norma para crear el grupo.';
+      return;
+    }
+
     this.selectedRuleIds = ruleIds;
-    // Al guardar reglas, lanzamos la creación final
     this.finalSubmit();
   }
 
@@ -70,14 +69,11 @@ export class CreateGroupModalComponent {
     this.prevStep();
   }
 
-  // --- Envío Final ---
-
   finalSubmit() {
     this.isSubmitting = true;
     this.errorMessage = '';
 
     const formValue = this.groupForm.value;
-    
     const groupData: GroupCreate = {
       name: formValue.name.trim(),
       description: formValue.description?.trim(),
@@ -87,22 +83,18 @@ export class CreateGroupModalComponent {
     this.groupsService.createGroup(groupData).subscribe({
       next: () => {
         this.successMessage = '¡Grupo creado con éxito!';
-        
-        // Cerrar tras breve delay
+
         setTimeout(() => {
           this.groupCreated.emit();
           this.closeModal();
         }, 1500);
       },
-      error: (error) => {
-        console.error('Error creating group:', error);
+      error: () => {
         this.errorMessage = 'No se pudo crear el grupo. Inténtalo de nuevo.';
         this.isSubmitting = false;
       }
     });
   }
-
-  // --- Utilidades ---
 
   closeModal() {
     this.close.emit();

@@ -36,6 +36,18 @@
   animation: fadeIn 0.3s ease-out;
 }
 
+.step-bar {
+  height: 10px;
+  flex: 1;
+  border-radius: 9999px;
+  background-color: #E5E7EB;
+  transition: background-color 0.2s ease;
+}
+
+.step-bar-active {
+  background-color: #3B82F6;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }

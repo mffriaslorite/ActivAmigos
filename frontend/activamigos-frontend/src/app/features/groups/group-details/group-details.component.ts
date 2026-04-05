@@ -1,46 +1,56 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, takeUntil, finalize } from 'rxjs';
+import { Subject, finalize, takeUntil } from 'rxjs';
 import { GroupsService } from '../../../core/services/groups.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ModerationService } from '../../../core/services/moderation.service';
 import { UserService } from '../../../core/services/user.service';
 import { GroupDetails } from '../../../core/models/group.model';
+import { RulesService } from '../../../core/services/rules.service';
 import { ChatRoomComponent } from '../../../shared/components/chat/chat-room.component';
 import { ConfirmationModalComponent } from '../../../shared/components/confirmation-modal/confirmation-modal.component';
 import { SemaphoreBadgeComponent } from '../../../shared/components/semaphore-badge/semaphore-badge.component';
+import { RulesSelectorComponent } from '../../../shared/components/rules-selector/rules-selector.component';
 
 @Component({
   selector: 'app-group-details',
   standalone: true,
   imports: [
-    CommonModule, 
-    ChatRoomComponent, 
-    ConfirmationModalComponent, 
-    SemaphoreBadgeComponent
+    CommonModule,
+    FormsModule,
+    ChatRoomComponent,
+    ConfirmationModalComponent,
+    SemaphoreBadgeComponent,
+    RulesSelectorComponent
   ],
   templateUrl: './group-details.component.html',
   styleUrls: ['./group-details.component.scss']
 })
 export class GroupDetailsComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-  
+
   group: GroupDetails | null = null;
   currentUserId: number | null = null;
-  
-  // Estados de carga y UI
+  editGroupData = {
+    name: '',
+    description: ''
+  };
+  groupRules: any[] = [];
+  showRulesSelector = false;
+
   isLoading = true;
   isActionLoading = false;
+  isEditingGroup = false;
   activeTab: 'info' | 'chat' = 'info';
-  
-  // Semáforo Personal (Mi estado en este grupo)
+
   mySemaphoreColor: string | null = null;
-  myWarningCount: number = 0;
+  myWarningCount = 0;
   isBanned = false;
 
-  // Modal de Salida
   showLeaveModal = false;
+  showDeleteModal = false;
   leaveModalConfig = {
     title: '',
     message: '',
@@ -54,45 +64,53 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     private groupsService: GroupsService,
     private authService: AuthService,
     private moderationService: ModerationService,
-    private userService: UserService
+    private userService: UserService,
+    private rulesService: RulesService
   ) {}
 
   ngOnInit() {
     const groupId = this.route.snapshot.paramMap.get('id');
-    if (groupId) {
-      this.loadGroupDetails(parseInt(groupId, 10));
-    }
 
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
-        if (user) this.currentUserId = user.id;
+        if (user) {
+          this.currentUserId = user.id;
+        }
       });
+
+    if (groupId) {
+      this.loadGroupDetails(parseInt(groupId, 10));
+    }
+  }
+
+  get isCreator(): boolean {
+    return !!this.group && this.currentUserId === this.group.created_by;
   }
 
   loadGroupDetails(id: number) {
     this.isLoading = true;
     this.groupsService.getGroupDetails(id)
       .pipe(
-        takeUntil(this.destroy$), 
+        takeUntil(this.destroy$),
         finalize(() => this.isLoading = false)
       )
       .subscribe({
         next: (data) => {
           this.group = data;
-          
-          // Si soy miembro, cargo mi semáforo personal
+          this.resetEditGroupData();
+          this.loadGroupRules(id);
+
           if (this.currentUserId && data.is_member) {
             this.loadMyStatus(id);
           }
         },
         error: () => {
-          this.router.navigate(['/groups']); // Si falla, volver a la lista
+          this.router.navigate(['/groups']);
         }
       });
   }
 
-  // ✅ Cargar mi estado de moderación (Semáforo)
   loadMyStatus(groupId: number) {
     if (!this.currentUserId) return;
 
@@ -107,36 +125,31 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ✅ Acción de Unirse
   joinGroup() {
     if (!this.group || this.isActionLoading) return;
-    this.isActionLoading = true;
 
+    this.isActionLoading = true;
     this.groupsService.joinGroup(this.group.id)
       .pipe(finalize(() => this.isActionLoading = false))
       .subscribe({
         next: () => {
-          this.loadGroupDetails(this.group!.id); // Recargar para ver cambios
-          this.activeTab = 'chat'; // Llevar al chat al unirse
+          this.loadGroupDetails(this.group!.id);
+          this.activeTab = 'chat';
         }
       });
   }
 
-  // ✅ Acción de Salir (Inteligente)
   onLeaveClick() {
     if (!this.group) return;
 
-    // 1. Soy el Creador -> No puedo salir
-    if (this.currentUserId === this.group.created_by) {
+    if (this.isCreator) {
       this.leaveModalConfig = {
-        title: 'Eres el creador',
-        message: 'No puedes salir de tu propio grupo. Si deseas eliminarlo, usa la opción de borrar.',
+        title: 'Eres la persona creadora',
+        message: 'No puedes salir de tu propio grupo. Si ya no lo necesitas, puedes borrarlo.',
         type: 'info',
         confirmText: 'Entendido'
       };
-    } 
-    // 2. Miembro normal -> Confirmación
-    else {
+    } else {
       this.leaveModalConfig = {
         title: '¿Salir del grupo?',
         message: `¿Seguro que quieres dejar "${this.group.name}"?`,
@@ -144,6 +157,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
         confirmText: 'Sí, salir'
       };
     }
+
     this.showLeaveModal = true;
   }
 
@@ -154,8 +168,8 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     }
 
     if (!this.group) return;
-    this.isActionLoading = true;
 
+    this.isActionLoading = true;
     this.groupsService.leaveGroup(this.group.id)
       .pipe(finalize(() => {
         this.isActionLoading = false;
@@ -164,25 +178,120 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.loadGroupDetails(this.group!.id);
-          this.activeTab = 'info'; // Volver a info al salir
+          this.activeTab = 'info';
         }
       });
   }
 
-  // Helpers Visuales
+  startEditingGroup() {
+    if (!this.group) return;
+    this.resetEditGroupData();
+    this.isEditingGroup = true;
+  }
+
+  cancelEditingGroup() {
+    this.isEditingGroup = false;
+    this.resetEditGroupData();
+  }
+
+  saveGroupChanges() {
+    if (!this.group || this.isActionLoading) return;
+
+    const name = this.editGroupData.name.trim();
+    if (!name) return;
+
+    this.isActionLoading = true;
+    this.groupsService.updateGroup(this.group.id, {
+      name,
+      description: this.editGroupData.description.trim()
+    })
+      .pipe(finalize(() => this.isActionLoading = false))
+      .subscribe({
+        next: () => {
+          this.isEditingGroup = false;
+          this.loadGroupDetails(this.group!.id);
+        }
+      });
+  }
+
+  loadGroupRules(groupId: number) {
+    this.rulesService.getGroupRules(groupId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.groupRules = response.rules || [];
+        },
+        error: () => {
+          this.groupRules = [];
+        }
+      });
+  }
+
+  getGroupRuleIds(): number[] {
+    return this.groupRules.map(rule => rule.id);
+  }
+
+  onRulesSaved(ruleIds: number[]) {
+    if (!this.group) return;
+
+    this.rulesService.attachGroupRules(this.group.id, ruleIds)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.showRulesSelector = false;
+          this.loadGroupRules(this.group!.id);
+        }
+      });
+  }
+
+  openDeleteModal() {
+    this.showDeleteModal = true;
+  }
+
+  confirmDeleteGroup() {
+    if (!this.group || this.isActionLoading) return;
+
+    this.isActionLoading = true;
+    this.groupsService.deleteGroup(this.group.id)
+      .pipe(finalize(() => {
+        this.isActionLoading = false;
+        this.showDeleteModal = false;
+      }))
+      .subscribe({
+        next: () => this.router.navigate(['/groups'])
+      });
+  }
+
   getGroupIcon(): string {
     if (!this.group) return '👥';
+
     const name = this.group.name.toLowerCase();
     if (name.includes('lectura')) return '📚';
     if (name.includes('deporte')) return '⚽';
     if (name.includes('cocina')) return '👨‍🍳';
     if (name.includes('arte')) return '🎨';
-    if (name.includes('música')) return '🎵';
+    if (name.includes('música') || name.includes('musica')) return '🎵';
+
     return '👥';
+  }
+
+  getActivityIcon(activityType?: string): string {
+    switch (activityType) {
+      case 'sport': return '⚽';
+      case 'social': return '👥';
+      case 'culture': return '🎭';
+      case 'academic': return '📚';
+      case 'other': return '🌈';
+      default: return '📅';
+    }
   }
 
   goBack() {
     this.router.navigate(['/groups']);
+  }
+
+  goToActivity(activityId: number) {
+    this.router.navigate(['/activities', activityId]);
   }
 
   setTab(tab: 'info' | 'chat') {
@@ -198,11 +307,17 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     return this.userService.getProfileImageUrl(userId);
   }
 
-  // ✅ HELPER PARA ERROR DE CARGA (Opcional, o se maneja en HTML)
-  handleImageError(event: any) {
-    event.target.style.display = 'none'; // Ocultar img rota
-    // El elemento hermano (iniciales) se mostrará porque la img está oculta/rota
-    // O mejor, controlamos con variable en el *ngFor, pero lo más simple es en HTML.
+  handleImageError(event: Event) {
+    const target = event.target as HTMLImageElement;
+    target.style.display = 'none';
   }
 
+  private resetEditGroupData() {
+    if (!this.group) return;
+
+    this.editGroupData = {
+      name: this.group.name || '',
+      description: this.group.description || ''
+    };
+  }
 }

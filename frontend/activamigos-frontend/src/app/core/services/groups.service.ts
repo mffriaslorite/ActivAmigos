@@ -268,7 +268,8 @@ export class GroupsService {
 
     return {
       ...group,
-      members: mockMembers.slice(0, Math.min(group.member_count, mockMembers.length))
+      members: mockMembers.slice(0, Math.min(group.member_count, mockMembers.length)),
+      activities: []
     };
   }
 

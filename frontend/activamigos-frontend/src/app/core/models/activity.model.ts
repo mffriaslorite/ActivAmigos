@@ -4,6 +4,8 @@ export interface Activity {
   description?: string;
   activity_type?: string;
   location?: string;
+  group_id?: number | null;
+  group_name?: string | null;
   date: string;
   rules?: string;
   created_by: number;
@@ -38,6 +40,7 @@ export interface ActivityCreate {
   description?: string;
   activity_type?: string;
   location?: string;
+  group_id?: number | null;
   date: string;
   rules?: string;
   rule_ids?: number[];
@@ -46,7 +49,9 @@ export interface ActivityCreate {
 export interface ActivityUpdate {
   title?: string;
   description?: string;
+  activity_type?: string;
   location?: string;
+  group_id?: number | null;
   date?: string;
   rules?: string;
 }

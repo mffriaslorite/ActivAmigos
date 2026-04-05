@@ -1,10 +1,8 @@
 <div class="min-h-screen bg-gray-50 flex flex-col">
-  
-  <!-- Barra pegajosa adaptativa -->
   <div class="sticky top-0 z-20 px-4 py-2 shadow-sm transition-all duration-300"
        [ngClass]="activeTab === 'info' ? 'bg-blue-600 text-white' : 'bg-white text-gray-800 border-b border-gray-100'">
     <div class="max-w-4xl mx-auto flex items-center gap-3">
-      <button (click)="goBack()" 
+      <button (click)="goBack()"
               class="flex items-center gap-2 px-3 py-1 rounded-full transition-colors w-fit"
               [ngClass]="activeTab === 'info' ? 'hover:bg-white/20' : 'hover:bg-gray-100'">
         <span class="text-2xl">⬅️</span> <span [class.hidden]="activeTab === 'chat'">Volver</span>
@@ -13,27 +11,36 @@
     </div>
   </div>
 
-  <!-- Información de la actividad (Solo en pestaña Info) -->
   <div *ngIf="activeTab === 'info' && activityDetails" class="bg-blue-600 text-white pb-6 pt-2 px-4 shadow-md animate-fade-in">
     <div class="max-w-4xl mx-auto">
       <div class="flex items-start justify-between gap-4">
         <div>
-           <div class="flex items-center gap-2 mb-2">
-              <span class="text-3xl bg-white/20 p-2 rounded-xl">{{ getActivityIcon() }}</span>
-           </div>
-           <h1 class="text-2xl font-bold leading-tight">{{ activityDetails.title }}</h1>
-           <p class="text-blue-100 mt-1 flex items-center gap-2 text-sm">
-             📅 {{ formatDate(activityDetails.date) }}
-           </p>
-           <p *ngIf="activityDetails.location" class="text-blue-100 flex items-center gap-2 text-sm mt-1">
-             📍 {{ activityDetails.location }}
-           </p>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-3xl bg-white/20 p-2 rounded-xl">{{ getActivityIcon() }}</span>
+          </div>
+          <h1 class="text-2xl font-bold leading-tight">{{ activityDetails.title }}</h1>
+          <p class="text-blue-100 mt-1 flex items-center gap-2 text-sm">
+            📅 {{ formatDate(activityDetails.date) }}
+          </p>
+          <p *ngIf="activityDetails.location" class="text-blue-100 flex items-center gap-2 text-sm mt-1">
+            📍 {{ activityDetails.location }}
+          </p>
+        </div>
+
+        <div *ngIf="isCreator" class="flex flex-col gap-2 min-w-[160px]">
+          <button (click)="startEditingActivity()"
+                  class="px-4 py-2 bg-white/90 text-blue-700 rounded-xl font-bold text-sm hover:bg-white transition-all">
+            ✏️ Editar
+          </button>
+          <button (click)="openDeleteModal()"
+                  class="px-4 py-2 bg-red-500 text-white rounded-xl font-bold text-sm hover:bg-red-600 transition-all">
+            🗑️ Borrar
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Loading State -->
   <div *ngIf="isLoading" class="bg-blue-600 text-white pb-6 pt-4 px-4 shadow-md">
     <div class="max-w-4xl mx-auto animate-pulse space-y-3">
       <div class="h-8 bg-white/30 rounded w-2/3"></div>
@@ -41,7 +48,7 @@
     </div>
   </div>
 
-  <div *ngIf="feedbackMessage" 
+  <div *ngIf="feedbackMessage"
        class="mx-4 mt-4 p-4 rounded-xl flex items-center gap-3 shadow-sm animate-fade-in max-w-4xl lg:mx-auto w-full"
        [ngClass]="feedbackType === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
     <span class="text-xl">{{ feedbackType === 'success' ? '✅' : '⚠️' }}</span>
@@ -49,70 +56,65 @@
   </div>
 
   <main class="flex-1 px-4 py-6 max-w-4xl w-full mx-auto space-y-6" *ngIf="!isLoading && activityDetails">
-
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-      <!-- #1.8: Sección "Tu comportamiento" eliminada según feedback de usuarios -->
+      <div *ngIf="!activityDetails.is_participant" class="text-center">
+        <p class="text-gray-600 mb-3">¿Te apetece ir a esta actividad?</p>
+        <button (click)="joinActivity()"
+                [disabled]="isActionLoading"
+                class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all flex justify-center items-center gap-2">
+          <span *ngIf="isActionLoading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          <span>¡Me apunto! 🙋‍♂️</span>
+        </button>
+      </div>
 
-       <div *ngIf="!activityDetails.is_participant" class="text-center">
-          <p class="text-gray-600 mb-3">¿Te apetece ir a esta actividad?</p>
-          <button (click)="joinActivity()" 
-                  [disabled]="isActionLoading"
-                  class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all flex justify-center items-center gap-2">
-             <span *ngIf="isActionLoading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-             <span>¡Me apunto! 🙋‍♂️</span>
-          </button>
-       </div>
-
-       <div *ngIf="activityDetails.is_participant" class="flex flex-col gap-3">
-          
-          <div class="flex items-center justify-between p-3 rounded-lg border transition-colors"
-            [ngClass]="{
-              'bg-green-50 border-green-200': activityDetails.attendance_status === 'confirmed',
-              'bg-gray-50 border-gray-200': activityDetails.attendance_status === 'declined',
-              'bg-yellow-50 border-yellow-200': activityDetails.attendance_status === 'pending'
-            }">
-             
-             <div class="flex items-center gap-2">
-               <span *ngIf="activityDetails.attendance_status === 'confirmed'" class="text-green-700 font-bold">
-                 ✅ Todo listo, ¡nos vemos!
-               </span>
-               <span *ngIf="activityDetails.attendance_status === 'declined' || activityDetails.attendance_status === 'absent'" class="text-gray-600 font-bold">
-                 ❌ Has dicho que no asistirás
-               </span>
-               <span *ngIf="activityDetails.attendance_status === 'pending'" class="text-yellow-700 font-bold">
-                 ⏳ Tienes que confirmar
-               </span>
-             </div>
-             
-             <button *ngIf="activityDetails.attendance_status === 'pending'"
-                     (click)="openAttendanceConfirmation()"
-                      class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg text-sm font-bold border border-yellow-200 animate-pulse hover:bg-yellow-200 transition-colors min-h-[40px]">
-                 ❓ ¿Vas a ir?
-              </button>
-
-             <button *ngIf="activityDetails.attendance_status === 'confirmed' || activityDetails.attendance_status === 'declined' || activityDetails.attendance_status === 'absent'"
-                     (click)="openAttendanceConfirmation()"
-                     class="text-xs text-blue-600 hover:text-blue-800 underline font-medium ml-2">
-                Modificar mi asistencia a la actividad
-             </button>
-
+      <div *ngIf="activityDetails.is_participant" class="flex flex-col gap-3">
+        <div class="flex items-center justify-between p-3 rounded-lg border transition-colors"
+             [ngClass]="{
+               'bg-green-50 border-green-200': activityDetails.attendance_status === 'confirmed',
+               'bg-gray-50 border-gray-200': activityDetails.attendance_status === 'declined' || activityDetails.attendance_status === 'absent',
+               'bg-yellow-50 border-yellow-200': activityDetails.attendance_status === 'pending'
+             }">
+          <div class="flex items-center gap-2">
+            <span *ngIf="activityDetails.attendance_status === 'confirmed'" class="text-green-700 font-bold">
+              ✅ Todo listo, ¡nos vemos!
+            </span>
+            <span *ngIf="activityDetails.attendance_status === 'declined' || activityDetails.attendance_status === 'absent'" class="text-gray-600 font-bold">
+              ❌ Has dicho que no asistirás
+            </span>
+            <span *ngIf="activityDetails.attendance_status === 'pending'" class="text-yellow-700 font-bold">
+              ⏳ Tienes que confirmar
+            </span>
           </div>
-                    <button (click)="leaveActivity()" 
-                   [disabled]="isActionLoading"
-                   class="w-full py-3 px-4 border-2 border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
-               <span>🚪</span>
-               <span>{{ isActionLoading ? 'Procesando...' : 'Darme de baja de la actividad' }}</span>
-           </button>
-       </div>
+
+          <button *ngIf="activityDetails.attendance_status === 'pending'"
+                  (click)="openAttendanceConfirmation()"
+                  class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg text-sm font-bold border border-yellow-200 animate-pulse hover:bg-yellow-200 transition-colors min-h-[40px]">
+            ❓ ¿Vas a ir?
+          </button>
+
+          <button *ngIf="activityDetails.attendance_status === 'confirmed' || activityDetails.attendance_status === 'declined' || activityDetails.attendance_status === 'absent'"
+                  (click)="openAttendanceConfirmation()"
+                  class="text-xs text-blue-600 hover:text-blue-800 underline font-medium ml-2">
+            Modificar mi asistencia a la actividad
+          </button>
+        </div>
+
+        <button (click)="leaveActivity()"
+                [disabled]="isActionLoading"
+                class="w-full py-3 px-4 border-2 border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
+          <span>🚪</span>
+          <span>{{ isActionLoading ? 'Procesando...' : 'Darme de baja de la actividad' }}</span>
+        </button>
+      </div>
     </div>
 
     <div class="flex border-b border-gray-200 mb-4 bg-gray-50 pt-2">
-      <button (click)="setTab('info')" 
+      <button (click)="setTab('info')"
               class="flex-1 pb-3 font-medium text-sm transition-colors border-b-2"
               [ngClass]="activeTab === 'info' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'">
-        Información y Participantes
+        Información y participantes
       </button>
-      <button (click)="setTab('chat')" 
+      <button (click)="setTab('chat')"
               class="flex-1 pb-3 font-medium text-sm transition-colors border-b-2 flex items-center justify-center gap-2"
               [ngClass]="activeTab === 'chat' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'">
         Chat
@@ -121,109 +123,108 @@
     </div>
 
     <div *ngIf="activeTab === 'info'" class="space-y-6 animate-fade-in">
-       
-       <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-         <h3 class="font-bold text-gray-800 mb-2 text-lg">📝 Descripción</h3>
-         <p class="text-gray-600 leading-relaxed">{{ activityDetails.description || 'Sin descripción detallada.' }}</p>
-         <div *ngIf="getActivityTypeInfo() as activityTypeInfo" class="mt-4 flex items-center gap-2 text-sm text-gray-600">
-            <span class="text-base">{{ activityTypeInfo.icon }}</span>
-            <span>Tipo de actividad:</span>
-            <span class="font-bold text-gray-800">{{ activityTypeInfo.label }}</span>
-         </div>
-       </div>
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+        <h3 class="font-bold text-gray-800 mb-2 text-lg">📝 Descripción</h3>
+        <p class="text-gray-600 leading-relaxed">{{ activityDetails.description || 'Sin descripción detallada.' }}</p>
+        <div *ngIf="getActivityTypeInfo() as activityTypeInfo" class="mt-4 flex items-center gap-2 text-sm text-gray-600">
+          <span class="text-base">{{ activityTypeInfo.icon }}</span>
+          <span>Tipo de actividad:</span>
+          <span class="font-bold text-gray-800">{{ activityTypeInfo.label }}</span>
+        </div>
+        <button *ngIf="activityDetails.group_id && activityDetails.group_name"
+                (click)="goToLinkedGroup()"
+                class="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 hover:bg-blue-100 transition-colors">
+          <span>👥</span>
+          <span>Ver grupo: {{ activityDetails.group_name }}</span>
+        </button>
+      </div>
 
-       <div *ngIf="activityRules.length > 0 || parseRules().length > 0" class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
-         <h3 class="font-bold text-blue-900 mb-4 text-lg flex items-center gap-2">
-            <span>📋</span> Normas de convivencia
-         </h3>
-         
-         <ul class="space-y-3">
-           <li *ngFor="let rule of activityRules" class="flex items-start gap-3 bg-white/60 p-3 rounded-xl border border-blue-100">
-             <span class="text-xl">{{ rule.icon || '🔹' }}</span>
-             <div>
-                <p class="font-bold text-blue-900 text-sm">{{ rule.title }}</p>
-                <p class="text-blue-700 text-xs mt-1">{{ rule.description }}</p>
-             </div>
-           </li>
+      <div *ngIf="activityRules.length > 0 || parseRules().length > 0" class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
+        <h3 class="font-bold text-blue-900 mb-4 text-lg flex items-center gap-2">
+          <span>📋</span> Normas de convivencia
+        </h3>
 
-           <ng-container *ngIf="activityRules.length === 0">
-               <li *ngFor="let rule of parseRules()" class="flex items-start gap-2 text-blue-800 px-2">
-                 <span class="mt-1 text-blue-500 font-bold">•</span>
-                 <span>{{ rule }}</span>
-               </li>
-           </ng-container>
-         </ul>
-       </div>
-       
-       <!-- <button *ngIf="canManageRules" (click)="showRulesSelector = true" class="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-medium hover:border-blue-300 hover:text-blue-500 transition-colors flex items-center justify-center gap-2">
-         <span>⚙️</span> Editar Normas (Solo Admin)
-       </button> -->
+        <ul class="space-y-3">
+          <li *ngFor="let rule of activityRules" class="flex items-start gap-3 bg-white/60 p-3 rounded-xl border border-blue-100">
+            <span class="text-xl">{{ rule.icon || '🔹' }}</span>
+            <div>
+              <p class="font-bold text-blue-900 text-sm">{{ rule.title }}</p>
+              <p class="text-blue-700 text-xs mt-1">{{ rule.description }}</p>
+            </div>
+          </li>
 
-       <div>
-         <h3 class="font-bold text-gray-800 mb-3 text-lg flex items-center justify-between">
-            <span>👥 Participantes</span>
-            <span class="text-sm bg-gray-100 px-2 py-1 rounded-full">{{ activityDetails.participant_count }} personas</span>
-         </h3>
-         
-         <div class="space-y-3">
-            <div *ngFor="let participant of activityDetails.participants" 
-                 class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-              
-              <div class="flex items-center gap-3">
-                 <app-semaphore-badge [color]="participant.semaphore_color" [warningCount]="participant.warning_count" [showText]="false"></app-semaphore-badge>
-                 
-                 <div>
-                   <p class="font-bold text-gray-800">{{ participant.first_name || participant.username }}</p>
-                   <p class="text-xs text-gray-500" *ngIf="participant.is_organizer">👑 Organizador</p>
-                 </div>
-              </div>
+          <ng-container *ngIf="activityRules.length === 0">
+            <li *ngFor="let rule of parseRules()" class="flex items-start gap-2 text-blue-800 px-2">
+              <span class="mt-1 text-blue-500 font-bold">•</span>
+              <span>{{ rule }}</span>
+            </li>
+          </ng-container>
+        </ul>
+      </div>
 
-              <div class="flex items-center gap-2">
-                 <span class="px-2 py-1 rounded text-xs font-bold flex items-center gap-1"
-                       [ngClass]="getParticipantStatusLabel(participant.attendance_status).class">
-                   {{ getParticipantStatusLabel(participant.attendance_status).icon }}
-                   {{ getParticipantStatusLabel(participant.attendance_status).text }}
-                 </span>
-                 
-                 <button *ngIf="canModerate && participant.id !== currentUserId" 
-                         (click)="openModerationModal(participant)"
-                         class="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                         aria-label="Reportar usuario">
-                    ⚠️
-                 </button>
+      <div>
+        <h3 class="font-bold text-gray-800 mb-3 text-lg flex items-center justify-between">
+          <span>👥 Participantes</span>
+          <span class="text-sm bg-gray-100 px-2 py-1 rounded-full">{{ activityDetails.participant_count }} personas</span>
+        </h3>
+
+        <div class="space-y-3">
+          <div *ngFor="let participant of activityDetails.participants"
+               class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <app-semaphore-badge [color]="participant.semaphore_color" [warningCount]="participant.warning_count" [showText]="false"></app-semaphore-badge>
+
+              <div>
+                <p class="font-bold text-gray-800">{{ participant.first_name || participant.username }}</p>
+                <p class="text-xs text-gray-500" *ngIf="participant.is_organizer">👑 Organizador</p>
               </div>
             </div>
-            
-            <div *ngIf="activityDetails.participants.length === 0" class="text-center text-gray-500 py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-              Aún no hay nadie apuntado. ¡Sé el primero!
+
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-1 rounded text-xs font-bold flex items-center gap-1"
+                    [ngClass]="getParticipantStatusLabel(participant.attendance_status).class">
+                {{ getParticipantStatusLabel(participant.attendance_status).icon }}
+                {{ getParticipantStatusLabel(participant.attendance_status).text }}
+              </span>
+
+              <button *ngIf="canModerate && participant.id !== currentUserId"
+                      (click)="openModerationModal(participant)"
+                      class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                      aria-label="Reportar usuario">
+                ⚠️
+              </button>
             </div>
-         </div>
-       </div>
+          </div>
+
+          <div *ngIf="activityDetails.participants.length === 0" class="text-center text-gray-500 py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            Aún no hay nadie apuntado. ¡Sé la primera persona!
+          </div>
+        </div>
+      </div>
     </div>
 
     <div *ngIf="activeTab === 'chat'" class="h-[600px] animate-fade-in flex flex-col">
-       <ng-container *ngIf="activityDetails.is_participant; else lockedChat">
-         <app-chat-room 
-            *ngIf="chatRoom" 
-            [contextType]="'ACTIVITY'" 
-            [contextId]="chatRoom.id"
-            class="flex-1">
-         </app-chat-room>
-       </ng-container>
+      <ng-container *ngIf="activityDetails.is_participant; else lockedChat">
+        <app-chat-room
+          *ngIf="chatRoom"
+          [contextType]="'ACTIVITY'"
+          [contextId]="chatRoom.id"
+          class="flex-1">
+        </app-chat-room>
+      </ng-container>
 
-       <ng-template #lockedChat>
-         <div class="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
-            <div class="text-5xl mb-4">🔒</div>
-            <h3 class="text-lg font-bold text-gray-600 mb-2">Chat Bloqueado</h3>
-            <p class="mb-6 max-w-xs mx-auto">Debes apuntarte a la actividad para poder leer y escribir mensajes.</p>
-            <button (click)="joinActivity()" 
-                    class="bg-blue-600 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:bg-blue-700">
-              ¡Me apunto! 🙋‍♂️
-            </button>
-         </div>
-       </ng-template>
+      <ng-template #lockedChat>
+        <div class="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
+          <div class="text-5xl mb-4">🔒</div>
+          <h3 class="text-lg font-bold text-gray-600 mb-2">Chat bloqueado</h3>
+          <p class="mb-6 max-w-xs mx-auto">Debes apuntarte a la actividad para poder leer y escribir mensajes.</p>
+          <button (click)="joinActivity()"
+                  class="bg-blue-600 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:bg-blue-700">
+            ¡Me apunto! 🙋‍♂️
+          </button>
+        </div>
+      </ng-template>
     </div>
-
   </main>
 </div>
 
@@ -242,14 +243,119 @@
   (warningIssued)="onWarningIssued($event)">
 </app-moderation-modal>
 
-<!-- <div *ngIf="showRulesSelector" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4">
-    <div class="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <app-rules-selector
-          [contextType]="'ACTIVITY'"
-          [contextId]="activityDetails ? activityDetails.id : 0"
-          [preselectedRuleIds]="getRuleIds()"
-          (cancel)="showRulesSelector = false"
-          (save)="onRulesSaved($event)">
-        </app-rules-selector>
+<app-confirmation-modal
+  [isOpen]="showDeleteModal"
+  title="¿Borrar esta actividad?"
+  message="Si borras esta actividad, las personas dejarán de verla y también desaparecerá su chat."
+  type="danger"
+  confirmText="Sí, borrar actividad"
+  [isLoading]="isActionLoading"
+  (confirm)="confirmDeleteActivity()"
+  (cancel)="showDeleteModal = false">
+</app-confirmation-modal>
+
+<div *ngIf="showRulesSelector && activityDetails" class="fixed inset-0 z-50 bg-white flex flex-col animate-fade-in">
+  <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+    <div>
+      <h2 class="text-xl font-bold text-gray-900 mt-2">Editar normas de convivencia</h2>
+      <p class="text-xs text-gray-500 mt-1">Paso 1 de 1</p>
     </div>
-</div> -->
+    <button (click)="showRulesSelector = false" class="text-3xl mb-4 p-3 min-w-[48px] min-h-[48px] flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+      ✕
+    </button>
+  </div>
+
+  <div class="flex-1 min-h-0">
+    <app-rules-selector
+      [contextType]="'ACTIVITY'"
+      [contextId]="activityDetails.id"
+      [preselectedRuleIds]="getRuleIds()"
+      (cancel)="showRulesSelector = false"
+      (save)="onRulesSaved($event)">
+    </app-rules-selector>
+  </div>
+</div>
+
+<div *ngIf="isEditingActivity" class="fixed inset-0 z-40 bg-white flex flex-col animate-fade-in">
+  <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+    <div>
+      <h2 class="text-xl font-bold text-gray-900 mt-2">Editar actividad</h2>
+      <p class="text-xs text-gray-500 mt-1">Cambia la información principal de forma sencilla.</p>
+    </div>
+    <button (click)="cancelEditingActivity()" [disabled]="isActionLoading" class="text-3xl mb-4 p-3 min-w-[48px] min-h-[48px] flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+      ✕
+    </button>
+  </div>
+
+  <div class="flex-1 overflow-y-auto p-6 bg-gray-50/50">
+    <div class="max-w-2xl mx-auto space-y-4">
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-2">Título</label>
+        <input [(ngModel)]="editActivityData.title"
+               type="text"
+               maxlength="50"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all bg-white">
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-2">Tipo de actividad</label>
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <button type="button"
+                  *ngFor="let type of activityTypes"
+                  (click)="editActivityData.activity_type = type.value"
+                  class="flex items-center gap-2 px-4 py-3 rounded-full border transition-all"
+                  [ngClass]="editActivityData.activity_type === type.value
+                    ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-500'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:bg-gray-50'">
+            <span class="text-xl">{{ type.icon }}</span>
+            <span class="text-sm font-bold whitespace-nowrap">{{ type.label }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-2">Fecha y hora</label>
+        <input [(ngModel)]="editActivityData.date"
+               type="datetime-local"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all bg-white">
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-2">Lugar</label>
+        <input [(ngModel)]="editActivityData.location"
+               type="text"
+               maxlength="50"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all bg-white">
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-2">Descripción</label>
+        <textarea [(ngModel)]="editActivityData.description"
+                  rows="4"
+                  maxlength="200"
+                  class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all resize-none bg-white"></textarea>
+      </div>
+
+      <button (click)="openRulesEditor()"
+              type="button"
+              class="w-full py-3 border-2 border-blue-200 text-blue-700 rounded-xl font-bold hover:bg-blue-50 transition-colors bg-white">
+        📋 Editar normas de convivencia
+      </button>
+    </div>
+  </div>
+
+  <div class="border-t border-gray-100 bg-white p-6">
+    <div class="max-w-2xl mx-auto grid gap-3 sm:grid-cols-2">
+      <button (click)="saveActivityChanges()"
+              [disabled]="isActionLoading || !editActivityData.title.trim() || !editActivityData.date"
+              class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50">
+        {{ isActionLoading ? 'Guardando...' : 'Guardar cambios' }}
+      </button>
+      <button (click)="cancelEditingActivity()"
+              [disabled]="isActionLoading"
+              class="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all active:scale-95 disabled:opacity-50">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>

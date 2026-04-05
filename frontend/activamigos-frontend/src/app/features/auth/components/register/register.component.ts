@@ -19,9 +19,10 @@ export class RegisterComponent implements OnInit, OnDestroy {
   errorMessage = '';
   isLoading = false;
   showPassword = false;
-  
+  currentStep: 1 | 2 = 1;
+
   animalsList: string[] = [];
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -62,6 +63,25 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.showPassword = !this.showPassword;
   }
 
+  nextStep() {
+    const stepOneFields = ['fullName', 'username', 'email'];
+    const hasInvalidField = stepOneFields.some(fieldName => this.registerForm.get(fieldName)?.invalid);
+
+    if (hasInvalidField) {
+      stepOneFields.forEach(fieldName => this.registerForm.get(fieldName)?.markAsTouched());
+      this.errorMessage = 'Completa tu nombre, tu apodo y tu correo para continuar.';
+      return;
+    }
+
+    this.errorMessage = '';
+    this.currentStep = 2;
+  }
+
+  previousStep() {
+    this.errorMessage = '';
+    this.currentStep = 1;
+  }
+
   onSubmit() {
     if (this.registerForm.invalid) {
       this.errorMessage = 'Por favor, rellena todos los campos marcados en rojo.';
@@ -74,7 +94,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.registerForm.disable();
 
     const formValues = this.registerForm.value;
-    
+
     const nameParts = formValues.fullName.trim().split(' ');
     const firstName = nameParts.shift() || '';
     const lastName = nameParts.join(' ');
@@ -102,6 +122,11 @@ export class RegisterComponent implements OnInit, OnDestroy {
   }
 
   goBack() {
+    if (this.currentStep === 2) {
+      this.previousStep();
+      return;
+    }
+
     this.router.navigate(['/']);
   }
 }

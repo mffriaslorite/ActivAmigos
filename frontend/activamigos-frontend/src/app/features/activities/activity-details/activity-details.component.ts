@@ -1,7 +1,8 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, takeUntil, finalize } from 'rxjs';
+import { Subject, finalize, takeUntil } from 'rxjs';
 import { ActivitiesService } from '../../../core/services/activities.service';
 import { ActivityDetails, ActivityParticipant } from '../../../core/models/activity.model';
 import { ChatRoomComponent } from '../../../shared/components/chat/chat-room.component';
@@ -12,37 +13,52 @@ import { RulesService } from '../../../core/services/rules.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ModerationService } from '../../../core/services/moderation.service';
 import { AttendanceModalComponent } from '../../../shared/components/attendance-modal/attendance-modal.component';
+import { ConfirmationModalComponent } from '../../../shared/components/confirmation-modal/confirmation-modal.component';
+import { RulesSelectorComponent } from '../../../shared/components/rules-selector/rules-selector.component';
 
 @Component({
   selector: 'app-activity-details',
   standalone: true,
-  imports: [CommonModule, ChatRoomComponent, SemaphoreBadgeComponent, ModerationModalComponent, AttendanceModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ChatRoomComponent,
+    SemaphoreBadgeComponent,
+    ModerationModalComponent,
+    AttendanceModalComponent,
+    ConfirmationModalComponent,
+    RulesSelectorComponent
+  ],
   templateUrl: './activity-details.component.html',
   styleUrls: ['./activity-details.component.scss']
 })
 export class ActivityDetailsComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-  
+
   activityDetails: ActivityDetails | null = null;
-  
-  // Estados de interfaz
+
   isLoading = true;
   isActionLoading = false;
+  isEditingActivity = false;
   feedbackMessage = '';
   feedbackType: 'success' | 'error' | '' = '';
-  
-  // Chat y Pestañas
+  showDeleteModal = false;
+  editActivityData = {
+    title: '',
+    description: '',
+    activity_type: '',
+    location: '',
+    date: ''
+  };
+
   currentUserId: number | null = null;
-  // CAMBIO: Solo 2 pestañas ahora
   activeTab: 'info' | 'chat' = 'info';
   chatRoom: { type: string; id: number; name: string } | null = null;
-  
-  // Reglas
+
   showRulesSelector = false;
   activityRules: any[] = [];
   canManageRules = false;
-  
-  // Moderación y Asistencia
+
   showAttendanceMarking = false;
   showAttendanceConfirmationModal = false;
   showModerationModal = false;
@@ -50,8 +66,16 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
   canModerate = false;
 
   mySemaphoreColor: string | null = null;
-  myWarningCount: number = 0;
+  myWarningCount = 0;
   isBanned = false;
+
+  activityTypes = [
+    { value: 'sport', label: 'Deporte', icon: '⚽' },
+    { value: 'social', label: 'Social', icon: '👥' },
+    { value: 'culture', label: 'Cultura', icon: '🎭' },
+    { value: 'academic', label: 'Estudios', icon: '📚' },
+    { value: 'other', label: 'Otro', icon: '🌈' }
+  ];
 
   constructor(
     private route: ActivatedRoute,
@@ -65,11 +89,6 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     const activityId = this.route.snapshot.paramMap.get('id');
-    if (activityId) {
-      this.loadActivityDetails(parseInt(activityId, 10));
-    } else {
-      this.router.navigate(['/activities']);
-    }
 
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
@@ -80,6 +99,16 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
           this.canModerate = user.role === 'ORGANIZER' || user.role === 'SUPERADMIN';
         }
       });
+
+    if (activityId) {
+      this.loadActivityDetails(parseInt(activityId, 10));
+    } else {
+      this.router.navigate(['/activities']);
+    }
+  }
+
+  get isCreator(): boolean {
+    return !!this.activityDetails && this.currentUserId === this.activityDetails.created_by;
   }
 
   loadActivityDetails(activityId: number) {
@@ -91,7 +120,7 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (details) => {
           this.activityDetails = details;
-          console.log(this.activityDetails.attendance_status);
+          this.resetEditActivityData();
           this.chatRoom = {
             type: 'ACTIVITY',
             id: activityId,
@@ -104,8 +133,7 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
 
           this.loadActivityRules(activityId);
         },
-        error: (error) => {
-          console.error('Error loading details:', error);
+        error: () => {
           this.showFeedback('No hemos podido cargar la actividad.', 'error');
         }
       });
@@ -118,12 +146,12 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
         next: (response) => {
           this.activityRules = response.rules || [];
         },
-        error: (e) => console.warn('Error loading structured rules', e)
+        error: (error) => console.warn('Error loading structured rules', error)
       });
   }
 
   getRuleIds(): number[] {
-    return this.activityRules.map(r => r.id);
+    return this.activityRules.map(rule => rule.id);
   }
 
   loadMyStatus(activityId: number) {
@@ -140,12 +168,11 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
       });
   }
 
-  // --- Acciones ---
   joinActivity() {
     if (!this.activityDetails || this.isActionLoading) return;
 
     this.isActionLoading = true;
-    this.feedbackMessage = ''; 
+    this.feedbackMessage = '';
 
     this.activitiesService.joinActivity(this.activityDetails.id)
       .pipe(finalize(() => this.isActionLoading = false))
@@ -164,9 +191,8 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
 
   leaveActivity() {
     if (!this.activityDetails || this.isActionLoading) return;
-    
-    this.isActionLoading = true;
 
+    this.isActionLoading = true;
     this.activitiesService.leaveActivity(this.activityDetails.id)
       .pipe(finalize(() => this.isActionLoading = false))
       .subscribe({
@@ -191,18 +217,90 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
 
   onAttendanceConfirmed(willAttend: boolean) {
     this.showAttendanceConfirmationModal = false;
+
     if (this.activityDetails) {
-       this.loadActivityDetails(this.activityDetails.id);
-       const msg = willAttend ? 'Asistencia confirmada.' : 'Gracias por avisar.';
-       this.showFeedback(msg, 'success');
+      this.loadActivityDetails(this.activityDetails.id);
+      const message = willAttend ? 'Asistencia confirmada.' : 'Gracias por avisar.';
+      this.showFeedback(message, 'success');
     }
+  }
+
+  startEditingActivity() {
+    if (!this.activityDetails) return;
+    this.resetEditActivityData();
+    this.isEditingActivity = true;
+  }
+
+  cancelEditingActivity() {
+    this.isEditingActivity = false;
+    this.resetEditActivityData();
+  }
+
+  saveActivityChanges() {
+    if (!this.activityDetails || this.isActionLoading) return;
+
+    const title = this.editActivityData.title.trim();
+    if (!title || !this.editActivityData.date) {
+      this.showFeedback('Completa el título y la fecha.', 'error');
+      return;
+    }
+
+    const selectedDate = new Date(this.editActivityData.date);
+    if (selectedDate < new Date()) {
+      this.showFeedback('La fecha no puede ser anterior a este momento.', 'error');
+      return;
+    }
+
+    this.isActionLoading = true;
+    this.activitiesService.updateActivity(this.activityDetails.id, {
+      title,
+      description: this.editActivityData.description.trim(),
+      activity_type: this.editActivityData.activity_type,
+      location: this.editActivityData.location.trim(),
+      date: selectedDate.toISOString()
+    })
+      .pipe(finalize(() => this.isActionLoading = false))
+      .subscribe({
+        next: () => {
+          this.isEditingActivity = false;
+          this.loadActivityDetails(this.activityDetails!.id);
+          this.showFeedback('Actividad actualizada.', 'success');
+        },
+        error: () => this.showFeedback('No hemos podido guardar los cambios.', 'error')
+      });
+  }
+
+  openRulesEditor() {
+    this.showRulesSelector = true;
+  }
+
+  openDeleteModal() {
+    this.showDeleteModal = true;
+  }
+
+  confirmDeleteActivity() {
+    if (!this.activityDetails || this.isActionLoading) return;
+
+    this.isActionLoading = true;
+    this.activitiesService.deleteActivity(this.activityDetails.id)
+      .pipe(finalize(() => {
+        this.isActionLoading = false;
+        this.showDeleteModal = false;
+      }))
+      .subscribe({
+        next: () => this.router.navigate(['/activities']),
+        error: () => this.showFeedback('No hemos podido borrar la actividad.', 'error')
+      });
   }
 
   showFeedback(message: string, type: 'success' | 'error') {
     this.feedbackMessage = message;
     this.feedbackType = type;
+
     setTimeout(() => {
-      if (this.feedbackMessage === message) this.feedbackMessage = '';
+      if (this.feedbackMessage === message) {
+        this.feedbackMessage = '';
+      }
     }, 5000);
   }
 
@@ -214,11 +312,11 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
     if (this.activityDetails.activity_type === 'academic') return '📚';
     if (this.activityDetails.activity_type === 'other') return '🌟';
 
-    const t = this.activityDetails.title.toLowerCase();
-    if (t.includes('fútbol') || t.includes('deporte')) return '⚽';
-    if (t.includes('cocina')) return '🍳';
-    if (t.includes('arte') || t.includes('pintar')) return '🎨';
-    if (t.includes('música')) return '🎵';
+    const title = this.activityDetails.title.toLowerCase();
+    if (title.includes('fútbol') || title.includes('futbol') || title.includes('deporte')) return '⚽';
+    if (title.includes('cocina')) return '🍳';
+    if (title.includes('arte') || title.includes('pintar')) return '🎨';
+    if (title.includes('música') || title.includes('musica')) return '🎵';
     return '🌟';
   }
 
@@ -247,21 +345,32 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
 
   formatDate(dateString: string): string {
     if (!dateString) return '';
-    const targetDate = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+
+    const targetDate = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
     return new Date(targetDate).toLocaleDateString('es-ES', {
-      weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   }
 
   parseRules(): string[] {
     if (!this.activityDetails?.rules) return [];
+
     return this.activityDetails.rules.split('\n')
-      .map(r => r.replace(/^[-•*]\s*/, '').trim())
-      .filter(r => r.length > 0);
+      .map(rule => rule.replace(/^[-•*]\s*/, '').trim())
+      .filter(rule => rule.length > 0);
   }
 
   goBack() {
     this.router.navigate(['/dashboard']);
+  }
+
+  goToLinkedGroup() {
+    if (!this.activityDetails?.group_id) return;
+    this.router.navigate(['/groups', this.activityDetails.group_id]);
   }
 
   setTab(tab: 'info' | 'chat') {
@@ -279,17 +388,20 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
     this.showModerationModal = true;
   }
 
-  onWarningIssued(response: any) {
-    if (this.activityDetails) this.loadActivityDetails(this.activityDetails.id);
+  onWarningIssued(_response: any) {
+    if (this.activityDetails) {
+      this.loadActivityDetails(this.activityDetails.id);
+    }
     this.showFeedback('Advertencia enviada.', 'success');
   }
 
   closeModerationModal() {
     this.showModerationModal = false;
   }
-  
+
   onRulesSaved(ruleIds: number[]) {
     if (!this.activityDetails) return;
+
     this.rulesService.attachActivityRules(this.activityDetails.id, ruleIds)
       .subscribe({
         next: () => {
@@ -304,5 +416,24 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private resetEditActivityData() {
+    if (!this.activityDetails) return;
+
+    this.editActivityData = {
+      title: this.activityDetails.title || '',
+      description: this.activityDetails.description || '',
+      activity_type: this.activityDetails.activity_type || '',
+      location: this.activityDetails.location || '',
+      date: this.toLocalDateTimeInput(this.activityDetails.date)
+    };
+  }
+
+  private toLocalDateTimeInput(dateString: string): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+    return localDate.toISOString().slice(0, 16);
   }
 }

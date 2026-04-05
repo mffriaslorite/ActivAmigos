@@ -21,8 +21,19 @@ export interface GroupMember {
   warning_count: number;
 }
 
+export interface GroupActivitySummary {
+  id: number;
+  title: string;
+  activity_type?: string;
+  location?: string;
+  date: string;
+  participant_count: number;
+  is_participant: boolean;
+}
+
 export interface GroupDetails extends Group {
   members: GroupMember[];
+  activities: GroupActivitySummary[];
 }
 
 export interface GroupCreate {

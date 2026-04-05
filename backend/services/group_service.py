@@ -1,9 +1,13 @@
 from flask_smorest import Blueprint, abort
 from flask import session
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime, timedelta, timezone
 from models.user.user import User, db
 from models.group.group import Group
+from models.activity.activity import Activity
 from models.associations.group_associations import group_members
+from models.rules.rules import group_rules
+from models.message.message import Message, MessageContextType
 from services.user_service import get_user_status_for_context
 
 from models.group.group_schema import (
@@ -190,6 +194,14 @@ def delete_group(group_id):
         abort(403, message="Only the group creator can delete this group")
 
     try:
+        Activity.query.filter_by(group_id=group_id).update({Activity.group_id: None}, synchronize_session=False)
+        db.session.execute(group_rules.delete().where(group_rules.c.group_id == group_id))
+        db.session.execute(group_members.delete().where(group_members.c.group_id == group_id))
+        Message.query.filter_by(
+            context_type=MessageContextType.GROUP,
+            context_id=group_id
+        ).delete(synchronize_session=False)
+
         db.session.delete(group)
         db.session.commit()
         return ""
@@ -295,6 +307,22 @@ def get_group_details(group_id):
             'semaphore_color': user_status['overall_semaphore_color'],
             'warning_count': user_status['total_warnings']
         })
+
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
+    activities = Activity.query\
+        .filter(Activity.group_id == group.id, Activity.date > cutoff_time)\
+        .order_by(Activity.date.asc())\
+        .all()
+
+    activities_data = [{
+        'id': activity.id,
+        'title': activity.title,
+        'activity_type': activity.activity_type,
+        'location': activity.location,
+        'date': activity.date,
+        'participant_count': activity.participant_count,
+        'is_participant': activity.is_participant(current_user.id)
+    } for activity in activities]
     
     return {
         'id': group.id,
@@ -305,7 +333,8 @@ def get_group_details(group_id):
         'created_at': group.created_at,
         'member_count': group.member_count,
         'is_member': group.is_member(current_user.id),
-        'members': members_data
+        'members': members_data,
+        'activities': activities_data
     }
 
 @blp.route("/<int:group_id>/user-role", methods=["GET"])

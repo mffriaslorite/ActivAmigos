@@ -1,48 +1,55 @@
-<div *ngIf="isOpen" 
-     class="fixed inset-0 bg-white flex flex-col items-center justify-center z-50 p-6 animate-fade-in"
+<div *ngIf="isOpen"
+     class="fixed inset-0 bg-white flex flex-col z-50 animate-fade-in"
      (click)="onBackdropClick($event)">
-  
-  <div class="w-full max-w-md flex flex-col items-center"
+
+  <div class="flex-1 flex flex-col w-full max-w-2xl mx-auto"
        (click)="$event.stopPropagation()">
-    
-    <div class="text-center w-full">
-      <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full mb-4"
+
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3 bg-white sticky top-0 z-10">
+      <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
            [ngClass]="{
              'bg-red-100 text-red-600': type === 'danger',
-             'bg-yellow-100 text-yellow-600': type === 'warning',
+             'bg-yellow-100 text-yellow-700': type === 'warning',
              'bg-blue-100 text-blue-600': type === 'info'
            }">
-        <span class="text-2xl" *ngIf="type === 'danger'">⚠️</span>
-        <span class="text-2xl" *ngIf="type === 'warning'">🤔</span>
-        <span class="text-2xl" *ngIf="type === 'info'">ℹ️</span>
+        <span *ngIf="type === 'danger'">⚠️</span>
+        <span *ngIf="type === 'warning'">🤔</span>
+        <span *ngIf="type === 'info'">ℹ️</span>
       </div>
+      <div>
+        <h2 class="text-xl font-bold text-gray-900">{{ title }}</h2>
+        <p class="text-sm text-gray-500">Lee la información antes de continuar.</p>
+      </div>
+    </div>
 
-      <h3 class="text-lg font-bold text-gray-900 mb-2">{{ title }}</h3>
-      <p class="text-sm text-gray-500 mb-6 leading-relaxed">{{ message }}</p>
+    <div class="flex-1 overflow-y-auto px-6 py-8">
+      <div class="bg-gray-50 rounded-2xl border border-gray-200 p-5">
+        <p class="text-base text-gray-700 leading-relaxed">{{ message }}</p>
+      </div>
+    </div>
 
-      <div class="flex flex-col gap-3 w-full">
-        <button *ngIf="type === 'info'"
-                (click)="cancel.emit()"
-                class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all active:scale-95 shadow-lg">
-          Entendido
+    <div class="border-t border-gray-100 p-6 bg-white space-y-3">
+      <button *ngIf="type === 'info'"
+              (click)="cancel.emit()"
+              class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all active:scale-95 shadow-lg">
+        Entendido
+      </button>
+
+      <ng-container *ngIf="type !== 'info'">
+        <button (click)="confirm.emit()"
+                [disabled]="isLoading"
+                class="w-full py-4 text-white font-bold rounded-2xl shadow-lg transition-all flex justify-center items-center gap-2 active:scale-95 text-lg"
+                [ngClass]="type === 'danger' ? 'bg-red-500 hover:bg-red-600' : 'bg-yellow-500 hover:bg-yellow-600'">
+          <span *ngIf="isLoading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          <span *ngIf="!isLoading">{{ confirmText }}</span>
         </button>
 
-        <ng-container *ngIf="type !== 'info'">
-          <button (click)="confirm.emit()"
-                  [disabled]="isLoading"
-                  class="w-full py-4 text-white font-bold rounded-xl shadow-lg transition-all flex justify-center items-center gap-2 active:scale-95 text-lg"
-                  [ngClass]="type === 'danger' ? 'bg-red-500 hover:bg-red-600' : 'bg-yellow-500 hover:bg-yellow-600'">
-            <span *ngIf="isLoading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-            <span *ngIf="!isLoading">{{ confirmText }}</span>
-          </button>
-
-          <button (click)="cancel.emit()"
-                  [disabled]="isLoading"
-                  class="w-full py-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-all active:scale-95 text-lg disabled:opacity-50">
-            {{ cancelText }}
-          </button>
-        </ng-container>
-      </div>
+        <button (click)="cancel.emit()"
+                [disabled]="isLoading"
+                class="w-full py-4 bg-gray-100 text-gray-700 font-bold rounded-2xl hover:bg-gray-200 transition-all active:scale-95 text-lg disabled:opacity-50">
+          {{ cancelText }}
+        </button>
+      </ng-container>
     </div>
   </div>
 </div>

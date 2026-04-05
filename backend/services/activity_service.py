@@ -4,8 +4,11 @@ from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta, timezone
 from models.user.user import User, db
 from models.activity.activity import Activity
+from models.group.group import Group
 from models.associations.activity_associations import activity_participants
 from models.attendance.attendance import ActivityAttendance
+from models.rules.rules import activity_rules
+from models.message.message import Message, MessageContextType
 from services.user_service import get_user_status_for_context
 from models.activity.activity_schema import (
     ActivityCreateSchema, 
@@ -39,6 +42,12 @@ def get_current_user():
 def create_activity(args):
     """Create a new activity"""
     current_user = get_current_user()
+    group = None
+
+    if args.get('group_id') is not None:
+        group = Group.query.get_or_404(args['group_id'])
+        if not group.is_member(current_user.id):
+            abort(403, message="Only group members can link an activity to this group")
     
     try:
         # Create new activity
@@ -47,6 +56,7 @@ def create_activity(args):
             description=args.get('description'),
             activity_type=args.get('activity_type'),
             location=args.get('location'),
+            group_id=group.id if group else None,
             date=args['date'],
             rules=args.get('rules'),
             created_by=current_user.id
@@ -96,6 +106,8 @@ def create_activity(args):
             'description': activity.description,
             'activity_type': activity.activity_type,
             'location': activity.location,
+            'group_id': activity.group_id,
+            'group_name': activity.group.name if activity.group else None,
             'date': activity.date,
             'rules': activity.rules,
             'created_by': activity.created_by,
@@ -156,6 +168,8 @@ def list_activities():
             'description': activity.description,
             'activity_type': activity.activity_type,
             'location': activity.location,
+            'group_id': activity.group_id,
+            'group_name': activity.group.name if activity.group else None,
             'date': activity.date,
             'participant_count': activity.participant_count,
             'is_participant': activity.is_participant(current_user.id),
@@ -203,6 +217,8 @@ def get_activity(activity_id):
         'description': activity.description,
         'activity_type': activity.activity_type,
         'location': activity.location,
+        'group_id': activity.group_id,
+        'group_name': activity.group.name if activity.group else None,
         'date': activity.date,
         'rules': activity.rules,
         'created_by': activity.created_by,
@@ -298,6 +314,8 @@ def get_activity_details(activity_id):
         'description': activity.description,
         'activity_type': activity.activity_type,
         'location': activity.location,
+        'group_id': activity.group_id,
+        'group_name': activity.group.name if activity.group else None,
         'date': activity.date,
         'rules': activity.rules,
         'created_by': activity.created_by,
@@ -320,6 +338,11 @@ def update_activity(args, activity_id):
     # Check if current user is the creator
     if activity.created_by != current_user.id:
         abort(403, message="Only the activity creator can update this activity")
+
+    if 'group_id' in args and args['group_id'] is not None:
+        group = Group.query.get_or_404(args['group_id'])
+        if not group.is_member(current_user.id):
+            abort(403, message="Only group members can link an activity to this group")
     
     try:
         # Update fields if provided
@@ -331,6 +354,8 @@ def update_activity(args, activity_id):
             activity.activity_type = args['activity_type']
         if 'location' in args:
             activity.location = args['location']
+        if 'group_id' in args:
+            activity.group_id = args['group_id']
         if 'date' in args:
             activity.date = args['date']
         if 'rules' in args:
@@ -344,6 +369,8 @@ def update_activity(args, activity_id):
             'description': activity.description,
             'activity_type': activity.activity_type,
             'location': activity.location,
+            'group_id': activity.group_id,
+            'group_name': activity.group.name if activity.group else None,
             'date': activity.date,
             'rules': activity.rules,
             'created_by': activity.created_by,
@@ -371,6 +398,14 @@ def delete_activity(activity_id):
         abort(403, message="Only the activity creator can delete this activity")
 
     try:
+        ActivityAttendance.query.filter_by(activity_id=activity_id).delete(synchronize_session=False)
+        db.session.execute(activity_rules.delete().where(activity_rules.c.activity_id == activity_id))
+        db.session.execute(activity_participants.delete().where(activity_participants.c.activity_id == activity_id))
+        Message.query.filter_by(
+            context_type=MessageContextType.ACTIVITY,
+            context_id=activity_id
+        ).delete(synchronize_session=False)
+
         db.session.delete(activity)
         db.session.commit()
         return ""

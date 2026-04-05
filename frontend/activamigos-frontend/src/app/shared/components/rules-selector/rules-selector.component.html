@@ -1,27 +1,27 @@
 <div class="flex flex-col h-full max-h-[85vh]">
 
     <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
-        
+
         <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-12 text-gray-400">
             <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
             <span>Cargando reglas disponibles...</span>
         </div>
 
         <form [formGroup]="rulesForm" *ngIf="!isLoading" class="space-y-3">
-            
+
             <div *ngFor="let template of availableTemplates; let i = index; trackBy: trackByTemplateId"
                  class="group relative bg-white border-2 rounded-xl p-4 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
                  [ngClass]="isRuleSelected(template.id) ? 'border-blue-500 bg-blue-50/30' : 'border-gray-100 hover:border-blue-300'">
-                
+
                 <label class="flex items-start gap-4 cursor-pointer w-full">
                     <div class="relative flex items-center justify-center w-6 h-6 mt-1 flex-shrink-0">
-                        <input type="checkbox" 
+                        <input type="checkbox"
                                [formControlName]="i"
                                (change)="onRuleToggle(template.id, $event)"
                                class="peer appearance-none w-6 h-6 border-2 border-gray-300 rounded-lg checked:bg-blue-500 checked:border-blue-500 transition-colors cursor-pointer" />
                         <span class="absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none font-bold text-sm">✓</span>
                     </div>
-                    
+
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1">
                             <span class="text-2xl">{{ template.icon }}</span>
@@ -44,9 +44,9 @@
     </div>
 
     <div class="border-t border-gray-200 bg-white p-4 flex-shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
-        
+
         <div class="flex items-center justify-between mb-3 px-1">
-            <button *ngIf="selectedRuleIds.length > 0" 
+            <button *ngIf="selectedRuleIds.length > 0"
                     (click)="selectedRuleIds = []; setupForm()"
                     class="text-xs text-red-600 font-bold px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition-colors flex items-center gap-1">
                 <span>🗑️</span>
@@ -58,26 +58,35 @@
             </span>
         </div>
 
-        <div class="flex gap-3 relative">
+        <div *ngIf="selectedRuleIds.length === 0"
+             class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
+            <span class="text-lg">📋</span>
+            <div>
+                <p class="text-sm font-bold text-amber-900">Falta elegir una norma</p>
+                <p class="text-sm text-amber-800">Marca al menos 1 norma para poder continuar.</p>
+            </div>
+        </div>
+
+        <div class="flex gap-3">
             <button type="button"
                     class="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors active:scale-95 flex justify-center items-center gap-2"
                     (click)="onCancel()"
                     [disabled]="isSaving">
                 <span>❌</span> Cancelar
             </button>
-            
+
             <button type="button"
-                    class="flex-[2] py-3 px-4 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 flex flex-col items-center justify-center relative"
+                    class="flex-[2] py-3 px-4 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 flex items-center justify-center"
                     [ngClass]="selectedRuleIds.length === 0 ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
                     (click)="onSave()"
                     [disabled]="isSaving || selectedRuleIds.length === 0">
                 <div class="flex items-center gap-2">
-                    <span *ngIf="!isSaving">💾 Guardar Cambios</span>
+                    <span *ngIf="!isSaving">💾 Guardar cambios</span>
                     <span *ngIf="isSaving" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 </div>
-                <span *ngIf="selectedRuleIds.length === 0" class="text-[10px] absolute -bottom-4 text-red-500 font-medium w-full text-center left-0 mt-1">Obligatorio 1 norma mínimo</span>
             </button>
         </div>
+
     </div>
 
 </div>
