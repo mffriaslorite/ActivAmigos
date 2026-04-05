@@ -138,6 +138,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         activities: []
       });
     }
+
   }
 
   private updateWeekCalendar() {
