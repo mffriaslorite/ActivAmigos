@@ -4,17 +4,21 @@ export interface User {
   first_name?: string;
   last_name?: string;
   profile_image?: string;
+  avatarError?: boolean;
 }
 
 export interface Message {
   id: number;
   context_type: 'GROUP' | 'ACTIVITY';
   context_id: number;
-  content: string;
+  content: string | null;
   created_at: string;
   sender_id: number;
   sender: User;
   is_system?: boolean;
+  message_type?: 'TEXT' | 'IMAGE' | 'AUDIO';
+  attachment_url?: string | null;
+  attachment_content_type?: string | null;
 }
 
 export interface CreateMessage {

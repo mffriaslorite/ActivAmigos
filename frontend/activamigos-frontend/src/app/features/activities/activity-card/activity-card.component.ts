@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Activity } from '../../../core/models/activity.model';
+import { ActivitiesService } from '../../../core/services/activities.service';
 
 @Component({
   selector: 'app-activity-card',
@@ -18,7 +19,10 @@ export class ActivityCardComponent {
   @Output() joinActivity = new EventEmitter<number>();
   @Output() leaveActivity = new EventEmitter<number>();
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private activitiesService: ActivitiesService
+  ) {}
 
   onCardClick() {
     this.router.navigate(['/activities', this.activity.id]);
@@ -38,12 +42,25 @@ export class ActivityCardComponent {
 
   // --- Helpers Visuales ---
 
+  getActivityTypes(): string[] {
+    if (this.activity.activity_types?.length) {
+      return this.activity.activity_types;
+    }
+
+    if (this.activity.activity_type) {
+      return this.activity.activity_type.split(',').map(type => type.trim()).filter(Boolean);
+    }
+
+    return [];
+  }
+
   getActivityIcon(): string {
-    if (this.activity.activity_type === 'sport') return '⚽';
-    if (this.activity.activity_type === 'social') return '👥';
-    if (this.activity.activity_type === 'culture') return '🎭';
-    if (this.activity.activity_type === 'academic') return '📚';
-    if (this.activity.activity_type === 'other') return '🌟';
+    const primaryType = this.getActivityTypes()[0];
+    if (primaryType === 'sport') return '⚽';
+    if (primaryType === 'social') return '👥';
+    if (primaryType === 'culture') return '🎭';
+    if (primaryType === 'academic') return '📚';
+    if (primaryType === 'other') return '🌟';
 
     const t = this.activity.title.toLowerCase();
     if (t.includes('fútbol') || t.includes('deporte')) return '⚽';
@@ -55,11 +72,12 @@ export class ActivityCardComponent {
   }
 
   getIconBackground(): string {
-    if (this.activity.activity_type === 'sport') return 'bg-green-100 text-green-600';
-    if (this.activity.activity_type === 'social') return 'bg-sky-100 text-sky-600';
-    if (this.activity.activity_type === 'culture') return 'bg-violet-100 text-violet-600';
-    if (this.activity.activity_type === 'academic') return 'bg-amber-100 text-amber-700';
-    if (this.activity.activity_type === 'other') return 'bg-blue-100 text-blue-600';
+    const primaryType = this.getActivityTypes()[0];
+    if (primaryType === 'sport') return 'bg-green-100 text-green-600';
+    if (primaryType === 'social') return 'bg-sky-100 text-sky-600';
+    if (primaryType === 'culture') return 'bg-violet-100 text-violet-600';
+    if (primaryType === 'academic') return 'bg-amber-100 text-amber-700';
+    if (primaryType === 'other') return 'bg-blue-100 text-blue-600';
 
     const t = this.activity.title.toLowerCase();
     if (t.includes('deporte')) return 'bg-green-100 text-green-600';
@@ -67,6 +85,22 @@ export class ActivityCardComponent {
     if (t.includes('arte')) return 'bg-pink-100 text-pink-600';
     if (t.includes('música')) return 'bg-yellow-100 text-yellow-600';
     return 'bg-blue-100 text-blue-600';
+  }
+
+  getActivityTypeLabel(type: string): string {
+    switch (type) {
+      case 'sport': return 'Deporte';
+      case 'social': return 'Social';
+      case 'culture': return 'Cultura';
+      case 'academic': return 'Estudios';
+      case 'other': return 'Otro';
+      default: return type;
+    }
+  }
+
+  getActivityImageSrc(): string | null {
+    if (!this.activity?.image_url) return null;
+    return this.activitiesService.getActivityImageSrc(this.activity.id, this.activity.image_url);
   }
 
   formatDate(dateString: string): string {

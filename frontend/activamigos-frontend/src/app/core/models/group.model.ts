@@ -25,6 +25,8 @@ export interface GroupActivitySummary {
   id: number;
   title: string;
   activity_type?: string;
+  activity_types?: string[];
+  image_url?: string | null;
   location?: string;
   date: string;
   participant_count: number;

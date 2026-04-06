@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -34,22 +34,27 @@ import { RulesSelectorComponent } from '../../../shared/components/rules-selecto
 })
 export class ActivityDetailsComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  @ViewChild('editActivityImageInput') editActivityImageInput?: ElementRef<HTMLInputElement>;
 
   activityDetails: ActivityDetails | null = null;
 
   isLoading = true;
   isActionLoading = false;
   isEditingActivity = false;
+  editCurrentStep: 1 | 2 | 3 | 4 = 1;
   feedbackMessage = '';
   feedbackType: 'success' | 'error' | '' = '';
   showDeleteModal = false;
   editActivityData = {
     title: '',
     description: '',
-    activity_type: '',
+    activity_types: [] as string[],
     location: '',
     date: ''
   };
+  selectedEditImageFile: File | null = null;
+  selectedEditImagePreviewUrl: string | null = null;
+  removeExistingImageOnSave = false;
 
   currentUserId: number | null = null;
   activeTab: 'info' | 'chat' = 'info';
@@ -228,11 +233,13 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
   startEditingActivity() {
     if (!this.activityDetails) return;
     this.resetEditActivityData();
+    this.editCurrentStep = 1;
     this.isEditingActivity = true;
   }
 
   cancelEditingActivity() {
     this.isEditingActivity = false;
+    this.editCurrentStep = 1;
     this.resetEditActivityData();
   }
 
@@ -255,18 +262,18 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
     this.activitiesService.updateActivity(this.activityDetails.id, {
       title,
       description: this.editActivityData.description.trim(),
-      activity_type: this.editActivityData.activity_type,
+      activity_types: this.editActivityData.activity_types,
       location: this.editActivityData.location.trim(),
       date: selectedDate.toISOString()
     })
-      .pipe(finalize(() => this.isActionLoading = false))
       .subscribe({
         next: () => {
-          this.isEditingActivity = false;
-          this.loadActivityDetails(this.activityDetails!.id);
-          this.showFeedback('Actividad actualizada.', 'success');
+          this.persistActivityImageChanges();
         },
-        error: () => this.showFeedback('No hemos podido guardar los cambios.', 'error')
+        error: () => {
+          this.isActionLoading = false;
+          this.showFeedback('No hemos podido guardar los cambios.', 'error');
+        }
       });
   }
 
@@ -306,11 +313,12 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
 
   getActivityIcon(): string {
     if (!this.activityDetails) return '🎯';
-    if (this.activityDetails.activity_type === 'sport') return '⚽';
-    if (this.activityDetails.activity_type === 'social') return '👥';
-    if (this.activityDetails.activity_type === 'culture') return '🎭';
-    if (this.activityDetails.activity_type === 'academic') return '📚';
-    if (this.activityDetails.activity_type === 'other') return '🌟';
+    const primaryType = this.getActivityTypes()[0];
+    if (primaryType === 'sport') return '⚽';
+    if (primaryType === 'social') return '👥';
+    if (primaryType === 'culture') return '🎭';
+    if (primaryType === 'academic') return '📚';
+    if (primaryType === 'other') return '🌟';
 
     const title = this.activityDetails.title.toLowerCase();
     if (title.includes('fútbol') || title.includes('futbol') || title.includes('deporte')) return '⚽';
@@ -320,9 +328,7 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
     return '🌟';
   }
 
-  getActivityTypeInfo() {
-    const activityType = this.activityDetails?.activity_type;
-
+  getActivityTypeInfo(activityType: string) {
     switch (activityType) {
       case 'sport': return { icon: '⚽', label: 'Deporte' };
       case 'social': return { icon: '👥', label: 'Social' };
@@ -365,6 +371,10 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
   }
 
   goBack() {
+    if (this.activeTab === 'chat') {
+      this.activeTab = 'info';
+      return;
+    }
     this.router.navigate(['/dashboard']);
   }
 
@@ -392,11 +402,103 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
     if (this.activityDetails) {
       this.loadActivityDetails(this.activityDetails.id);
     }
-    this.showFeedback('Advertencia enviada.', 'success');
+      this.showFeedback('Advertencia enviada.', 'success');
   }
 
   closeModerationModal() {
     this.showModerationModal = false;
+  }
+
+  goToNextEditStep() {
+    if (this.editCurrentStep === 1) {
+      const title = this.editActivityData.title.trim();
+      if (!title || !this.editActivityData.date || this.editActivityData.activity_types.length === 0) {
+        this.showFeedback('Completa el título, el tipo y la fecha.', 'error');
+        return;
+      }
+    }
+
+    if (this.editCurrentStep < 4) {
+      this.editCurrentStep = (this.editCurrentStep + 1) as 1 | 2 | 3 | 4;
+    }
+  }
+
+  goToPreviousEditStep() {
+    if (this.editCurrentStep > 1) {
+      this.editCurrentStep = (this.editCurrentStep - 1) as 1 | 2 | 3 | 4;
+    }
+  }
+
+  getActivityTypes(): string[] {
+    if (this.activityDetails?.activity_types?.length) {
+      return this.activityDetails.activity_types;
+    }
+
+    if (this.activityDetails?.activity_type) {
+      return this.activityDetails.activity_type.split(',').map(type => type.trim()).filter(Boolean);
+    }
+
+    return [];
+  }
+
+  getActivityImageSrc(): string | null {
+    if (!this.activityDetails?.image_url) return null;
+    return this.activitiesService.getActivityImageSrc(this.activityDetails.id, this.activityDetails.image_url);
+  }
+
+  isEditActivityTypeSelected(type: string): boolean {
+    return this.editActivityData.activity_types.includes(type);
+  }
+
+  toggleEditActivityType(type: string) {
+    this.editActivityData.activity_types = this.editActivityData.activity_types.includes(type)
+      ? this.editActivityData.activity_types.filter(value => value !== type)
+      : [...this.editActivityData.activity_types, type];
+  }
+
+  openEditImagePicker() {
+    this.editActivityImageInput?.nativeElement.click();
+  }
+
+  onEditImageSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.showFeedback('Selecciona una imagen válida.', 'error');
+      input.value = '';
+      return;
+    }
+
+    if (file.size > 16 * 1024 * 1024) {
+      this.showFeedback('La imagen es demasiado grande. El máximo es 16 MB.', 'error');
+      input.value = '';
+      return;
+    }
+
+    this.selectedEditImageFile = file;
+    this.removeExistingImageOnSave = false;
+    if (this.selectedEditImagePreviewUrl) {
+      URL.revokeObjectURL(this.selectedEditImagePreviewUrl);
+    }
+    this.selectedEditImagePreviewUrl = URL.createObjectURL(file);
+  }
+
+  removeEditImageSelection() {
+    this.selectedEditImageFile = null;
+    if (this.selectedEditImagePreviewUrl) {
+      URL.revokeObjectURL(this.selectedEditImagePreviewUrl);
+    }
+    this.selectedEditImagePreviewUrl = null;
+    if (this.editActivityImageInput?.nativeElement) {
+      this.editActivityImageInput.nativeElement.value = '';
+    }
+  }
+
+  markExistingImageForRemoval() {
+    this.removeExistingImageOnSave = true;
+    this.removeEditImageSelection();
   }
 
   onRulesSaved(ruleIds: number[]) {
@@ -424,10 +526,46 @@ export class ActivityDetailsComponent implements OnInit, OnDestroy {
     this.editActivityData = {
       title: this.activityDetails.title || '',
       description: this.activityDetails.description || '',
-      activity_type: this.activityDetails.activity_type || '',
+      activity_types: [...this.getActivityTypes()],
       location: this.activityDetails.location || '',
       date: this.toLocalDateTimeInput(this.activityDetails.date)
     };
+    this.removeExistingImageOnSave = false;
+    this.removeEditImageSelection();
+  }
+
+  private persistActivityImageChanges() {
+    if (!this.activityDetails) return;
+
+    if (this.selectedEditImageFile) {
+      this.activitiesService.uploadActivityImage(this.activityDetails.id, this.selectedEditImageFile)
+        .pipe(finalize(() => this.isActionLoading = false))
+        .subscribe({
+          next: () => this.finishActivityUpdate('Actividad actualizada.'),
+          error: () => this.showFeedback('La actividad se guardó, pero no hemos podido subir la imagen.', 'error')
+        });
+      return;
+    }
+
+    if (this.removeExistingImageOnSave && this.activityDetails.image_url) {
+      this.activitiesService.deleteActivityImage(this.activityDetails.id)
+        .pipe(finalize(() => this.isActionLoading = false))
+        .subscribe({
+          next: () => this.finishActivityUpdate('Actividad actualizada.'),
+          error: () => this.showFeedback('La actividad se guardó, pero no hemos podido borrar la imagen.', 'error')
+        });
+      return;
+    }
+
+    this.isActionLoading = false;
+    this.finishActivityUpdate('Actividad actualizada.');
+  }
+
+  private finishActivityUpdate(message: string) {
+    this.isEditingActivity = false;
+    this.editCurrentStep = 1;
+    this.loadActivityDetails(this.activityDetails!.id);
+    this.showFeedback(message, 'success');
   }
 
   private toLocalDateTimeInput(dateString: string): string {

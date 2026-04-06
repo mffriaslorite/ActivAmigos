@@ -48,6 +48,8 @@ def update_profile(data, current_user: User):
         current_user.last_name = data["last_name"]
     if "bio" in data:
         current_user.bio = data["bio"]
+    if "points_display_mode" in data and data["points_display_mode"] is not None:
+        current_user.points_display_mode = data["points_display_mode"]
     if "email" in data:
         new_email = data["email"].lower()
         if new_email != current_user.email:

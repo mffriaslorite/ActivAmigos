@@ -276,11 +276,41 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return Math.floor(this.currentPoints / 100) + 2;
   }
 
+  get pointsDisplayMode(): 'XP' | 'STARS' {
+    return this.currentUser?.points_display_mode || 'XP';
+  }
+
   get pointsToNextLevel(): number {
     return 100 - (this.currentPoints % 100);
   }
 
   get pointsInCurrentLevel(): number {
     return this.currentPoints % 100;
+  }
+
+  get currentVisualPoints(): number {
+    return this.pointsDisplayMode === 'STARS'
+      ? Math.max(0, Math.round(this.pointsInCurrentLevel / 25))
+      : this.pointsInCurrentLevel;
+  }
+
+  get nextLevelVisualTarget(): number {
+    return this.pointsDisplayMode === 'STARS' ? 4 : 100;
+  }
+
+  get dashboardProgressLabel(): string {
+    if (this.pointsDisplayMode === 'STARS') {
+      return `${this.currentVisualPoints} / ${this.nextLevelVisualTarget} ⭐`;
+    }
+
+    return `${this.currentVisualPoints} / ${this.nextLevelVisualTarget} XP`;
+  }
+
+  get dashboardProgressTitle(): string {
+    if (this.pointsDisplayMode === 'STARS') {
+      return `Estás en Nivel ${this.nextLevel - 1} y tienes ${this.currentVisualPoints} de ${this.nextLevelVisualTarget} estrellas`;
+    }
+
+    return `Estás en Nivel ${this.nextLevel - 1} y tienes ${this.currentVisualPoints} de ${this.nextLevelVisualTarget} XP`;
   }
 }

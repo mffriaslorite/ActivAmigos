@@ -274,7 +274,9 @@ export class GroupsService {
   }
 
   getUserGroups(): Observable<Group[]> {
-    return this.http.get<Group[]>(`${this.API_BASE_URL}/groups`, { withCredentials: true });
+    return this.getGroups().pipe(
+      map(groups => groups.filter(group => group.is_member))
+    );
   }
 
   /**

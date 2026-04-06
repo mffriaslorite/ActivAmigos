@@ -5,6 +5,7 @@ class ActivityCreateSchema(Schema):
     title = fields.Str(required=True, validate=validate.Length(min=1, max=100))
     description = fields.Str(validate=validate.Length(max=500), allow_none=True)
     activity_type = fields.Str(validate=validate.Length(max=50), allow_none=True)
+    activity_types = fields.List(fields.Str(validate=validate.Length(max=50)), allow_none=True)
     location = fields.Str(validate=validate.Length(max=255), allow_none=True)
     group_id = fields.Int(allow_none=True)
     date = fields.DateTime(required=True)
@@ -29,6 +30,7 @@ class ActivityUpdateSchema(Schema):
     title = fields.Str(validate=validate.Length(min=1, max=100))
     description = fields.Str(validate=validate.Length(max=500), allow_none=True)
     activity_type = fields.Str(validate=validate.Length(max=50), allow_none=True)
+    activity_types = fields.List(fields.Str(validate=validate.Length(max=50)), allow_none=True)
     location = fields.Str(validate=validate.Length(max=255), allow_none=True)
     group_id = fields.Int(allow_none=True)
     date = fields.DateTime()
@@ -53,6 +55,8 @@ class ActivityResponseSchema(Schema):
     title = fields.Str()
     description = fields.Str(allow_none=True)
     activity_type = fields.Str(allow_none=True)
+    activity_types = fields.List(fields.Str(), dump_only=True)
+    image_url = fields.Str(allow_none=True)
     location = fields.Str(allow_none=True)
     group_id = fields.Int(allow_none=True)
     group_name = fields.Str(allow_none=True)
@@ -70,6 +74,8 @@ class ActivityListSchema(Schema):
     title = fields.Str()
     description = fields.Str(allow_none=True)
     activity_type = fields.Str(allow_none=True)
+    activity_types = fields.List(fields.Str(), dump_only=True)
+    image_url = fields.Str(allow_none=True)
     location = fields.Str(allow_none=True)
     group_id = fields.Int(allow_none=True)
     group_name = fields.Str(allow_none=True)
@@ -104,6 +110,8 @@ class ActivityDetailsResponseSchema(Schema):
     title = fields.Str()
     description = fields.Str(allow_none=True)
     activity_type = fields.Str(allow_none=True)
+    activity_types = fields.List(fields.Str(), dump_only=True)
+    image_url = fields.Str(allow_none=True)
     location = fields.Str(allow_none=True)
     group_id = fields.Int(allow_none=True)
     group_name = fields.Str(allow_none=True)
@@ -116,3 +124,13 @@ class ActivityDetailsResponseSchema(Schema):
     attendance_confirmed = fields.Bool()
     participants = fields.List(fields.Nested(ActivityParticipantSchema))
     attendance_status = fields.Str(allow_none=True)
+
+class ActivityImageUploadSchema(Schema):
+    image = fields.Raw(
+        required=True,
+        metadata={
+            "type": "string",
+            "description": "Activity image file (JPG, PNG, WebP)",
+            "format": "binary"
+        }
+    )

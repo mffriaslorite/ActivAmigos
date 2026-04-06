@@ -83,6 +83,32 @@ class MinIOClient:
         except Exception as e:
             current_app.logger.error(f"Image upload error: {e}")
             raise
+
+    def upload_activity_image(self, file_data, activity_id, content_type):
+        """Upload a representative image for an activity."""
+        self._ensure_initialized()
+
+        try:
+            if not self._is_valid_image_type(content_type):
+                raise ValueError("Invalid image type. Only JPG, PNG, and WebP are allowed.")
+
+            processed_image = self._process_image(file_data)
+            filename = f"activity_images/{activity_id}/{uuid.uuid4()}.jpg"
+            bucket_name = current_app.config['MINIO_BUCKET_NAME']
+            self.client.put_object(
+                bucket_name,
+                filename,
+                io.BytesIO(processed_image),
+                length=len(processed_image),
+                content_type='image/jpeg'
+            )
+            return self._get_public_url(filename)
+        except S3Error as e:
+            current_app.logger.error(f"MinIO upload error: {e}")
+            raise Exception("Failed to upload image to storage")
+        except Exception as e:
+            current_app.logger.error(f"Activity image upload error: {e}")
+            raise
     
     def delete_profile_image(self, image_url):
         """Delete profile image from MinIO"""
@@ -96,6 +122,18 @@ class MinIOClient:
                 self.client.remove_object(bucket_name, filename)
         except Exception as e:
             current_app.logger.warning(f"Failed to delete image: {e}")
+
+    def delete_object_url(self, object_url):
+        """Delete an object from MinIO using its public URL."""
+        self._ensure_initialized()
+
+        try:
+            filename = self._extract_filename_from_url(object_url)
+            if filename:
+                bucket_name = current_app.config['MINIO_BUCKET_NAME']
+                self.client.remove_object(bucket_name, filename)
+        except Exception as e:
+            current_app.logger.warning(f"Failed to delete object: {e}")
     
     def _is_valid_image_type(self, content_type):
         """Check if the content type is a valid image type"""

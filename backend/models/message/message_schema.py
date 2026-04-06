@@ -14,10 +14,14 @@ class MessageSchema(Schema):
     id = fields.Integer(dump_only=True)
     context_type = fields.String(validate=validate.OneOf(['GROUP', 'ACTIVITY']))
     context_id = fields.Integer(required=True)
-    content = fields.String(required=True, validate=validate.Length(min=1, max=2000))
+    content = fields.String(allow_none=True, validate=validate.Length(max=2000))
     created_at = fields.DateTime(dump_only=True)
     sender_id = fields.Integer(required=True)
     sender = fields.Nested(UserSchema, dump_only=True)
+    is_system = fields.Boolean(dump_only=True)
+    message_type = fields.String(dump_only=True, validate=validate.OneOf(['TEXT', 'IMAGE', 'AUDIO']))
+    attachment_url = fields.String(dump_only=True, allow_none=True)
+    attachment_content_type = fields.String(dump_only=True, allow_none=True)
 
 class MessageCreateSchema(Schema):
     """Schema for creating new messages"""

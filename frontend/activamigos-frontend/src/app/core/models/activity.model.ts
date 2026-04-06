@@ -3,6 +3,8 @@ export interface Activity {
   title: string;
   description?: string;
   activity_type?: string;
+  activity_types?: string[];
+  image_url?: string | null;
   location?: string;
   group_id?: number | null;
   group_name?: string | null;
@@ -39,6 +41,7 @@ export interface ActivityCreate {
   title: string;
   description?: string;
   activity_type?: string;
+  activity_types?: string[];
   location?: string;
   group_id?: number | null;
   date: string;
@@ -50,6 +53,7 @@ export interface ActivityUpdate {
   title?: string;
   description?: string;
   activity_type?: string;
+  activity_types?: string[];
   location?: string;
   group_id?: number | null;
   date?: string;

@@ -51,6 +51,8 @@ class GroupActivitySchema(Schema):
     id = fields.Int()
     title = fields.Str()
     activity_type = fields.Str(allow_none=True)
+    activity_types = fields.List(fields.Str(), dump_only=True)
+    image_url = fields.Str(allow_none=True)
     location = fields.Str(allow_none=True)
     date = fields.DateTime()
     participant_count = fields.Int()

@@ -1,7 +1,7 @@
 from marshmallow import Schema, fields, post_dump
 from marshmallow_enum import EnumField
 from werkzeug.datastructures import FileStorage
-from .user import UserRole
+from .user import UserRole, PointsDisplayMode
 
 class UserSchema(Schema):
     id = fields.Int(dump_only=True)
@@ -12,6 +12,7 @@ class UserSchema(Schema):
     profile_image = fields.Str()
     bio = fields.Str()
     role = EnumField(UserRole, dump_only=True, by_value=True)
+    points_display_mode = EnumField(PointsDisplayMode, by_value=True)
     is_active = fields.Bool()
     created_at = fields.DateTime()
     last_login = fields.DateTime()
@@ -22,6 +23,7 @@ class UpdateProfileSchema(Schema):
     first_name = fields.Str()
     last_name = fields.Str()
     bio = fields.Str()
+    points_display_mode = EnumField(PointsDisplayMode, by_value=True)
 
 class ProfileImageUploadSchema(Schema):
     image = fields.Raw(

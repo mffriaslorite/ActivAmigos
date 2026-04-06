@@ -7,6 +7,7 @@ export interface User {
   profile_image?: string;
   bio?: string;
   role?: 'USER' | 'ORGANIZER' | 'SUPERADMIN';
+  points_display_mode?: 'XP' | 'STARS';
   is_active: boolean;
   created_at: string;
   last_login?: string;

@@ -15,6 +15,7 @@ export class LevelProgressBarComponent implements OnChanges {
   // Opciones visuales
   @Input() showPoints: boolean = true;
   @Input() showLevel: boolean = true;
+  @Input() displayMode: 'XP' | 'STARS' = 'XP';
 
   // Variables calculadas para la vista
   level: number = 1;
@@ -50,5 +51,21 @@ export class LevelProgressBarComponent implements OnChanges {
     return {
       'width': `${this.progressPercentage}%`
     };
+  }
+
+  get currentVisualPoints(): number {
+    return this.displayMode === 'STARS'
+      ? Math.max(0, Math.round(this.pointsInCurrentLevel / 25))
+      : this.pointsInCurrentLevel;
+  }
+
+  get nextLevelVisualTarget(): number {
+    return this.displayMode === 'STARS' ? 4 : 100;
+  }
+
+  get remainingVisualPoints(): number {
+    return this.displayMode === 'STARS'
+      ? Math.max(0, this.nextLevelVisualTarget - this.currentVisualPoints)
+      : this.pointsToNextLevel;
   }
 }

@@ -15,30 +15,22 @@
       </div>
     </div>
 
-    <div class="bg-white border-b border-gray-100 sticky top-[52px] z-10 shadow-sm">
+    <div *ngIf="activeTab === 'info'" class="bg-white border-b border-gray-100 sticky top-[52px] z-10 shadow-sm">
       <div class="flex max-w-2xl mx-auto">
         <button (click)="setTab('info')"
-                class="flex-1 py-3 text-xs font-bold border-b-2 transition-colors uppercase tracking-wider"
-                [class.border-indigo-600]="activeTab === 'info'"
-                [class.text-indigo-600]="activeTab === 'info'"
-                [class.border-transparent]="activeTab !== 'info'"
-                [class.text-gray-400]="activeTab !== 'info'">
+                class="flex-1 py-3 text-xs font-bold border-b-2 transition-colors uppercase tracking-wider border-indigo-600 text-indigo-600">
           Información
         </button>
         <button (click)="setTab('chat')"
-                class="flex-1 py-3 text-xs font-bold border-b-2 transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
-                [class.border-indigo-600]="activeTab === 'chat'"
-                [class.text-indigo-600]="activeTab === 'chat'"
-                [class.border-transparent]="activeTab !== 'chat'"
-                [class.text-gray-400]="activeTab !== 'chat'">
+                class="flex-1 py-3 text-xs font-bold border-b-2 transition-colors flex items-center justify-center gap-2 uppercase tracking-wider border-transparent text-gray-400">
           Chat del grupo
           <span *ngIf="!group.is_member" class="text-[10px] bg-gray-100 px-1.5 rounded text-gray-400">🔒</span>
         </button>
       </div>
     </div>
 
-    <main class="max-w-2xl mx-auto p-4">
-      <div *ngIf="activeTab === 'info'" class="space-y-4 animate-fade-in">
+    <main *ngIf="activeTab === 'info'" class="max-w-2xl mx-auto p-4">
+      <div class="space-y-4 animate-fade-in">
         <div class="relative overflow-hidden bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl p-6 text-white shadow-xl mb-6">
           <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
           <div class="absolute -left-5 -bottom-5 w-24 h-24 bg-indigo-400/20 rounded-full blur-xl"></div>
@@ -117,13 +109,29 @@
                     (click)="goToActivity(activity.id)"
                     class="w-full text-left rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
               <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <div class="flex items-center gap-2">
-                    <span class="text-xl">{{ getActivityIcon(activity.activity_type) }}</span>
-                    <p class="font-bold text-gray-800">{{ activity.title }}</p>
+                <div class="min-w-0 flex items-start gap-3">
+                  <div *ngIf="activity.image_url; else groupActivityIcon" class="w-14 h-14 rounded-2xl overflow-hidden border border-indigo-100 bg-white flex-shrink-0">
+                    <img [src]="getActivityImageSrc(activity.id, activity.image_url)" [alt]="'Imagen de ' + activity.title" class="w-full h-full object-cover">
                   </div>
-                  <p class="mt-2 text-sm text-gray-600">📅 {{ activity.date | date:'dd/MM/yyyy HH:mm' }}</p>
-                  <p *ngIf="activity.location" class="text-sm text-gray-500 mt-1">📍 {{ activity.location }}</p>
+                  <ng-template #groupActivityIcon>
+                    <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-xl border border-indigo-100 flex-shrink-0">
+                      {{ getActivityIcon(activity.activity_type) }}
+                    </div>
+                  </ng-template>
+
+                  <div>
+                    <div class="flex items-center gap-2">
+                    <p class="font-bold text-gray-800">{{ activity.title }}</p>
+                    </div>
+                    <div *ngIf="activity.activity_types?.length" class="mt-2 flex flex-wrap gap-1.5">
+                      <span *ngFor="let type of activity.activity_types"
+                            class="rounded-full bg-white px-2 py-1 text-[11px] font-bold text-indigo-700 border border-indigo-100">
+                        {{ type === 'sport' ? 'Deporte' : type === 'social' ? 'Social' : type === 'culture' ? 'Cultura' : type === 'academic' ? 'Estudios' : 'Otro' }}
+                      </span>
+                    </div>
+                    <p class="mt-2 text-sm text-gray-600">📅 {{ activity.date | date:'dd/MM/yyyy HH:mm' }}</p>
+                    <p *ngIf="activity.location" class="text-sm text-gray-500 mt-1">📍 {{ activity.location }}</p>
+                  </div>
                 </div>
                 <div class="shrink-0 rounded-xl bg-white px-3 py-2 text-xs font-bold text-indigo-700 border border-indigo-100">
                   {{ activity.participant_count }} personas
@@ -181,16 +189,19 @@
           </button>
         </div>
       </div>
+    </main>
 
-      <div *ngIf="activeTab === 'chat'" class="h-[calc(100vh-180px)]">
-        <ng-container *ngIf="group.is_member; else lockedChat">
+    <section *ngIf="activeTab === 'chat'" class="fixed inset-x-0 bottom-0 top-[57px] bg-gray-50 z-30 animate-fade-in flex flex-col">
+      <div class="flex-1 min-h-0 max-w-2xl w-full mx-auto px-4 py-4">
+        <ng-container *ngIf="group.is_member; else lockedChatFullscreen">
           <app-chat-room
             [contextType]="'GROUP'"
-            [contextId]="group.id">
+            [contextId]="group.id"
+            class="h-full">
           </app-chat-room>
         </ng-container>
 
-        <ng-template #lockedChat>
+        <ng-template #lockedChatFullscreen>
           <div class="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
             <div class="text-5xl mb-4">🔒</div>
             <h3 class="text-lg font-bold text-gray-600 mb-2">Chat bloqueado</h3>
@@ -202,7 +213,7 @@
           </div>
         </ng-template>
       </div>
-    </main>
+    </section>
   </div>
 
   <app-confirmation-modal

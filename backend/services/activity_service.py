@@ -1,5 +1,5 @@
 from flask_smorest import Blueprint, abort
-from flask import session
+from flask import session, request, current_app, Response
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta, timezone
 from models.user.user import User, db
@@ -10,6 +10,7 @@ from models.attendance.attendance import ActivityAttendance
 from models.rules.rules import activity_rules
 from models.message.message import Message, MessageContextType
 from services.user_service import get_user_status_for_context
+from utils.minio_client import minio_client
 from models.activity.activity_schema import (
     ActivityCreateSchema, 
     ActivityUpdateSchema, 
@@ -17,10 +18,12 @@ from models.activity.activity_schema import (
     ActivityListSchema,
     JoinLeaveActivityResponseSchema,
     ActivityParticipantSchema,
-    ActivityDetailsResponseSchema
+    ActivityDetailsResponseSchema,
+    ActivityImageUploadSchema
 )
 
 blp = Blueprint("Activities", "activities", url_prefix="/api/activities", description="Activities management routes")
+VALID_ACTIVITY_TYPES = {"sport", "social", "culture", "academic", "other"}
 
 def require_auth():
     """Helper function to check if user is authenticated"""
@@ -35,6 +38,53 @@ def get_current_user():
     if not user:
         abort(401, message="User not found")
     return user
+
+def normalize_activity_types(raw_types, fallback_type=None):
+    source = raw_types
+    if source is None and fallback_type:
+        source = [fallback_type]
+    elif isinstance(source, str):
+        source = [item.strip() for item in source.split(',')]
+
+    normalized = []
+    seen = set()
+    for value in source or []:
+        if not value:
+            continue
+        normalized_value = value.strip()
+        if normalized_value in VALID_ACTIVITY_TYPES and normalized_value not in seen:
+            normalized.append(normalized_value)
+            seen.add(normalized_value)
+    return normalized
+
+def serialize_activity_types(activity_types=None, fallback_type=None):
+    normalized = normalize_activity_types(activity_types, fallback_type)
+    return ','.join(normalized) if normalized else None
+
+def deserialize_activity_types(activity: Activity):
+    return normalize_activity_types(activity.activity_type)
+
+def build_activity_payload(activity: Activity, current_user_id=None, attendance_confirmed=False, attendance_status=None):
+    activity_types = deserialize_activity_types(activity)
+    return {
+        'id': activity.id,
+        'title': activity.title,
+        'description': activity.description,
+        'activity_type': activity_types[0] if activity_types else None,
+        'activity_types': activity_types,
+        'image_url': activity.image_url,
+        'location': activity.location,
+        'group_id': activity.group_id,
+        'group_name': activity.group.name if activity.group else None,
+        'date': activity.date,
+        'rules': activity.rules,
+        'created_by': activity.created_by,
+        'created_at': activity.created_at,
+        'participant_count': activity.participant_count,
+        'is_participant': activity.is_participant(current_user_id) if current_user_id else False,
+        'attendance_confirmed': attendance_confirmed,
+        'attendance_status': attendance_status
+    }
 
 @blp.route("", methods=["POST"])
 @blp.arguments(ActivityCreateSchema)
@@ -54,7 +104,7 @@ def create_activity(args):
         activity = Activity(
             title=args['title'],
             description=args.get('description'),
-            activity_type=args.get('activity_type'),
+            activity_type=serialize_activity_types(args.get('activity_types'), args.get('activity_type')),
             location=args.get('location'),
             group_id=group.id if group else None,
             date=args['date'],
@@ -99,24 +149,7 @@ def create_activity(args):
         except Exception as e:
             print(f"Error checking activity creation achievements: {e}")
         
-        # Prepare response
-        response_data = {
-            'id': activity.id,
-            'title': activity.title,
-            'description': activity.description,
-            'activity_type': activity.activity_type,
-            'location': activity.location,
-            'group_id': activity.group_id,
-            'group_name': activity.group.name if activity.group else None,
-            'date': activity.date,
-            'rules': activity.rules,
-            'created_by': activity.created_by,
-            'created_at': activity.created_at,
-            'participant_count': activity.participant_count,
-            'is_participant': True
-        }
-        
-        return response_data
+        return build_activity_payload(activity, current_user.id, attendance_confirmed=True, attendance_status='confirmed')
         
     except IntegrityError:
         db.session.rollback()
@@ -162,22 +195,7 @@ def list_activities():
                     else:
                         attendance_status = 'absent'  # Marked absent by organizer after activity date
         
-        activities_data.append({
-            'id': activity.id,
-            'title': activity.title,
-            'description': activity.description,
-            'activity_type': activity.activity_type,
-            'location': activity.location,
-            'group_id': activity.group_id,
-            'group_name': activity.group.name if activity.group else None,
-            'date': activity.date,
-            'participant_count': activity.participant_count,
-            'is_participant': activity.is_participant(current_user.id),
-            'attendance_confirmed': attendance_confirmed,
-            'attendance_status': attendance_status,
-            'created_at': activity.created_at,
-            'created_by': activity.created_by
-        })
+        activities_data.append(build_activity_payload(activity, current_user.id, attendance_confirmed, attendance_status))
     
     return activities_data
 
@@ -211,25 +229,7 @@ def get_activity(activity_id):
             else:
                 attendance_status = 'absent'
     
-    response_data = {
-        'id': activity.id,
-        'title': activity.title,
-        'description': activity.description,
-        'activity_type': activity.activity_type,
-        'location': activity.location,
-        'group_id': activity.group_id,
-        'group_name': activity.group.name if activity.group else None,
-        'date': activity.date,
-        'rules': activity.rules,
-        'created_by': activity.created_by,
-        'created_at': activity.created_at,
-        'participant_count': activity.participant_count,
-        'is_participant': activity.is_participant(current_user.id),
-        'attendance_confirmed': attendance_confirmed,
-        'attendance_status': attendance_status
-    }
-    
-    return response_data
+    return build_activity_payload(activity, current_user.id, attendance_confirmed, attendance_status)
 
 @blp.route("/<int:activity_id>/details", methods=["GET"])
 @blp.response(200, ActivityDetailsResponseSchema)
@@ -308,23 +308,14 @@ def get_activity_details(activity_id):
             'warning_count': user_status['total_warnings']
         })
 
-    return {
-        'id': activity.id,
-        'title': activity.title,
-        'description': activity.description,
-        'activity_type': activity.activity_type,
-        'location': activity.location,
-        'group_id': activity.group_id,
-        'group_name': activity.group.name if activity.group else None,
-        'date': activity.date,
-        'rules': activity.rules,
-        'created_by': activity.created_by,
-        'created_at': activity.created_at,
-        'is_participant': activity.is_participant(current_user.id),
-        'attendance_confirmed': current_user_attendance_confirmed,
-        'participants': participants,
-        'attendance_status': current_user_attendance_status
-    }
+    response_data = build_activity_payload(
+        activity,
+        current_user.id,
+        current_user_attendance_confirmed,
+        current_user_attendance_status
+    )
+    response_data['participants'] = participants
+    return response_data
 
 @blp.route("/<int:activity_id>", methods=["PUT"])
 @blp.arguments(ActivityUpdateSchema)
@@ -350,8 +341,8 @@ def update_activity(args, activity_id):
             activity.title = args['title']
         if 'description' in args:
             activity.description = args['description']
-        if 'activity_type' in args:
-            activity.activity_type = args['activity_type']
+        if 'activity_types' in args or 'activity_type' in args:
+            activity.activity_type = serialize_activity_types(args.get('activity_types'), args.get('activity_type'))
         if 'location' in args:
             activity.location = args['location']
         if 'group_id' in args:
@@ -363,27 +354,91 @@ def update_activity(args, activity_id):
         
         db.session.commit()
         
-        response_data = {
-            'id': activity.id,
-            'title': activity.title,
-            'description': activity.description,
-            'activity_type': activity.activity_type,
-            'location': activity.location,
-            'group_id': activity.group_id,
-            'group_name': activity.group.name if activity.group else None,
-            'date': activity.date,
-            'rules': activity.rules,
-            'created_by': activity.created_by,
-            'created_at': activity.created_at,
-            'participant_count': activity.participant_count,
-            'is_participant': activity.is_participant(current_user.id)
-        }
-        
-        return response_data
+        return build_activity_payload(activity, current_user.id)
         
     except IntegrityError:
         db.session.rollback()
         abort(400, message="Error updating activity")
+
+@blp.route("/<int:activity_id>/image", methods=["PUT"])
+@blp.arguments(ActivityImageUploadSchema, location="files")
+@blp.response(200, ActivityResponseSchema)
+def upload_activity_image(files, activity_id):
+    """Upload or replace the representative image of an activity."""
+    current_user = get_current_user()
+    activity = Activity.query.get_or_404(activity_id)
+
+    if activity.created_by != current_user.id:
+        abort(403, message="Only the activity creator can update the image")
+
+    if 'image' not in request.files:
+        abort(400, message="No file provided")
+
+    file = request.files['image']
+    if not file or file.filename == '':
+        abort(400, message="No file selected")
+
+    try:
+        file_data = file.read()
+        if len(file_data) > 16 * 1024 * 1024:
+            abort(400, message="File too large. Maximum size is 16MB")
+
+        if activity.image_url:
+            minio_client.delete_object_url(activity.image_url)
+
+        activity.image_url = minio_client.upload_activity_image(file_data, activity.id, file.content_type)
+        db.session.commit()
+        return build_activity_payload(activity, current_user.id)
+    except ValueError as e:
+        abort(400, message=str(e))
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Failed to upload activity image: {e}")
+        abort(500, message="Failed to upload image")
+
+@blp.route("/<int:activity_id>/image", methods=["DELETE"])
+@blp.response(200, ActivityResponseSchema)
+def delete_activity_image(activity_id):
+    """Delete the representative image of an activity."""
+    current_user = get_current_user()
+    activity = Activity.query.get_or_404(activity_id)
+
+    if activity.created_by != current_user.id:
+        abort(403, message="Only the activity creator can delete the image")
+
+    if not activity.image_url:
+        abort(404, message="No image to delete")
+
+    try:
+        minio_client.delete_object_url(activity.image_url)
+        activity.image_url = None
+        db.session.commit()
+        return build_activity_payload(activity, current_user.id)
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Failed to delete activity image: {e}")
+        abort(500, message="Failed to delete image")
+
+@blp.route("/<int:activity_id>/image/stream", methods=["GET"])
+def stream_activity_image(activity_id):
+    """Stream the representative image of an activity."""
+    activity = Activity.query.get_or_404(activity_id)
+
+    if not activity.image_url:
+        abort(404, message="No image")
+
+    object_name = minio_client._extract_filename_from_url(activity.image_url) or activity.image_url
+
+    try:
+        data, content_type = minio_client.get_object_bytes(object_name)
+        return Response(
+            data,
+            mimetype=content_type,
+            headers={'Cache-Control': 'public, max-age=3600'}
+        )
+    except Exception as e:
+        current_app.logger.error(f"Failed to fetch activity image: {e}")
+        abort(500, message="Failed to fetch image")
 
 @blp.route("/<int:activity_id>", methods=["DELETE"])
 @blp.response(204)
@@ -398,6 +453,8 @@ def delete_activity(activity_id):
         abort(403, message="Only the activity creator can delete this activity")
 
     try:
+        if activity.image_url:
+            minio_client.delete_object_url(activity.image_url)
         ActivityAttendance.query.filter_by(activity_id=activity_id).delete(synchronize_session=False)
         db.session.execute(activity_rules.delete().where(activity_rules.c.activity_id == activity_id))
         db.session.execute(activity_participants.delete().where(activity_participants.c.activity_id == activity_id))

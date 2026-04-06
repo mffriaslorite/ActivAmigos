@@ -4,10 +4,16 @@
      [attr.aria-label]="'Ver detalles de ' + activity.title">
   
   <div class="flex items-start gap-4">
-    
-    <div [class]="'w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-3xl ' + getIconBackground()">
-      {{ getActivityIcon() }}
+    <div *ngIf="activity.image_url; else activityIcon"
+         class="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 shadow-sm border border-blue-100 bg-blue-50">
+      <img [src]="getActivityImageSrc()" [alt]="'Imagen de ' + activity.title" class="w-full h-full object-cover">
     </div>
+
+    <ng-template #activityIcon>
+      <div [class]="'w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-3xl ' + getIconBackground()">
+        {{ getActivityIcon() }}
+      </div>
+    </ng-template>
     
     <div class="flex-1 min-w-0">
       
@@ -25,6 +31,13 @@
           📍 {{ activity.location }}
         </span>
       </p>
+
+      <div *ngIf="getActivityTypes().length > 0" class="mb-3 flex flex-wrap gap-2">
+        <span *ngFor="let type of getActivityTypes()"
+              class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700 border border-blue-100">
+          <span>{{ getActivityTypeLabel(type) }}</span>
+        </span>
+      </div>
 
       <div class="flex items-center justify-between mt-2">
         

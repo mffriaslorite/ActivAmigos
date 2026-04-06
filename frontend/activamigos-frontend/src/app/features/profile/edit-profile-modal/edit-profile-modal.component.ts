@@ -41,7 +41,8 @@ export class ProfileEditModalComponent implements OnInit, OnDestroy {
     this.profileForm = this.fb.group({
       first_name: ['', [Validators.required, Validators.minLength(2)]],
       last_name: ['', [Validators.required, Validators.minLength(2)]],
-      bio: ['', [Validators.maxLength(500)]]
+      bio: ['', [Validators.maxLength(500)]],
+      points_display_mode: ['XP']
     });
   }
 
@@ -50,7 +51,8 @@ export class ProfileEditModalComponent implements OnInit, OnDestroy {
       this.profileForm.patchValue({
         first_name: this.currentUser.first_name || '',
         last_name: this.currentUser.last_name || '',
-        bio: this.currentUser.bio || ''
+        bio: this.currentUser.bio || '',
+        points_display_mode: this.currentUser.points_display_mode || 'XP'
       });
     }
   }

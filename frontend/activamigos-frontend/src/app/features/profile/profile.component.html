@@ -55,6 +55,7 @@
         <div *ngIf="gamificationState" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 animate-fade-in">
           <app-level-progress-bar
             [points]="gamificationState.points"
+            [displayMode]="pointsDisplayMode"
             [showPoints]="true"
             [showLevel]="true">
           </app-level-progress-bar>
@@ -83,7 +84,12 @@
 
               <div class="text-right flex-shrink-0">
                  <span class="block text-xs font-bold text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full mb-1">
-                   +{{ ua.achievement.points_reward }} pts
+                   <ng-container *ngIf="pointsDisplayMode === 'STARS'; else rewardPointsProfile">
+                     ⭐ {{ formatReward(ua.achievement.points_reward) }}
+                   </ng-container>
+                   <ng-template #rewardPointsProfile>
+                     +{{ formatReward(ua.achievement.points_reward) }}
+                   </ng-template>
                  </span>
                  <span class="text-[10px] text-gray-400">{{ formatDate(ua.date_earned) }}</span>
               </div>

@@ -9,6 +9,7 @@ class Activity(db.Model):
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(500), nullable=True)
     activity_type = db.Column(db.String(50), nullable=True)
+    image_url = db.Column(db.String(255), nullable=True)
     location = db.Column(db.String(255), nullable=True)
     group_id = db.Column(db.Integer, db.ForeignKey('groups.id'), nullable=True)
     date = db.Column(db.DateTime, nullable=False)

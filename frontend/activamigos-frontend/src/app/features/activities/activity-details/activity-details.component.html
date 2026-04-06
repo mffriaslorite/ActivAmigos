@@ -16,7 +16,15 @@
       <div class="flex items-start justify-between gap-4">
         <div>
           <div class="flex items-center gap-2 mb-2">
-            <span class="text-3xl bg-white/20 p-2 rounded-xl">{{ getActivityIcon() }}</span>
+            <div *ngIf="activityDetails.image_url; else activityHeaderIcon"
+                 class="h-16 w-16 overflow-hidden rounded-2xl border border-white/20 bg-white/10 shadow-lg">
+              <img [src]="getActivityImageSrc()"
+                   [alt]="'Imagen de ' + activityDetails.title"
+                   class="h-full w-full object-cover">
+            </div>
+            <ng-template #activityHeaderIcon>
+              <span class="text-3xl bg-white/20 p-2 rounded-xl">{{ getActivityIcon() }}</span>
+            </ng-template>
           </div>
           <h1 class="text-2xl font-bold leading-tight">{{ activityDetails.title }}</h1>
           <p class="text-blue-100 mt-1 flex items-center gap-2 text-sm">
@@ -38,6 +46,7 @@
           </button>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -55,7 +64,7 @@
     <p class="font-medium">{{ feedbackMessage }}</p>
   </div>
 
-  <main class="flex-1 px-4 py-6 max-w-4xl w-full mx-auto space-y-6" *ngIf="!isLoading && activityDetails">
+  <main class="flex-1 px-4 py-6 max-w-4xl w-full mx-auto space-y-6" *ngIf="!isLoading && activityDetails && activeTab === 'info'">
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
       <div *ngIf="!activityDetails.is_participant" class="text-center">
         <p class="text-gray-600 mb-3">¿Te apetece ir a esta actividad?</p>
@@ -110,13 +119,11 @@
 
     <div class="flex border-b border-gray-200 mb-4 bg-gray-50 pt-2">
       <button (click)="setTab('info')"
-              class="flex-1 pb-3 font-medium text-sm transition-colors border-b-2"
-              [ngClass]="activeTab === 'info' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'">
+              class="flex-1 pb-3 font-medium text-sm transition-colors border-b-2 border-blue-500 text-blue-600">
         Información y participantes
       </button>
       <button (click)="setTab('chat')"
-              class="flex-1 pb-3 font-medium text-sm transition-colors border-b-2 flex items-center justify-center gap-2"
-              [ngClass]="activeTab === 'chat' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'">
+              class="flex-1 pb-3 font-medium text-sm transition-colors border-b-2 border-transparent text-gray-500 flex items-center justify-center gap-2">
         Chat
         <span *ngIf="!activityDetails.is_participant" class="text-[10px] bg-gray-200 px-1.5 rounded text-gray-500">🔒</span>
       </button>
@@ -126,10 +133,17 @@
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
         <h3 class="font-bold text-gray-800 mb-2 text-lg">📝 Descripción</h3>
         <p class="text-gray-600 leading-relaxed">{{ activityDetails.description || 'Sin descripción detallada.' }}</p>
-        <div *ngIf="getActivityTypeInfo() as activityTypeInfo" class="mt-4 flex items-center gap-2 text-sm text-gray-600">
-          <span class="text-base">{{ activityTypeInfo.icon }}</span>
-          <span>Tipo de actividad:</span>
-          <span class="font-bold text-gray-800">{{ activityTypeInfo.label }}</span>
+        <div *ngIf="getActivityTypes().length > 0" class="mt-4">
+          <p class="text-sm font-bold text-gray-700 mb-2">Tipos de actividad</p>
+          <div class="flex flex-wrap gap-2">
+            <span *ngFor="let type of getActivityTypes()"
+                  class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-sm font-bold text-blue-700 border border-blue-100">
+              <ng-container *ngIf="getActivityTypeInfo(type) as activityTypeInfo">
+                <span class="text-base">{{ activityTypeInfo.icon }}</span>
+                <span>{{ activityTypeInfo.label }}</span>
+              </ng-container>
+            </span>
+          </div>
         </div>
         <button *ngIf="activityDetails.group_id && activityDetails.group_name"
                 (click)="goToLinkedGroup()"
@@ -202,18 +216,21 @@
         </div>
       </div>
     </div>
+  </main>
 
-    <div *ngIf="activeTab === 'chat'" class="h-[600px] animate-fade-in flex flex-col">
-      <ng-container *ngIf="activityDetails.is_participant; else lockedChat">
+  <section *ngIf="!isLoading && activityDetails && activeTab === 'chat'"
+           class="fixed inset-x-0 bottom-0 top-[57px] bg-gray-50 z-30 animate-fade-in flex flex-col">
+    <div class="flex-1 min-h-0 px-4 py-4 max-w-4xl w-full mx-auto">
+      <ng-container *ngIf="activityDetails.is_participant; else lockedChatFullscreen">
         <app-chat-room
           *ngIf="chatRoom"
           [contextType]="'ACTIVITY'"
           [contextId]="chatRoom.id"
-          class="flex-1">
+          class="h-full">
         </app-chat-room>
       </ng-container>
 
-      <ng-template #lockedChat>
+      <ng-template #lockedChatFullscreen>
         <div class="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
           <div class="text-5xl mb-4">🔒</div>
           <h3 class="text-lg font-bold text-gray-600 mb-2">Chat bloqueado</h3>
@@ -225,7 +242,7 @@
         </div>
       </ng-template>
     </div>
-  </main>
+  </section>
 </div>
 
 <app-attendance-modal
@@ -276,11 +293,11 @@
   </div>
 </div>
 
-<div *ngIf="isEditingActivity" class="fixed inset-0 z-40 bg-white flex flex-col animate-fade-in">
+<div *ngIf="isEditingActivity && activityDetails" class="fixed inset-0 z-40 bg-white flex flex-col animate-fade-in">
   <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
     <div>
       <h2 class="text-xl font-bold text-gray-900 mt-2">Editar actividad</h2>
-      <p class="text-xs text-gray-500 mt-1">Cambia la información principal de forma sencilla.</p>
+      <p class="text-xs text-gray-500 mt-1">Paso {{ editCurrentStep }} de 4</p>
     </div>
     <button (click)="cancelEditingActivity()" [disabled]="isActionLoading" class="text-3xl mb-4 p-3 min-w-[48px] min-h-[48px] flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
       ✕
@@ -289,69 +306,130 @@
 
   <div class="flex-1 overflow-y-auto p-6 bg-gray-50/50">
     <div class="max-w-2xl mx-auto space-y-4">
-      <div>
-        <label class="block text-sm font-bold text-gray-700 mb-2">Título</label>
-        <input [(ngModel)]="editActivityData.title"
-               type="text"
-               maxlength="50"
-               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all bg-white">
-      </div>
+      <div *ngIf="editCurrentStep === 1">
+        <div>
+          <label class="block text-sm font-bold text-gray-700 mb-2">Título</label>
+          <input [(ngModel)]="editActivityData.title"
+                 type="text"
+                 maxlength="50"
+                 class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all bg-white">
+        </div>
 
-      <div>
-        <label class="block text-sm font-bold text-gray-700 mb-2">Tipo de actividad</label>
-        <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <button type="button"
-                  *ngFor="let type of activityTypes"
-                  (click)="editActivityData.activity_type = type.value"
-                  class="flex items-center gap-2 px-4 py-3 rounded-full border transition-all"
-                  [ngClass]="editActivityData.activity_type === type.value
-                    ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-500'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:bg-gray-50'">
-            <span class="text-xl">{{ type.icon }}</span>
-            <span class="text-sm font-bold whitespace-nowrap">{{ type.label }}</span>
-          </button>
+        <div class="mt-4">
+          <label class="block text-sm font-bold text-gray-700 mb-2">Tipo de actividad</label>
+          <p class="text-xs text-gray-500 mb-2">Puedes elegir más de uno si encaja mejor.</p>
+          <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <button type="button"
+                    *ngFor="let type of activityTypes"
+                    (click)="toggleEditActivityType(type.value)"
+                    class="flex items-center gap-2 px-4 py-3 rounded-full border transition-all"
+                    [ngClass]="isEditActivityTypeSelected(type.value)
+                      ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-500'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:bg-gray-50'">
+              <span class="text-xl">{{ type.icon }}</span>
+              <span class="text-sm font-bold whitespace-nowrap">{{ type.label }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="block text-sm font-bold text-gray-700 mb-2">Fecha y hora</label>
+          <input [(ngModel)]="editActivityData.date"
+                 type="datetime-local"
+                 class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all bg-white">
         </div>
       </div>
 
-      <div>
-        <label class="block text-sm font-bold text-gray-700 mb-2">Fecha y hora</label>
-        <input [(ngModel)]="editActivityData.date"
-               type="datetime-local"
-               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all bg-white">
+      <div *ngIf="editCurrentStep === 2">
+        <input #editActivityImageInput type="file" class="hidden" accept="image/*" (change)="onEditImageSelected($event)">
+
+        <label class="block text-sm font-bold text-gray-700 mb-2">Imagen de la actividad <span class="font-normal text-gray-400">(Opcional)</span></label>
+        <div *ngIf="selectedEditImagePreviewUrl || (!removeExistingImageOnSave && activityDetails.image_url); else emptyEditImageState" class="rounded-3xl border border-blue-100 bg-blue-50 p-3">
+          <img [src]="selectedEditImagePreviewUrl || getActivityImageSrc()"
+               alt="Vista previa de la actividad"
+               class="h-52 w-full rounded-2xl object-cover">
+          <div class="mt-3 grid grid-cols-2 gap-3">
+            <button type="button"
+                    (click)="openEditImagePicker()"
+                    class="rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100">
+              🖼️ Cambiar imagen
+            </button>
+            <button type="button"
+                    (click)="markExistingImageForRemoval()"
+                    class="rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-bold text-red-600 transition-colors hover:bg-red-50">
+              🗑️ Quitar imagen
+            </button>
+          </div>
+        </div>
+
+        <ng-template #emptyEditImageState>
+          <button type="button"
+                  (click)="openEditImagePicker()"
+                  class="w-full rounded-3xl border-2 border-dashed border-blue-200 bg-blue-50/60 px-4 py-6 text-left transition-colors hover:bg-blue-50">
+            <div class="flex items-center gap-4">
+              <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-3xl shadow-sm">🖼️</span>
+              <div>
+                <p class="font-bold text-blue-900">Añadir una imagen</p>
+                <p class="text-sm text-blue-700">Ayuda a reconocer la actividad más rápido.</p>
+              </div>
+            </div>
+          </button>
+        </ng-template>
       </div>
 
-      <div>
+      <div *ngIf="editCurrentStep === 3">
         <label class="block text-sm font-bold text-gray-700 mb-2">Lugar</label>
         <input [(ngModel)]="editActivityData.location"
                type="text"
                maxlength="50"
                class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all bg-white">
+
+        <div class="mt-4">
+          <label class="block text-sm font-bold text-gray-700 mb-2">Descripción</label>
+          <textarea [(ngModel)]="editActivityData.description"
+                    rows="4"
+                    maxlength="200"
+                    class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all resize-none bg-white"></textarea>
+        </div>
       </div>
 
-      <div>
-        <label class="block text-sm font-bold text-gray-700 mb-2">Descripción</label>
-        <textarea [(ngModel)]="editActivityData.description"
-                  rows="4"
-                  maxlength="200"
-                  class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all resize-none bg-white"></textarea>
-      </div>
+      <div *ngIf="editCurrentStep === 4">
+        <div class="rounded-2xl bg-blue-50 border border-blue-100 p-4">
+          <h3 class="font-bold text-blue-900 text-base">Normas de convivencia</h3>
+          <p class="text-sm text-blue-800 mt-1">Puedes revisar y cambiar las normas asociadas a esta actividad.</p>
+        </div>
 
-      <button (click)="openRulesEditor()"
-              type="button"
-              class="w-full py-3 border-2 border-blue-200 text-blue-700 rounded-xl font-bold hover:bg-blue-50 transition-colors bg-white">
-        📋 Editar normas de convivencia
-      </button>
+        <button (click)="openRulesEditor()"
+                type="button"
+                class="mt-4 w-full py-3 border-2 border-blue-200 text-blue-700 rounded-xl font-bold hover:bg-blue-50 transition-colors bg-white">
+          📋 Editar normas de convivencia
+        </button>
+      </div>
     </div>
   </div>
 
   <div class="border-t border-gray-100 bg-white p-6">
     <div class="max-w-2xl mx-auto grid gap-3 sm:grid-cols-2">
-      <button (click)="saveActivityChanges()"
-              [disabled]="isActionLoading || !editActivityData.title.trim() || !editActivityData.date"
+      <button *ngIf="editCurrentStep < 4"
+              (click)="goToNextEditStep()"
+              [disabled]="isActionLoading"
+              class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50">
+        Siguiente
+      </button>
+      <button *ngIf="editCurrentStep === 4"
+              (click)="saveActivityChanges()"
+              [disabled]="isActionLoading || !editActivityData.title.trim() || !editActivityData.date || editActivityData.activity_types.length === 0"
               class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50">
         {{ isActionLoading ? 'Guardando...' : 'Guardar cambios' }}
       </button>
-      <button (click)="cancelEditingActivity()"
+      <button *ngIf="editCurrentStep > 1"
+              (click)="goToPreviousEditStep()"
+              [disabled]="isActionLoading"
+              class="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all active:scale-95 disabled:opacity-50">
+        Atrás
+      </button>
+      <button *ngIf="editCurrentStep === 1"
+              (click)="cancelEditingActivity()"
               [disabled]="isActionLoading"
               class="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all active:scale-95 disabled:opacity-50">
         Cancelar

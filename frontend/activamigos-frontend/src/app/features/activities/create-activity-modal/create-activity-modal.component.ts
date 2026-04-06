@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivitiesService } from '../../../core/services/activities.service';
@@ -18,12 +18,15 @@ export class CreateActivityModalComponent implements OnInit {
   @Input() isVisible = false;
   @Output() close = new EventEmitter<void>();
   @Output() activityCreated = new EventEmitter<void>();
+  @ViewChild('activityImageInput') activityImageInput?: ElementRef<HTMLInputElement>;
 
   activityForm: FormGroup;
   isSubmitting = false;
-  currentStep: 1 | 2 | 3 = 1;
+  currentStep: 1 | 2 | 3 | 4 = 1;
   selectedRuleIds: number[] = [];
   availableGroups: Group[] = [];
+  selectedImageFile: File | null = null;
+  selectedImagePreviewUrl: string | null = null;
 
   activityTypes = [
     { value: 'sport', label: 'Deporte', icon: '⚽' },
@@ -59,7 +62,7 @@ export class CreateActivityModalComponent implements OnInit {
     return this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
       description: ['', [Validators.maxLength(200)]],
-      activity_type: ['', [Validators.required]],
+      activity_types: [[], [Validators.required]],
       location: ['', [Validators.maxLength(50)]],
       group_id: [null],
       date: [localIsoString, [Validators.required]],
@@ -93,17 +96,20 @@ export class CreateActivityModalComponent implements OnInit {
     this.errorMessage = '';
   }
 
-  goToRulesStep() {
+  goToGroupStep() {
     this.currentStep = 3;
     this.errorMessage = '';
   }
 
+  goToRulesStep() {
+    this.currentStep = 4;
+    this.errorMessage = '';
+  }
+
   prevStep() {
-    if (this.currentStep === 3) {
-      this.currentStep = 2;
-    } else {
-      this.currentStep = 1;
-    }
+    if (this.currentStep === 4) this.currentStep = 3;
+    else if (this.currentStep === 3) this.currentStep = 2;
+    else this.currentStep = 1;
     this.errorMessage = '';
   }
 
@@ -132,7 +138,7 @@ export class CreateActivityModalComponent implements OnInit {
     const activityData: ActivityCreate = {
       title: formValue.title.trim(),
       description: formValue.description?.trim(),
-      activity_type: formValue.activity_type,
+      activity_types: formValue.activity_types,
       location: formValue.location?.trim(),
       group_id: formValue.group_id || null,
       date: new Date(formValue.date).toISOString(),
@@ -140,13 +146,18 @@ export class CreateActivityModalComponent implements OnInit {
     };
 
     this.activitiesService.createActivity(activityData).subscribe({
-      next: () => {
-        this.successMessage = '¡Actividad creada con éxito!';
+      next: (activity) => {
+        if (this.selectedImageFile) {
+          this.activitiesService.uploadActivityImage(activity.id, this.selectedImageFile).subscribe({
+            next: () => this.handleCreateSuccess(),
+            error: () => {
+              this.handleCreateSuccess('Actividad creada, pero no hemos podido subir la imagen.');
+            }
+          });
+          return;
+        }
 
-        setTimeout(() => {
-          this.activityCreated.emit();
-          this.closeModal();
-        }, 1500);
+        this.handleCreateSuccess();
       },
       error: () => {
         this.errorMessage = 'No se pudo crear la actividad. Inténtalo de nuevo.';
@@ -173,7 +184,8 @@ export class CreateActivityModalComponent implements OnInit {
 
     this.activityForm.patchValue({
       date: localIsoString,
-      group_id: null
+      group_id: null,
+      activity_types: []
     });
 
     this.currentStep = 1;
@@ -181,6 +193,7 @@ export class CreateActivityModalComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
     this.selectedRuleIds = [];
+    this.removeSelectedImage();
   }
 
   isFieldInvalid(fieldName: string): boolean {
@@ -196,6 +209,67 @@ export class CreateActivityModalComponent implements OnInit {
   }
 
   selectActivityType(type: string) {
-    this.activityForm.patchValue({ activity_type: type });
+    const currentTypes: string[] = this.activityForm.get('activity_types')?.value || [];
+    const nextTypes = currentTypes.includes(type)
+      ? currentTypes.filter(value => value !== type)
+      : [...currentTypes, type];
+
+    this.activityForm.patchValue({ activity_types: nextTypes });
+    this.activityForm.get('activity_types')?.markAsTouched();
+  }
+
+  isActivityTypeSelected(type: string): boolean {
+    const currentTypes: string[] = this.activityForm.get('activity_types')?.value || [];
+    return currentTypes.includes(type);
+  }
+
+  openImagePicker() {
+    this.activityImageInput?.nativeElement.click();
+  }
+
+  onImageSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.errorMessage = 'Selecciona una imagen válida.';
+      input.value = '';
+      return;
+    }
+
+    if (file.size > 16 * 1024 * 1024) {
+      this.errorMessage = 'La imagen es demasiado grande. El máximo es 16 MB.';
+      input.value = '';
+      return;
+    }
+
+    this.selectedImageFile = file;
+    if (this.selectedImagePreviewUrl) {
+      URL.revokeObjectURL(this.selectedImagePreviewUrl);
+    }
+    this.selectedImagePreviewUrl = URL.createObjectURL(file);
+    this.errorMessage = '';
+  }
+
+  removeSelectedImage() {
+    this.selectedImageFile = null;
+    if (this.selectedImagePreviewUrl) {
+      URL.revokeObjectURL(this.selectedImagePreviewUrl);
+    }
+    this.selectedImagePreviewUrl = null;
+    if (this.activityImageInput?.nativeElement) {
+      this.activityImageInput.nativeElement.value = '';
+    }
+  }
+
+  private handleCreateSuccess(message = '¡Actividad creada con éxito!') {
+    this.successMessage = message;
+    this.isSubmitting = false;
+
+    setTimeout(() => {
+      this.activityCreated.emit();
+      this.closeModal();
+    }, 1500);
   }
 }

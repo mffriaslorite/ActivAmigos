@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, finalize, takeUntil } from 'rxjs';
 import { GroupsService } from '../../../core/services/groups.service';
+import { ActivitiesService } from '../../../core/services/activities.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ModerationService } from '../../../core/services/moderation.service';
 import { UserService } from '../../../core/services/user.service';
@@ -62,6 +63,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private groupsService: GroupsService,
+    private activitiesService: ActivitiesService,
     private authService: AuthService,
     private moderationService: ModerationService,
     private userService: UserService,
@@ -286,7 +288,16 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     }
   }
 
+  getActivityImageSrc(activityId: number, imageUrl?: string | null): string | null {
+    if (!imageUrl) return null;
+    return this.activitiesService.getActivityImageSrc(activityId, imageUrl);
+  }
+
   goBack() {
+    if (this.activeTab === 'chat') {
+      this.activeTab = 'info';
+      return;
+    }
     this.router.navigate(['/groups']);
   }
 

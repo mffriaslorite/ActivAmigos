@@ -78,7 +78,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(groups => this.userGroups = groups);
 
-    this.activitiesService.getUpcomingActivities()
+    this.activitiesService.getUserActivities()
       .pipe(takeUntil(this.destroy$))
       .subscribe(activities => this.upcomingActivities = activities);
 
@@ -136,6 +136,19 @@ export class ProfileComponent implements OnInit, OnDestroy {
     if (!dateString) return '';
     const date = new Date(dateString.endsWith('Z') ? dateString : dateString + 'Z');
     return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  get pointsDisplayMode(): 'XP' | 'STARS' {
+    return this.currentUser?.points_display_mode || 'XP';
+  }
+
+  formatReward(points: number): string {
+    if (this.pointsDisplayMode === 'STARS') {
+      const stars = Math.max(1, Math.round(points / 25));
+      return `${stars} estrella${stars === 1 ? '' : 's'}`;
+    }
+
+    return `${points} pts`;
   }
   
   logout() {

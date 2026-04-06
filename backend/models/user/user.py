@@ -13,6 +13,10 @@ class UserRole(enum.Enum):
 class PasswordHintType(enum.Enum):
     ANIMAL_LIST = "ANIMAL_LIST"
 
+class PointsDisplayMode(enum.Enum):
+    XP = "XP"
+    STARS = "STARS"
+
 class User(db.Model):
     __tablename__ = 'users'
 
@@ -30,6 +34,7 @@ class User(db.Model):
     role = db.Column(db.Enum(UserRole), default=UserRole.USER, nullable=False)
     password_hint_type = db.Column(db.Enum(PasswordHintType), nullable=True)
     password_hint_value = db.Column(db.String(255), nullable=True)
+    points_display_mode = db.Column(db.Enum(PointsDisplayMode), default=PointsDisplayMode.XP, nullable=False)
 
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

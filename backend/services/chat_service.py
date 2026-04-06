@@ -1,10 +1,11 @@
-from flask import Blueprint, request, session, current_app
+from flask import Blueprint, Response, request, session, current_app
 from flask_smorest import Api, Blueprint
 from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
 from marshmallow import ValidationError
 from datetime import datetime, timezone
 import functools
 import logging
+from uuid import uuid4
 
 from models.user.user import db, User
 from models.group.group import Group
@@ -15,6 +16,7 @@ from models.message.message_schema import (
     MessageCreateSchema, 
     MessageListQuerySchema
 )
+from utils.minio_client import minio_client
 # from utils.decorators import login_required
 
 # Set up logging
@@ -31,6 +33,55 @@ blp = Blueprint(
 
 # SocketIO instance will be initialized in app.py
 socketio = None
+ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/jpg', 'image/png', 'image/webp'}
+ALLOWED_AUDIO_TYPES = {
+    'audio/webm',
+    'audio/ogg',
+    'audio/wav',
+    'audio/x-wav',
+    'audio/mpeg',
+    'audio/mp3',
+    'audio/mp4',
+    'audio/aac'
+}
+
+
+def normalize_content_type(content_type):
+    return (content_type or '').split(';', 1)[0].strip().lower()
+
+
+def normalize_context_type(context_type):
+    normalized = (context_type or '').upper()
+    if normalized not in {'GROUP', 'ACTIVITY'}:
+        raise ValueError('Invalid context type')
+    return normalized
+
+
+def get_media_type_from_content_type(content_type):
+    normalized = normalize_content_type(content_type)
+    if normalized in ALLOWED_IMAGE_TYPES:
+        return 'IMAGE'
+    if normalized in ALLOWED_AUDIO_TYPES:
+        return 'AUDIO'
+    raise ValueError('Formato no compatible. Solo se permiten imagenes y audios.')
+
+
+def get_file_extension(content_type):
+    extension_map = {
+        'image/jpeg': '.jpg',
+        'image/jpg': '.jpg',
+        'image/png': '.png',
+        'image/webp': '.webp',
+        'audio/webm': '.webm',
+        'audio/ogg': '.ogg',
+        'audio/wav': '.wav',
+        'audio/x-wav': '.wav',
+        'audio/mpeg': '.mp3',
+        'audio/mp3': '.mp3',
+        'audio/mp4': '.m4a',
+        'audio/aac': '.aac'
+    }
+    return extension_map.get(normalize_content_type(content_type), '')
 
 
 def resolve_chat_room(context_type, context_id, user_id):
@@ -48,7 +99,15 @@ def resolve_chat_room(context_type, context_id, user_id):
     raise ValueError('Invalid context type')
 
 
-def create_message_and_broadcast(user_id, context_type, context_id, content):
+def create_message_and_broadcast(
+    user_id,
+    context_type,
+    context_id,
+    content,
+    message_type='TEXT',
+    attachment_object_name=None,
+    attachment_content_type=None
+):
     room_name = resolve_chat_room(context_type, context_id, user_id)
 
     if not can_user_chat(context_type, context_id, user_id):
@@ -56,10 +115,13 @@ def create_message_and_broadcast(user_id, context_type, context_id, content):
 
     message_context = MessageContextType.GROUP if context_type == 'GROUP' else MessageContextType.ACTIVITY
     message = Message(
-        content=content,
+        content=content or None,
         sender_id=user_id,
         context_type=message_context,
-        context_id=context_id
+        context_id=context_id,
+        message_type=message_type,
+        attachment_object_name=attachment_object_name,
+        attachment_content_type=normalize_content_type(attachment_content_type) if attachment_content_type else None
     )
 
     db.session.add(message)
@@ -77,6 +139,17 @@ def create_message_and_broadcast(user_id, context_type, context_id, content):
         socketio.emit('new_message', message_dict, room=room_name)
 
     return message_dict
+
+
+def upload_chat_attachment(file_data, user_id, context_type, context_id, content_type):
+    media_type = get_media_type_from_content_type(content_type)
+    normalized_content_type = normalize_content_type(content_type)
+    object_name = (
+        f"chat_attachments/{context_type.lower()}/{context_id}/{user_id}/"
+        f"{uuid4()}{get_file_extension(normalized_content_type)}"
+    )
+    minio_client.upload_bytes(object_name, file_data, normalized_content_type)
+    return media_type, object_name, normalized_content_type
 
 def can_user_chat(context_type, context_id, user_id):
     """Check if user is allowed to chat in this context"""
@@ -246,7 +319,7 @@ def init_socketio(app, socketio_instance):
                 context_id,
                 message_data['content']
             )
-            logger.info(f"✅ Message {message_dict['id']} sent to {room_name}")
+            logger.info(f"✅ Message {message_dict['id']} sent to {context_type}:{context_id}")
             
             # Confirm to sender
             emit('message_sent', {
@@ -481,3 +554,95 @@ def post_chat_message(message_data):
         logger.error(f"Error posting message via HTTP: {e}")
         db.session.rollback()
         blp.abort(500, message="Failed to send message")
+
+
+@blp.route("/messages/attachments", methods=["POST"])
+@require_authentication
+def post_chat_attachment():
+    """Send an image or audio message over HTTP and rebroadcast it to the socket room."""
+    user_id = session.get('user_id')
+    file = request.files.get('attachment')
+
+    if not file or not file.filename:
+        blp.abort(400, message="Selecciona una imagen o un audio para enviar.")
+
+    try:
+        context_type = normalize_context_type(request.form.get('context_type'))
+        context_id = request.form.get('context_id', type=int)
+        content = (request.form.get('content') or '').strip()
+
+        if not context_id:
+            blp.abort(400, message="Falta el chat al que quieres enviar el archivo.")
+        if len(content) > 2000:
+            blp.abort(400, message="El texto del mensaje es demasiado largo.")
+
+        file_data = file.read()
+        if not file_data:
+            blp.abort(400, message="El archivo esta vacio.")
+
+        max_file_size = current_app.config.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024)
+        if len(file_data) > max_file_size:
+            blp.abort(400, message="El archivo supera el tamano maximo permitido.")
+
+        media_type, object_name, attachment_content_type = upload_chat_attachment(
+            file_data,
+            user_id,
+            context_type,
+            context_id,
+            file.content_type
+        )
+
+        message_dict = create_message_and_broadcast(
+            user_id,
+            context_type,
+            context_id,
+            content,
+            message_type=media_type,
+            attachment_object_name=object_name,
+            attachment_content_type=attachment_content_type
+        )
+        return message_dict, 201
+    except PermissionError as e:
+        blp.abort(403, message=str(e))
+    except ValueError as e:
+        blp.abort(400, message=str(e))
+    except Exception as e:
+        logger.error(f"Error posting attachment via HTTP: {e}")
+        db.session.rollback()
+        blp.abort(500, message="No se pudo enviar el archivo.")
+
+
+@blp.route("/messages/<int:message_id>/attachment", methods=["GET"])
+@require_authentication
+def get_chat_attachment(message_id):
+    """Stream a chat attachment if the user has access to the message context."""
+    user_id = session.get('user_id')
+    message = Message.query.get_or_404(message_id)
+
+    if not message.attachment_object_name:
+        blp.abort(404, message="Este mensaje no tiene archivo adjunto.")
+
+    context_type = message.context_type.value if message.context_type else None
+    if not context_type:
+        blp.abort(404, message="No se encontro el contexto del mensaje.")
+
+    try:
+        resolve_chat_room(context_type, message.context_id, user_id)
+    except PermissionError as e:
+        blp.abort(403, message=str(e))
+
+    if not can_user_chat(context_type, message.context_id, user_id):
+        can_view = message.is_system or message.sender_id == user_id
+        if not can_view:
+            blp.abort(403, message="No puedes ver este archivo adjunto.")
+
+    try:
+        data, content_type = minio_client.get_object_bytes(message.attachment_object_name)
+        return Response(
+            data,
+            mimetype=message.attachment_content_type or content_type,
+            headers={'Cache-Control': 'private, max-age=3600'}
+        )
+    except Exception as e:
+        logger.error(f"Error fetching chat attachment {message_id}: {e}")
+        blp.abort(500, message="No se pudo recuperar el archivo adjunto.")

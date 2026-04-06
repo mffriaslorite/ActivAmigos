@@ -112,7 +112,8 @@ export class ActivitiesComponent implements OnInit, OnDestroy {
         (a.location && a.location.toLowerCase().includes(term))
       );
 
-      const matchesType = !this.selectedType || a.activity_type === this.selectedType;
+      const activityTypes = this.getActivityTypes(a);
+      const matchesType = !this.selectedType || activityTypes.includes(this.selectedType);
 
       const matchesDate = !this.selectedDate || this.isSameCalendarDate(a.date, this.selectedDate);
 
@@ -172,6 +173,18 @@ export class ActivitiesComponent implements OnInit, OnDestroy {
       activity.getUTCMonth() + 1 === month &&
       activity.getUTCDate() === day
     );
+  }
+
+  private getActivityTypes(activity: Activity): string[] {
+    if (activity.activity_types?.length) {
+      return activity.activity_types;
+    }
+
+    if (activity.activity_type) {
+      return activity.activity_type.split(',').map(type => type.trim()).filter(Boolean);
+    }
+
+    return [];
   }
 
   // --- Acciones de Tarjeta ---

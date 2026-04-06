@@ -1,10 +1,8 @@
 <div class="flex flex-col h-full bg-gray-50 rounded-2xl overflow-hidden border border-gray-200 shadow-inner">
-  
   <div class="bg-white px-4 py-2 border-b border-gray-100 flex items-center justify-between text-xs text-gray-500 sticky top-0 z-10">
     <div class="flex items-center gap-2">
-      <div class="w-2 h-2 rounded-full" 
-           [ngClass]="isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'"></div>
-      <span>{{ isConnected ? 'En línea' : 'Desconectado' }}</span>
+      <div class="w-2 h-2 rounded-full" [ngClass]="isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'"></div>
+      <span>{{ isConnected ? 'En linea' : 'Desconectado' }}</span>
     </div>
     <div *ngIf="userSemaphoreColor" class="flex items-center gap-1">
       <span>Tu estado:</span>
@@ -13,87 +11,115 @@
   </div>
 
   <div #messagesContainer class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
-    
     <div *ngIf="isBanned" class="h-full flex flex-col items-center justify-center p-8 text-center animate-fade-in bg-white/50">
-        <div class="bg-red-50 p-4 rounded-full mb-4">
-            <span class="text-4xl">🚫</span>
-        </div>
-        <h3 class="text-xl font-bold text-red-800 mb-2">Acceso Restringido</h3>
-        <p class="text-gray-600 max-w-sm mx-auto leading-relaxed">
-            Tu cuenta ha sido suspendida en este chat debido a incumplimiento de las normas. No puedes leer ni enviar mensajes.
-        </p>
+      <div class="bg-red-50 p-4 rounded-full mb-4">
+        <span class="text-4xl">🚫</span>
+      </div>
+      <h3 class="text-xl font-bold text-red-800 mb-2">Acceso restringido</h3>
+      <p class="text-gray-600 max-w-sm mx-auto leading-relaxed">
+        Tu cuenta ha sido suspendida en este chat debido a incumplimiento de las normas. No puedes leer ni enviar mensajes.
+      </p>
     </div>
 
     <ng-container *ngIf="!isBanned">
-        <div *ngIf="isLoading" class="space-y-4 opacity-50">
-           <div class="flex gap-2">
-             <div class="w-8 h-8 bg-gray-300 rounded-full"></div>
-             <div class="h-10 bg-gray-200 rounded-xl w-2/3"></div>
-           </div>
-           <div class="flex gap-2 flex-row-reverse">
-             <div class="h-10 bg-blue-100 rounded-xl w-1/2"></div>
-           </div>
+      <div *ngIf="isLoading" class="space-y-4 opacity-50">
+        <div class="flex gap-2">
+          <div class="w-8 h-8 bg-gray-300 rounded-full"></div>
+          <div class="h-10 bg-gray-200 rounded-xl w-2/3"></div>
+        </div>
+        <div class="flex gap-2 flex-row-reverse">
+          <div class="h-10 bg-blue-100 rounded-xl w-1/2"></div>
+        </div>
+      </div>
+
+      <div *ngIf="!isLoading && messages.length === 0" class="h-full flex flex-col items-center justify-center text-gray-400">
+        <span class="text-4xl mb-2">👋</span>
+        <p>No hay mensajes aun.</p>
+        <p class="text-sm">Puedes escribir, enviar una foto o grabar un audio.</p>
+      </div>
+
+      <ng-container *ngFor="let msg of messages">
+        <div *ngIf="msg.is_system" class="flex justify-center my-2">
+          <span class="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full border border-gray-200">
+            🔔 {{ msg.content }}
+          </span>
         </div>
 
-        <div *ngIf="!isLoading && messages.length === 0" class="h-full flex flex-col items-center justify-center text-gray-400">
-          <span class="text-4xl mb-2">👋</span>
-          <p>No hay mensajes aún.</p>
-          <p class="text-sm">¡Sé el primero en saludar!</p>
-        </div>
+        <div *ngIf="!msg.is_system" class="flex gap-3 group" [ngClass]="isMyMessage(msg) ? 'flex-row-reverse' : 'flex-row'">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm"
+               [ngClass]="isMyMessage(msg) ? 'bg-blue-500' : 'bg-gray-400'">
+            <img *ngIf="getUserAvatarUrl(msg.sender.id) && !msg.sender.avatarError; else showInitial"
+                 [src]="getUserAvatarUrl(msg.sender.id)"
+                 (error)="msg.sender.avatarError = true"
+                 alt="Avatar"
+                 class="w-10 h-10 rounded-full object-cover">
+            <ng-template #showInitial>
+              {{ getAvatarInitial(msg.sender) }}
+            </ng-template>
+          </div>
 
-        <ng-container *ngFor="let msg of messages">
-          
-          <div *ngIf="msg.is_system" class="flex justify-center my-2">
-            <span class="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full border border-gray-200">
-              🔔 {{ msg.content }}
+          <div class="flex flex-col max-w-[80%]" [ngClass]="isMyMessage(msg) ? 'items-end' : 'items-start'">
+            <div class="px-4 py-3 rounded-2xl shadow-sm text-sm relative transition-all"
+                 [ngClass]="{
+                   'bg-blue-600 text-white rounded-tr-none': isMyMessage(msg),
+                   'bg-white text-gray-800 border border-gray-100 rounded-tl-none hover:bg-gray-50 cursor-pointer': !isMyMessage(msg)
+                 }"
+                 (click)="onMessageClick(msg)">
+              <p *ngIf="!isMyMessage(msg)" class="text-xs font-bold text-blue-600 mb-2">
+                {{ getSenderName(msg.sender) }}
+              </p>
+
+              <img *ngIf="msg.message_type === 'IMAGE' && getAttachmentUrl(msg)"
+                   [src]="getAttachmentUrl(msg)!"
+                   alt="Imagen compartida en el chat"
+                   class="rounded-2xl max-h-80 min-w-[180px] max-w-[240px] w-auto object-contain border border-white/20 bg-white/10 cursor-zoom-in"
+                   (click)="openImagePreview(getAttachmentUrl(msg)!); $event.stopPropagation()">
+
+              <div *ngIf="msg.message_type === 'AUDIO' && getAttachmentUrl(msg) && getAudioState(getAudioMessageKey(msg)) as audioState"
+                   class="audio-card"
+                   [class.audio-card--own]="isMyMessage(msg)"
+                   (click)="$event.stopPropagation()">
+                <button type="button"
+                        class="audio-card__play"
+                        [class.audio-card__play--own]="isMyMessage(msg)"
+                        (click)="toggleAudioPlayback(msg)">
+                  {{ audioState.isPlaying ? '❚❚' : '▶' }}
+                </button>
+
+                <div class="audio-card__content">
+                  <div class="audio-wave">
+                    <span *ngFor="let bar of getAudioBars(getAudioMessageKey(msg)); let i = index"
+                          class="audio-wave__bar"
+                          [style.height.px]="getWaveBarHeight(bar)"
+                          [class.audio-wave__bar--played]="i < getPlayedBarsCount(getAudioMessageKey(msg))"
+                          [class.audio-wave__bar--played-own]="isMyMessage(msg) && i < getPlayedBarsCount(getAudioMessageKey(msg))"
+                          [style.animationDelay.ms]="i * 22"></span>
+                  </div>
+
+                  <div class="audio-card__meta" [class.audio-card__meta--own]="isMyMessage(msg)">
+                    <span>{{ formatAudioTime(audioState.currentTime || 0) }}</span>
+                    <span>/</span>
+                    <span>{{ formatAudioTime(audioState.duration || 0) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <p *ngIf="msg.content" class="whitespace-pre-wrap leading-relaxed" [class.mt-3]="msg.message_type !== 'TEXT'">
+                {{ msg.content }}
+              </p>
+
+              <p class="text-[10px] mt-2 text-right opacity-70"
+                 [ngClass]="isMyMessage(msg) ? 'text-blue-100' : 'text-gray-400'">
+                {{ formatTimestamp(msg.created_at) }}
+              </p>
+            </div>
+
+            <span *ngIf="canModerate && !isMyMessage(msg) && msg.message_type !== 'AUDIO'" class="text-[12px] text-black-400 group-hover:opacity-100 transition-opacity mt-1">
+              ⚠️ Clica el mensaje para advertir al usuario
             </span>
           </div>
-
-          <div *ngIf="!msg.is_system" 
-               class="flex gap-3 group" 
-               [ngClass]="isMyMessage(msg) ? 'flex-row-reverse' : 'flex-row'">
-            
-            <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm"
-                 [ngClass]="isMyMessage(msg) ? 'bg-blue-500' : 'bg-gray-400'">
-              <img *ngIf="getUserAvatarUrl(msg.sender.id) && !msg.sender.avatarError; else showInitial" 
-                   [src]="getUserAvatarUrl(msg.sender.id)" 
-                   (error)="msg.sender.avatarError = true"
-                   alt="Avatar" 
-                   class="w-10 h-10 rounded-full object-cover">
-              <ng-template #showInitial>
-                {{ getAvatarInitial(msg.sender) }}
-              </ng-template>
-            </div>
-
-            <div class="flex flex-col max-w-[75%]" 
-                 [ngClass]="isMyMessage(msg) ? 'items-end' : 'items-start'">
-              
-              <div class="px-4 py-2 rounded-2xl shadow-sm text-sm relative transition-all"
-                   [ngClass]="{
-                     'bg-blue-600 text-white rounded-tr-none': isMyMessage(msg),
-                     'bg-white text-gray-800 border border-gray-100 rounded-tl-none hover:bg-gray-50 cursor-pointer': !isMyMessage(msg)
-                   }"
-                   (click)="onMessageClick(msg)">
-                
-                <p *ngIf="!isMyMessage(msg)" class="text-xs font-bold text-blue-600 mb-1">
-                  {{ getSenderName(msg.sender) }}
-                </p>
-                
-                <p class="whitespace-pre-wrap leading-relaxed">{{ msg.content }}</p>
-                
-                <p class="text-[10px] mt-1 text-right opacity-70"
-                   [ngClass]="isMyMessage(msg) ? 'text-blue-100' : 'text-gray-400'">
-                  {{ formatTimestamp(msg.created_at) }}
-                </p>
-              </div>
-              
-              <span *ngIf="canModerate && !isMyMessage(msg)" class="text-[12px] text-black-400 group-hover:opacity-100 transition-opacity mt-1">
-               ⚠️ Clica el mensaje para advertir al usuario
-              </span>
-            </div>
-          </div>
-
-        </ng-container>
+        </div>
+      </ng-container>
     </ng-container>
   </div>
 
@@ -105,28 +131,145 @@
     </div>
   </div>
 
-  <form *ngIf="!isBanned" [formGroup]="messageForm" (ngSubmit)="sendMessage()" 
-        class="bg-white p-3 border-t border-gray-200 flex items-end gap-2">
-    
-    <div class="flex-1 bg-gray-100 rounded-2xl flex items-center px-4 py-2 focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white transition-all">
-      <input 
-        type="text" 
-        formControlName="content"
-        class="bg-transparent border-none w-full focus:outline-none text-gray-700"
-        placeholder="Escribe un mensaje..."
-        autocomplete="off">
+  <form *ngIf="!isBanned" [formGroup]="messageForm" (ngSubmit)="sendMessage()" class="bg-white border-t border-gray-200 p-3 space-y-3">
+    <div *ngIf="sendErrorMessage" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {{ sendErrorMessage }}
     </div>
 
-    <button 
-      type="submit" 
-      [disabled]="messageForm.invalid || isSending || !isConnected"
-      class="w-10 h-10 rounded-full flex items-center justify-center text-white transition-all disabled:opacity-50 disabled:scale-90"
-      [ngClass]="messageForm.valid ? 'bg-blue-600 hover:bg-blue-700 shadow-md' : 'bg-gray-300'">
-      
-      <span *ngIf="!isSending">➤</span>
-      <span *ngIf="isSending" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-    </button>
+    <div *ngIf="selectedImagePreviewUrl" class="rounded-2xl border border-blue-100 bg-blue-50 p-3 space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="font-semibold text-blue-900">Imagen preparada</p>
+          <p class="text-sm text-blue-700">Se enviara junto al mensaje.</p>
+        </div>
+        <button type="button" class="min-w-10 h-10 px-3 rounded-xl bg-white border border-blue-200 text-blue-700 font-semibold"
+                (click)="clearSelectedImage()">
+          Quitar
+        </button>
+      </div>
+      <img [src]="selectedImagePreviewUrl" alt="Vista previa de la imagen seleccionada" class="rounded-2xl max-h-44 object-cover w-full">
+    </div>
+
+    <div *ngIf="isPreparingRecordedAudio" class="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-center gap-3">
+      <span class="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></span>
+      <span>Preparando audio... espera un momento.</span>
+    </div>
+
+    <div *ngIf="recordedAudioPreviewUrl && getAudioState('preview') as previewAudio" class="rounded-[24px] border border-emerald-100 bg-gradient-to-r from-emerald-50 to-cyan-50 p-4 space-y-4 shadow-sm">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="font-semibold text-emerald-950">Audio preparado</p>
+          <p class="text-sm text-emerald-800">Puedes escucharlo antes de enviarlo.</p>
+        </div>
+        <button type="button" class="min-w-10 h-10 px-3 rounded-xl bg-white border border-emerald-200 text-emerald-700 font-semibold"
+                (click)="clearRecordedAudio()">
+          Quitar
+        </button>
+      </div>
+
+      <div class="audio-card audio-card--preview">
+        <button type="button" class="audio-card__play audio-card__play--preview" (click)="togglePreviewAudioPlayback()">
+          {{ previewAudio.isPlaying ? '❚❚' : '▶' }}
+        </button>
+
+        <div class="audio-card__content">
+          <div class="audio-wave audio-wave--preview">
+            <span *ngFor="let bar of getAudioBars('preview'); let i = index"
+                  class="audio-wave__bar audio-wave__bar--preview"
+                  [style.height.px]="getWaveBarHeight(bar)"
+                  [class.audio-wave__bar--played-preview]="i < getPlayedBarsCount('preview')"
+                  [style.animationDelay.ms]="i * 18"></span>
+          </div>
+
+          <div class="audio-card__meta text-emerald-900">
+            <span>{{ formatAudioTime(previewAudio.currentTime || 0) }}</span>
+            <span>/</span>
+            <span>{{ formatAudioTime(previewAudio.duration || 0) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <input #imageInput type="file" class="hidden" accept="image/*" (change)="onImageSelected($event)">
+
+    <div class="flex gap-2 flex-wrap">
+      <button type="button"
+              class="min-h-12 px-4 rounded-2xl border font-semibold flex items-center gap-2"
+              [disabled]="isImageActionDisabled()"
+              [ngClass]="isImageActionDisabled() ? 'opacity-45 cursor-not-allowed border-gray-300 text-gray-400 bg-gray-100' : ''"
+              (click)="openImagePicker()">
+        <span class="text-xl">🖼️</span>
+        <span>Enviar imagen</span>
+      </button>
+
+      <button type="button"
+              class="min-h-12 px-4 rounded-2xl border font-semibold flex items-center gap-2"
+              [disabled]="isComposerBusy()"
+              [ngClass]="isComposerBusy() ? 'opacity-45 cursor-not-allowed border-gray-300 text-gray-400 bg-gray-100' : (isRecordingAudio ? 'border-red-300 bg-red-50 text-red-700' : 'border-emerald-300 bg-emerald-50 text-emerald-700')"
+              (click)="toggleAudioRecording()">
+        <span class="text-xl">{{ isRecordingAudio ? '⏹️' : '🎤' }}</span>
+        <span>{{ isRecordingAudio ? 'Parar grabacion' : 'Grabar audio' }}</span>
+      </button>
+    </div>
+
+    <div *ngIf="isRecordingAudio" class="rounded-[28px] border border-red-200 bg-gradient-to-r from-red-50 to-orange-50 px-4 py-4 space-y-4 shadow-sm">
+      <div class="flex items-center gap-3 text-sm text-red-800 font-semibold">
+        <span class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
+        <span>Grabando audio</span>
+        <span class="ml-auto text-base">{{ formatAudioTime(recordingDurationSeconds) }}</span>
+      </div>
+
+      <div class="recording-meter" aria-hidden="true">
+        <span *ngFor="let bar of recordingWaveform; let i = index"
+              class="recording-meter__bar"
+              [style.height.%]="bar * 100"
+              [style.animationDelay.ms]="i * 22"></span>
+      </div>
+
+      <p class="text-sm text-red-700">
+        Las barras se mueven con el sonido del microfono. Cuando quieras terminar, pulsa "Parar grabacion".
+      </p>
+    </div>
+
+    <div class="flex items-end gap-2">
+      <div class="flex-1 bg-gray-100 rounded-2xl flex items-center px-4 py-2 transition-all"
+           [ngClass]="isTextComposerDisabled() ? 'opacity-55 cursor-not-allowed' : 'focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white'">
+        <input
+          type="text"
+          formControlName="content"
+          class="bg-transparent border-none w-full focus:outline-none text-gray-700"
+          placeholder="Escribe un mensaje"
+          autocomplete="off"
+          [disabled]="isTextComposerDisabled()">
+      </div>
+
+      <button type="submit"
+              [disabled]="!canSubmitMessage() || isSending || !isConnected"
+              class="min-w-12 h-12 rounded-full flex items-center justify-center text-white font-bold transition-all disabled:opacity-50 disabled:scale-90"
+              [ngClass]="canSubmitMessage() ? 'bg-blue-600 hover:bg-blue-700 shadow-md' : 'bg-gray-300'">
+        <span *ngIf="!isSending">➤</span>
+        <span *ngIf="isSending" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+      </button>
+    </div>
   </form>
+</div>
+
+<div *ngIf="imagePreviewUrl"
+     class="fixed inset-0 z-50 bg-black/88 backdrop-blur-sm flex flex-col"
+     (click)="closeImagePreview()">
+  <div class="flex-1 overflow-auto p-4 pt-8 pb-8 flex items-center justify-center">
+    <img [src]="imagePreviewUrl"
+         alt="Imagen ampliada"
+         class="image-preview-modal__image transition-transform duration-200 ease-out select-none cursor-zoom-in"
+         [style.transform]="'scale(' + imagePreviewZoom + ')'"
+         [style.transformOrigin]="'center center'"
+         (click)="toggleImagePreviewZoom(); $event.stopPropagation()">
+  </div>
+
+  <div class="px-6 pb-6 text-center text-white/85 text-sm">
+    <p>Toca la imagen para acercarla o alejarla.</p>
+    <p>Toca fuera para cerrar.</p>
+  </div>
 </div>
 
 <app-moderation-modal

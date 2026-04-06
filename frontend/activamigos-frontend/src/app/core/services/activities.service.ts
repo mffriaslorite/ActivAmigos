@@ -112,6 +112,47 @@ export class ActivitiesService {
     );
   }
 
+  uploadActivityImage(id: number, imageFile: File): Observable<Activity> {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+
+    return this.http.put<Activity>(
+      `${this.API_BASE_URL}/activities/${id}/image`,
+      formData,
+      { withCredentials: true }
+    ).pipe(
+      tap(updatedActivity => {
+        const currentActivities = this.activitiesSubject.value;
+        const updatedActivities = currentActivities.map(activity =>
+          activity.id === id ? { ...activity, image_url: updatedActivity.image_url } : activity
+        );
+        this.activitiesSubject.next(updatedActivities);
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  deleteActivityImage(id: number): Observable<Activity> {
+    return this.http.delete<Activity>(
+      `${this.API_BASE_URL}/activities/${id}/image`,
+      { withCredentials: true }
+    ).pipe(
+      tap(updatedActivity => {
+        const currentActivities = this.activitiesSubject.value;
+        const updatedActivities = currentActivities.map(activity =>
+          activity.id === id ? { ...activity, image_url: updatedActivity.image_url } : activity
+        );
+        this.activitiesSubject.next(updatedActivities);
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  getActivityImageSrc(activityId: number, imageVersion?: string | null): string {
+    const version = imageVersion ? encodeURIComponent(imageVersion) : 'default';
+    return `${this.API_BASE_URL}/activities/${activityId}/image/stream?v=${version}`;
+  }
+
   /**
    * Join an activity
    */
@@ -281,7 +322,9 @@ export class ActivitiesService {
    * Get user activities
    */
   getUserActivities(): Observable<Activity[]> {
-    return this.http.get<Activity[]>(`${this.API_BASE_URL}/activities`, { withCredentials: true });
+    return this.getActivities().pipe(
+      map(activities => activities.filter(activity => activity.is_participant))
+    );
   }
 
   /**

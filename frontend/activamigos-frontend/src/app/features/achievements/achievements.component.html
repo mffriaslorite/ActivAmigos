@@ -50,7 +50,12 @@
                     
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
                           [ngClass]="isUnlocked(achievement.id) ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-200 text-gray-500'">
-                        +{{ achievement.points_reward }} XP
+                        <ng-container *ngIf="pointsDisplayMode === 'STARS'; else xpReward">
+                            ⭐ {{ formatReward(achievement.points_reward) }}
+                        </ng-container>
+                        <ng-template #xpReward>
+                            +{{ formatReward(achievement.points_reward) }}
+                        </ng-template>
                     </span>
 
                     <span *ngIf="isUnlocked(achievement.id)" class="text-[10px] text-indigo-400 font-medium">

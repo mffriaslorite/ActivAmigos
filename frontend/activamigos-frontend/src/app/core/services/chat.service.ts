@@ -12,22 +12,7 @@ export interface ModerationStatus {
   semaphore_color: 'grey' | 'light_green' | 'dark_green' | 'yellow' | 'red';
 }
 
-export interface ChatMessage {
-  id: number;
-  context_type: 'GROUP' | 'ACTIVITY';
-  context_id: number;
-  content: string;
-  created_at: string;
-  sender_id: number;
-  sender: {
-    id: number;
-    username: string;
-    first_name?: string;
-    last_name?: string;
-    profile_image?: string;
-  };
-  is_system?: boolean;
-}
+export type ChatMessage = Message;
 
 @Injectable({
   providedIn: 'root'
@@ -149,6 +134,31 @@ export class ChatService {
     );
   }
 
+  sendAttachmentMessage(
+    contextType: 'GROUP' | 'ACTIVITY',
+    contextId: number,
+    attachment: File,
+    content?: string
+  ): Observable<ChatMessage> {
+    const formData = new FormData();
+    formData.append('context_type', contextType);
+    formData.append('context_id', String(contextId));
+    formData.append('attachment', attachment);
+
+    if (content?.trim()) {
+      formData.append('content', content.trim());
+    }
+
+    return this.http.post<ChatMessage>(`${this.API_BASE_URL}/chat/messages/attachments`, formData, {
+      withCredentials: true
+    }).pipe(
+      tap(message => {
+        this.messagesSubject.next([message]);
+      }),
+      catchError(this.handleError)
+    );
+  }
+
   /**
    * Get message history for a group or activity
    */
@@ -254,5 +264,18 @@ export class ChatService {
 
   sendActivityMessage(activityId: number, content: string): Observable<any> {
     return this.sendMessage('ACTIVITY', activityId, content);
+  }
+
+  getAttachmentUrl(message: ChatMessage): string | null {
+    if (!message.attachment_url) {
+      return null;
+    }
+
+    if (message.attachment_url.startsWith('http://') || message.attachment_url.startsWith('https://')) {
+      return message.attachment_url;
+    }
+
+    const baseUrl = environment.apiUrl || '';
+    return `${baseUrl}${message.attachment_url}`;
   }
 }

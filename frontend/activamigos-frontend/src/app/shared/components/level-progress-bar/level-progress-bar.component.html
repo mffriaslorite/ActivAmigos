@@ -6,8 +6,22 @@
     </div>
     
     <div *ngIf="showPoints" class="text-right">
-      <span class="text-sm font-bold text-gray-700">{{ pointsInCurrentLevel }} / 100 XP</span>
-      <p class="text-[10px] text-gray-400">Faltan {{ pointsToNextLevel }} para subir</p>
+      <span class="text-sm font-bold text-gray-700">
+        <ng-container *ngIf="displayMode === 'XP'; else starsProgress">
+          {{ currentVisualPoints }} / {{ nextLevelVisualTarget }} XP
+        </ng-container>
+        <ng-template #starsProgress>
+          {{ currentVisualPoints }} / {{ nextLevelVisualTarget }} ⭐
+        </ng-template>
+      </span>
+      <p class="text-[10px] text-gray-400">
+        <ng-container *ngIf="displayMode === 'XP'; else starsRemaining">
+          Faltan {{ remainingVisualPoints }} para subir
+        </ng-container>
+        <ng-template #starsRemaining>
+          Faltan {{ remainingVisualPoints }} ⭐ para subir
+        </ng-template>
+      </p>
     </div>
   </div>
 

@@ -22,6 +22,11 @@ from models.group.group_schema import (
 
 blp = Blueprint("Groups", "groups", url_prefix="/api/groups", description="Groups management routes")
 
+def deserialize_activity_types(raw_value):
+    if not raw_value:
+        return []
+    return [item.strip() for item in raw_value.split(',') if item.strip()]
+
 def require_auth():
     """Helper function to check if user is authenticated"""
     if 'user_id' not in session:
@@ -317,7 +322,9 @@ def get_group_details(group_id):
     activities_data = [{
         'id': activity.id,
         'title': activity.title,
-        'activity_type': activity.activity_type,
+        'activity_type': deserialize_activity_types(activity.activity_type)[0] if activity.activity_type else None,
+        'activity_types': deserialize_activity_types(activity.activity_type),
+        'image_url': activity.image_url,
         'location': activity.location,
         'date': activity.date,
         'participant_count': activity.participant_count,

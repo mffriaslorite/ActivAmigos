@@ -22,21 +22,21 @@
             </app-semaphore-badge>
 
             <div class="hidden sm:flex bg-indigo-50 px-3 py-1 rounded-full items-center gap-2 border border-indigo-100 shadow-sm transition-all hover:bg-indigo-100 cursor-help"
-              title="Tienes {{ currentPoints }} puntos en total">
+              [title]="dashboardProgressTitle">
               <span class="text-lg animate-float">🚀</span>
 
               <div class="flex flex-col leading-none">
                 <span class="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">Nivel {{ nextLevel - 1 }} -> {{ nextLevel }}</span>
-                <span class="font-bold text-indigo-700 text-sm">{{ pointsInCurrentLevel }} / 100 XP</span>
+                <span class="font-bold text-indigo-700 text-sm">{{ dashboardProgressLabel }}</span>
               </div>
             </div>
 
             <div class="sm:hidden bg-indigo-50 px-3 py-1 rounded-full flex items-center gap-2 border border-indigo-100 shadow-sm"
-              title="Estás en Nivel {{ nextLevel - 1 }} y tienes {{ pointsInCurrentLevel }} de 100 XP">
+              [title]="dashboardProgressTitle">
               <span class="text-base animate-float">🚀</span>
               <div class="flex flex-col leading-none">
                 <span class="text-[9px] text-indigo-400 font-bold uppercase tracking-wider">Nivel {{ nextLevel - 1 }}</span>
-                <span class="font-bold text-indigo-700 text-xs">{{ pointsInCurrentLevel }} / 100 XP</span>
+                <span class="font-bold text-indigo-700 text-xs">{{ dashboardProgressLabel }}</span>
               </div>
             </div>
           </div>

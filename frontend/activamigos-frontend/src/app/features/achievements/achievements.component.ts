@@ -5,6 +5,8 @@ import { forkJoin } from 'rxjs';
 import { AchievementService } from '../../core/services/achievements.service';
 import { Achievement, GamificationState } from '../../core/models/achivement.model';
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav.component';
+import { AuthService } from '../../core/services/auth.service';
+import { User } from '../../core/models/user.model';
 
 @Component({
   selector: 'app-achievements',
@@ -22,15 +24,18 @@ export class AchievementsComponent implements OnInit {
   
   // Estado del usuario
   myState: GamificationState | null = null;
+  currentUser: User | null = null;
   
   isLoading = true;
 
   constructor(
     private achievementsService: AchievementService,
+    private authService: AuthService,
     public location: Location
   ) {}
 
   ngOnInit() {
+    this.authService.currentUser$.subscribe(user => this.currentUser = user);
     this.loadData();
   }
 
@@ -83,4 +88,17 @@ export class AchievementsComponent implements OnInit {
     );
     return found ? found.date_earned : null;
   }
-}
+
+  get pointsDisplayMode(): 'XP' | 'STARS' {
+    return this.currentUser?.points_display_mode || 'XP';
+  }
+
+  formatReward(points: number): string {
+    if (this.pointsDisplayMode === 'STARS') {
+      const stars = Math.max(1, Math.round(points / 25));
+      return `${stars} estrella${stars === 1 ? '' : 's'}`;
+    }
+
+    return `${points} XP`;
+  }
+} 
