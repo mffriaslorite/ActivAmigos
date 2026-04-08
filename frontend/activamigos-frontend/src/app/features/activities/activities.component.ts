@@ -7,9 +7,11 @@ import { CreateActivityModalComponent } from './create-activity-modal/create-act
 import { ActivityCardComponent } from './activity-card/activity-card.component';
 import { ActivitiesService } from '../../core/services/activities.service';
 import { Activity } from '../../core/models/activity.model';
+import { Group } from '../../core/models/group.model';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfirmationModalComponent } from '../../shared/components/confirmation-modal/confirmation-modal.component';
 import { AuthService } from '../../core/services/auth.service';
+import { GroupsService } from '../../core/services/groups.service';
 
 @Component({
   selector: 'app-activities',
@@ -23,10 +25,14 @@ export class ActivitiesComponent implements OnInit, OnDestroy {
   
   activities: Activity[] = [];
   filteredActivities: Activity[] = [];
+  groupFilterOptions: Group[] = [];
   searchTerm = '';
   selectedType = '';
   selectedDate = '';
+  selectedGroupId = '';
+  groupSearchTerm = '';
   showFilters = false;
+  showGroupPicker = false;
 
   readonly activityTypeOptions = [
     { value: 'sport', label: 'Deporte', icon: '⚽' },
@@ -58,11 +64,13 @@ export class ActivitiesComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private activitiesService: ActivitiesService,
+    private groupsService: GroupsService,
     private snackBar: MatSnackBar,
     private authService: AuthService
   ) {}
 
   ngOnInit() {
+    this.loadGroupFilterOptions();
     this.loadActivities();
 
     // Obtener ID del usuario actual
@@ -87,6 +95,7 @@ export class ActivitiesComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (activities) => {
           this.activities = activities;
+          this.syncGroupFilterOptions();
           this.filterActivities();
         },
         error: (error) => {
@@ -116,8 +125,9 @@ export class ActivitiesComponent implements OnInit, OnDestroy {
       const matchesType = !this.selectedType || activityTypes.includes(this.selectedType);
 
       const matchesDate = !this.selectedDate || this.isSameCalendarDate(a.date, this.selectedDate);
+      const matchesGroup = !this.selectedGroupId || String(a.group_id ?? '') === this.selectedGroupId;
 
-      return matchesSearch && matchesType && matchesDate;
+      return matchesSearch && matchesType && matchesDate && matchesGroup;
     });
   }
 
@@ -132,10 +142,18 @@ export class ActivitiesComponent implements OnInit, OnDestroy {
     this.filterActivities();
   }
 
+  selectGroupFilter(groupId: string) {
+    this.selectedGroupId = groupId;
+    this.showGroupPicker = false;
+    this.filterActivities();
+  }
+
   clearFilters() {
     this.searchTerm = '';
     this.selectedType = '';
     this.selectedDate = '';
+    this.selectedGroupId = '';
+    this.showGroupPicker = false;
     this.filterActivities();
   }
 
@@ -143,8 +161,18 @@ export class ActivitiesComponent implements OnInit, OnDestroy {
     this.showFilters = !this.showFilters;
   }
 
+  openGroupPicker() {
+    this.groupSearchTerm = '';
+    this.showGroupPicker = true;
+  }
+
+  closeGroupPicker() {
+    this.groupSearchTerm = '';
+    this.showGroupPicker = false;
+  }
+
   get hasActiveFilters(): boolean {
-    return !!(this.selectedType || this.selectedDate);
+    return !!(this.selectedType || this.selectedDate || this.selectedGroupId);
   }
 
   get selectedTypeOption() {
@@ -162,6 +190,43 @@ export class ActivitiesComponent implements OnInit, OnDestroy {
       month: '2-digit',
       year: 'numeric'
     });
+  }
+
+  get selectedGroupOption(): Group | null {
+    return this.groupFilterOptions.find(group => String(group.id) === this.selectedGroupId) || null;
+  }
+
+  get groupFilterSummary(): string {
+    return this.selectedGroupOption?.name || 'Todos los grupos';
+  }
+
+  get filteredGroupFilterOptions(): Group[] {
+    const term = this.groupSearchTerm.trim().toLowerCase();
+
+    return this.groupFilterOptions.filter(group => {
+      if (!term) {
+        return true;
+      }
+
+      return group.name.toLowerCase().includes(term);
+    });
+  }
+
+  get myFilteredGroupOptions(): Group[] {
+    return this.filteredGroupFilterOptions.filter(group => group.is_member);
+  }
+
+  get otherFilteredGroupOptions(): Group[] {
+    return this.filteredGroupFilterOptions.filter(group => !group.is_member);
+  }
+
+  getGroupIdValue(group: Group): string {
+    return String(group.id);
+  }
+
+  onGroupSearch(event: Event) {
+    const target = event.target as HTMLInputElement;
+    this.groupSearchTerm = target.value;
   }
 
   private isSameCalendarDate(activityDate: string, selectedDate: string): boolean {
@@ -185,6 +250,46 @@ export class ActivitiesComponent implements OnInit, OnDestroy {
     }
 
     return [];
+  }
+
+  private loadGroupFilterOptions() {
+    this.groupsService.getGroups()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (groups) => {
+          this.groupFilterOptions = groups;
+          this.syncGroupFilterOptions();
+        },
+        error: (error) => {
+          console.error('Error loading groups for filters:', error);
+        }
+      });
+  }
+
+  private syncGroupFilterOptions() {
+    if (this.groupFilterOptions.length === 0 || this.activities.length === 0) {
+      return;
+    }
+
+    const usedGroupIds = new Set(
+      this.activities
+        .map(activity => activity.group_id)
+        .filter((groupId): groupId is number => typeof groupId === 'number')
+    );
+
+    this.groupFilterOptions = this.groupFilterOptions
+      .filter(group => usedGroupIds.has(group.id))
+      .sort((a, b) => {
+        if (a.is_member !== b.is_member) {
+          return a.is_member ? -1 : 1;
+        }
+
+        return a.name.localeCompare(b.name, 'es');
+      });
+
+    if (this.selectedGroupId && !this.groupFilterOptions.some(group => String(group.id) === this.selectedGroupId)) {
+      this.selectedGroupId = '';
+    }
   }
 
   // --- Acciones de Tarjeta ---

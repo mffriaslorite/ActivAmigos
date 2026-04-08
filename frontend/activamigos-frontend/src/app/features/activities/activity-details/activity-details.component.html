@@ -13,7 +13,7 @@
 
   <div *ngIf="activeTab === 'info' && activityDetails" class="bg-blue-600 text-white pb-6 pt-2 px-4 shadow-md animate-fade-in">
     <div class="max-w-4xl mx-auto">
-      <div class="flex items-start justify-between gap-4">
+      <div>
         <div>
           <div class="flex items-center gap-2 mb-2">
             <div *ngIf="activityDetails.image_url; else activityHeaderIcon"
@@ -33,17 +33,6 @@
           <p *ngIf="activityDetails.location" class="text-blue-100 flex items-center gap-2 text-sm mt-1">
             📍 {{ activityDetails.location }}
           </p>
-        </div>
-
-        <div *ngIf="isCreator" class="flex flex-col gap-2 min-w-[160px]">
-          <button (click)="startEditingActivity()"
-                  class="px-4 py-2 bg-white/90 text-blue-700 rounded-xl font-bold text-sm hover:bg-white transition-all">
-            ✏️ Editar
-          </button>
-          <button (click)="openDeleteModal()"
-                  class="px-4 py-2 bg-red-500 text-white rounded-xl font-bold text-sm hover:bg-red-600 transition-all">
-            🗑️ Borrar
-          </button>
         </div>
       </div>
 
@@ -114,6 +103,19 @@
           <span>🚪</span>
           <span>{{ isActionLoading ? 'Procesando...' : 'Darme de baja de la actividad' }}</span>
         </button>
+
+        <div *ngIf="isCreator" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <button (click)="startEditingActivity()"
+                  class="w-full py-3 px-4 border-2 border-blue-200 text-blue-700 rounded-xl font-bold text-sm bg-blue-50 hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
+            <span>✏️</span>
+            <span>Editar actividad</span>
+          </button>
+          <button (click)="openDeleteModal()"
+                  class="w-full py-3 px-4 border-2 border-rose-200 text-rose-700 rounded-xl font-bold text-sm bg-rose-50 hover:bg-rose-100 transition-colors flex items-center justify-center gap-2">
+            <span>🗑️</span>
+            <span>Borrar actividad</span>
+          </button>
+        </div>
       </div>
     </div>
 

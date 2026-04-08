@@ -1,0 +1,69 @@
+<div class="about-page min-h-screen">
+  <div class="about-page__glow about-page__glow--left" aria-hidden="true"></div>
+  <div class="about-page__glow about-page__glow--right" aria-hidden="true"></div>
+
+  <header class="about-page__header">
+    <a routerLink="/" class="about-page__back">⬅️ Volver</a>
+    <div class="about-page__brand">
+      <span class="about-page__brand-icon">🚀</span>
+      <span>ActivAmigos</span>
+    </div>
+  </header>
+
+  <main class="about-page__content">
+    <section class="about-hero">
+      <div class="about-hero__badge">Acerca de</div>
+      <h1 class="about-hero__title">Un proyecto para conectar personas de forma sencilla, accesible y humana.</h1>
+      <p class="about-hero__text">
+        Esta página está pensada para presentar al equipo detrás de ActivAmigos. Puedes editar nombres, enlaces, descripción
+        y añadir una foto real más adelante si quieres.
+      </p>
+    </section>
+
+    <section class="about-story">
+      <div class="about-story__card">
+        <h2>Sobre el proyecto</h2>
+        <p>
+          ActivAmigos nace con la idea de facilitar la participación en grupos, actividades y espacios sociales accesibles
+          para personas con discapacidad cognitiva. La interfaz busca ser clara, amable y fácil de entender desde móvil.
+        </p>
+      </div>
+
+      <div class="about-story__card">
+        <h2>Qué puedes editar aquí</h2>
+        <p>
+          Puedes cambiar los nombres de los responsables, su descripción, los enlaces a GitHub y sustituir los avatares con
+          iniciales por fotografías reales cuando lo tengas decidido.
+        </p>
+      </div>
+    </section>
+
+    <section class="about-team">
+      <div class="about-team__heading">
+        <h2>Personas detrás de ActivAmigos</h2>
+        <p>Texto de relleno preparado para que luego solo tengas que personalizarlo.</p>
+      </div>
+
+      <div class="about-team__grid">
+        <article *ngFor="let person of people" class="about-card">
+          <div class="about-card__top">
+            <div class="about-avatar" [ngClass]="person.accentClass">
+              <span>{{ person.initials }}</span>
+            </div>
+            <div>
+              <p class="about-card__role">{{ person.role }}</p>
+              <h3 class="about-card__name">{{ person.name }}</h3>
+            </div>
+          </div>
+
+          <p class="about-card__bio">{{ person.shortBio }}</p>
+
+          <a [href]="person.githubUrl" target="_blank" rel="noreferrer" class="about-card__link">
+            <span>GitHub</span>
+            <span aria-hidden="true">↗</span>
+          </a>
+        </article>
+      </div>
+    </section>
+  </main>
+</div>

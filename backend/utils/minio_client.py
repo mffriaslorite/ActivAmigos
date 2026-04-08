@@ -3,7 +3,7 @@ import os
 from minio import Minio
 from minio.error import S3Error
 from flask import current_app
-from PIL import Image
+from PIL import Image, ImageOps
 import io
 
 class MinIOClient:
@@ -61,7 +61,7 @@ class MinIOClient:
             processed_image = self._process_image(file_data)
             
             # Generate unique filename
-            file_extension = self._get_file_extension(content_type)
+            file_extension = '.jpg'
             filename = f"profile_images/{user_id}/{uuid.uuid4()}{file_extension}"
             
             # Upload to MinIO
@@ -71,7 +71,7 @@ class MinIOClient:
                 filename,
                 io.BytesIO(processed_image),
                 length=len(processed_image),
-                content_type=content_type
+                content_type='image/jpeg'
             )
             
             # Return public URL
@@ -155,14 +155,21 @@ class MinIOClient:
         try:
             # Open image with PIL
             image = Image.open(io.BytesIO(file_data))
+
+            # Respect EXIF orientation from mobile photos before resizing/saving.
+            image = ImageOps.exif_transpose(image)
             
             # Convert to RGB if necessary (for JPEG)
-            if image.mode in ('RGBA', 'LA', 'P'):
+            if image.mode not in ('RGB',):
                 background = Image.new('RGB', image.size, (255, 255, 255))
                 if image.mode == 'P':
                     image = image.convert('RGBA')
-                background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
-                image = background
+                if image.mode in ('RGBA', 'LA'):
+                    alpha = image.getchannel('A')
+                    background.paste(image.convert('RGBA'), mask=alpha)
+                    image = background
+                else:
+                    image = image.convert('RGB')
             
             # Resize if too large (max 800x800)
             max_size = (800, 800)

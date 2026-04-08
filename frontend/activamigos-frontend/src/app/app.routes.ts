@@ -8,6 +8,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent),
     title: 'ActivAmigos - Conecta, Actívate y Haz Amigos'
   },
+  {
+    path: 'about',
+    loadComponent: () => import('./features/about/about.component').then(m => m.AboutComponent),
+    title: 'Acerca de - ActivAmigos'
+  },
   
   // Authentication routes (lazy loaded)
   {
