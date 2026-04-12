@@ -6,11 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './tutorial-modal.component.html',
-  styles: [`
-    :host {
-      display: block;
-    }
-  `]
+  styleUrls: ['./tutorial-modal.component.scss']
 })
 export class TutorialModalComponent {
   @Input() isOpen = false;

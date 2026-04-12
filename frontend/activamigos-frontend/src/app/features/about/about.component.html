@@ -13,10 +13,10 @@
   <main class="about-page__content">
     <section class="about-hero">
       <div class="about-hero__badge">Acerca de</div>
-      <h1 class="about-hero__title">Un proyecto para conectar personas de forma sencilla, accesible y humana.</h1>
+      <h1 class="about-hero__title">Un proyecto pensado para conectar personas de forma accesible, sencilla y humana.</h1>
       <p class="about-hero__text">
-        Esta página está pensada para presentar al equipo detrás de ActivAmigos. Puedes editar nombres, enlaces, descripción
-        y añadir una foto real más adelante si quieres.
+        ActivAmigos ha sido desarrollado como Trabajo Fin de Grado por Manuel Fco. Frías Lorite y monitorizado, supervisado y dirigido por su tutor académico Miguel Gea Mejías. La aplicación busca facilitar la participación en
+        grupos, actividades y espacios sociales con una experiencia clara y comprensible, especialmente desde móvil.
       </p>
     </section>
 
@@ -25,15 +25,16 @@
         <h2>Sobre el proyecto</h2>
         <p>
           ActivAmigos nace con la idea de facilitar la participación en grupos, actividades y espacios sociales accesibles
-          para personas con discapacidad cognitiva. La interfaz busca ser clara, amable y fácil de entender desde móvil.
+          para personas con discapacidad cognitiva. El proyecto combina una capa técnica de desarrollo software con una
+          orientación clara hacia la accesibilidad cognitiva, la simplicidad visual y la autonomía del usuario.
         </p>
       </div>
 
       <div class="about-story__card">
-        <h2>Qué puedes editar aquí</h2>
+        <h2>Marco académico</h2>
         <p>
-          Puedes cambiar los nombres de los responsables, su descripción, los enlaces a GitHub y sustituir los avatares con
-          iniciales por fotografías reales cuando lo tengas decidido.
+          Esta aplicación forma parte del Trabajo Fin de Grado de Manuel Fco. Frías Lorite. El proceso ha sido guiado por
+          el tutor académico Miguel Gea Mejías, que ha acompañado la definición del problema, la validación de decisiones y la evolución del producto.
         </p>
       </div>
     </section>
@@ -41,14 +42,20 @@
     <section class="about-team">
       <div class="about-team__heading">
         <h2>Personas detrás de ActivAmigos</h2>
-        <p>Texto de relleno preparado para que luego solo tengas que personalizarlo.</p>
       </div>
 
       <div class="about-team__grid">
         <article *ngFor="let person of people" class="about-card">
           <div class="about-card__top">
-            <div class="about-avatar" [ngClass]="person.accentClass">
-              <span>{{ person.initials }}</span>
+            <div class="about-avatar-shell">
+              <img [src]="person.imagePath"
+                   [alt]="person.imageAlt"
+                   class="about-avatar-image"
+                   loading="lazy"
+                   (error)="$any($event.target).style.display='none'">
+              <div class="about-avatar" [ngClass]="person.accentClass">
+                <span>{{ person.initials }}</span>
+              </div>
             </div>
             <div>
               <p class="about-card__role">{{ person.role }}</p>
@@ -59,7 +66,10 @@
           <p class="about-card__bio">{{ person.shortBio }}</p>
 
           <a [href]="person.githubUrl" target="_blank" rel="noreferrer" class="about-card__link">
-            <span>GitHub</span>
+            <span class="about-card__link-label">
+              <img src="img/github-svgrepo-com.svg" alt="" aria-hidden="true" class="about-card__link-icon">
+              <span>GitHub</span>
+            </span>
             <span aria-hidden="true">↗</span>
           </a>
         </article>

@@ -7,6 +7,8 @@ type AboutPerson = {
   name: string;
   shortBio: string;
   githubUrl: string;
+  imagePath: string;
+  imageAlt: string;
   initials: string;
   accentClass: string;
 };
@@ -22,18 +24,22 @@ export class AboutComponent {
   readonly people: AboutPerson[] = [
     {
       role: 'Creador del proyecto',
-      name: 'Tu nombre aquí',
-      shortBio: 'Estudiante y desarrollador principal de ActivAmigos. Sustituye este texto por una presentación breve, cercana y clara.',
-      githubUrl: 'https://github.com/tu-usuario',
-      initials: 'TN',
+      name: 'Manuel Fco. Frías Lorite',
+      shortBio: 'Estudiante y desarrollador principal de ActivAmigos, proyecto realizado como Trabajo Fin de Grado con foco en accesibilidad, participación social y uso sencillo desde móvil.',
+      githubUrl: 'https://github.com/mffriaslorite',
+      imagePath: 'img/about-manuel.jpg',
+      imageAlt: 'Fotografía del desarrollador principal Manuel Fco. Frías Lorite',
+      initials: 'MF',
       accentClass: 'about-avatar--indigo'
     },
     {
       role: 'Tutor académico',
-      name: 'Nombre del tutor aquí',
-      shortBio: 'Profesor y tutor del trabajo. Puedes usar este espacio para explicar su papel en la guía del proyecto y la parte académica.',
-      githubUrl: 'https://github.com/usuario-del-tutor',
-      initials: 'TT',
+      name: 'Miguel Gea Mejías',
+      shortBio: 'Profesor y tutor académico del Trabajo Fin de Grado, encargado de la supervisión, orientación metodológica y seguimiento del desarrollo del proyecto.',
+      githubUrl: 'https://github.com/mgea/',
+      imagePath: 'img/about-tutor.jpg',
+      imageAlt: 'Fotografía del tutor académico Miguel Gea Mejías',
+      initials: 'MG',
       accentClass: 'about-avatar--emerald'
     }
   ];
