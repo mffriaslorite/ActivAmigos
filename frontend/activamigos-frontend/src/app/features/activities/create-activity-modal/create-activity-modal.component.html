@@ -14,7 +14,7 @@
               : currentStep === 2
                 ? 'Imagen de la actividad'
                 : currentStep === 3
-                  ? 'Grupo relacionado'
+                  ? 'Grupo y detalles'
                   : 'Añadir normas'
           }}
         </h2>
@@ -77,12 +77,6 @@
                      placeholder="Ej: Entrada del Retiro">
             </div>
 
-            <div>
-              <label class="block text-sm font-bold text-gray-700 mb-1">Detalles <span class="font-normal text-gray-400">(Opcional)</span></label>
-              <textarea formControlName="description" rows="2"
-                        class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none resize-none"
-                        placeholder="¿Qué vamos a hacer?"></textarea>
-            </div>
           </div>
 
           <div class="mt-6">
@@ -147,37 +141,38 @@
 
         <div *ngIf="currentStep === 3 && !successMessage" class="space-y-4">
           <div class="rounded-2xl bg-blue-50 border border-blue-100 p-4">
-            <h3 class="font-bold text-blue-900 text-base">¿Esta actividad pertenece a un grupo?</h3>
-            <p class="text-sm text-blue-800 mt-1">Si eliges un grupo, las personas de ese grupo podrán verla más fácilmente dentro de su espacio.</p>
+            <h3 class="font-bold text-blue-900 text-base">Añade más contexto a la actividad</h3>
+            <p class="text-sm text-blue-800 mt-1">Puedes vincularla a un grupo y escribir un detalle breve para que se entienda mejor.</p>
           </div>
 
-          <div class="space-y-3">
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">Grupo relacionado <span class="font-normal text-gray-400">(Opcional)</span></label>
             <button type="button"
-                    (click)="selectRelatedGroup(null)"
-                    class="w-full text-left rounded-2xl border-2 px-4 py-4 transition-all"
-                    [ngClass]="isRelatedGroupSelected(null) ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 bg-white hover:border-blue-300'">
+                    (click)="openGroupPicker()"
+                    class="w-full rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4 text-left transition-colors hover:bg-blue-100">
               <div class="flex items-center gap-3">
-                <span class="text-2xl">🌍</span>
-                <div>
-                  <p class="font-bold text-gray-800">Sin grupo</p>
-                  <p class="text-sm text-gray-500">La actividad aparecerá como una propuesta general.</p>
+                <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">
+                  {{ selectedRelatedGroup ? '👥' : '🌍' }}
+                </span>
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs font-bold uppercase tracking-wide text-blue-700">Actividad asociada a</p>
+                  <p class="text-base font-bold text-gray-800 truncate">
+                    {{ selectedRelatedGroup?.name || 'Sin grupo' }}
+                  </p>
+                  <p class="text-sm text-gray-500 truncate">
+                    {{ selectedRelatedGroup?.description || 'La actividad aparecerá como una propuesta general.' }}
+                  </p>
                 </div>
+                <span class="text-blue-600 text-xl">▾</span>
               </div>
             </button>
+          </div>
 
-            <button type="button"
-                    *ngFor="let group of availableGroups"
-                    (click)="selectRelatedGroup(group.id)"
-                    class="w-full text-left rounded-2xl border-2 px-4 py-4 transition-all"
-                    [ngClass]="isRelatedGroupSelected(group.id) ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 bg-white hover:border-blue-300'">
-              <div class="flex items-center gap-3">
-                <span class="text-2xl">👥</span>
-                <div>
-                  <p class="font-bold text-gray-800">{{ group.name }}</p>
-                  <p class="text-sm text-gray-500">{{ group.description || 'Actividad vinculada a este grupo.' }}</p>
-                </div>
-              </div>
-            </button>
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-1">Detalles <span class="font-normal text-gray-400">(Opcional)</span></label>
+            <textarea formControlName="description" rows="3"
+                      class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none resize-none"
+                      placeholder="¿Qué vamos a hacer?"></textarea>
           </div>
 
           <div class="grid grid-cols-2 gap-3 pt-2">
@@ -204,6 +199,67 @@
               (save)="onRulesSave($event)">
             </app-rules-selector>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isVisible && currentStep === 3 && showGroupPicker"
+       class="fixed inset-0 z-[60] bg-slate-900/35 flex items-end animate-fade-in"
+       (click)="closeGroupPicker()">
+    <div class="w-full max-h-[82vh] rounded-t-[28px] bg-white shadow-2xl p-5 pb-[calc(20px+env(safe-area-inset-bottom,0px))] flex flex-col gap-4 animate-scale-in"
+         (click)="$event.stopPropagation()">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[0.22em] text-blue-500">Grupo relacionado</p>
+          <h3 class="text-xl font-bold text-gray-900 mt-1">Elige un grupo</h3>
+        </div>
+        <button type="button"
+                (click)="closeGroupPicker()"
+                class="min-w-[48px] min-h-[48px] rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-2xl">
+          ✕
+        </button>
+      </div>
+
+      <div class="relative">
+        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-lg">🔍</span>
+        <input type="text"
+               [value]="groupSearchTerm"
+               (input)="onGroupSearch($event)"
+               class="w-full rounded-2xl border border-gray-200 bg-gray-50 py-3 pl-12 pr-4 text-gray-800 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white"
+               placeholder="Buscar grupo...">
+      </div>
+
+      <div class="overflow-y-auto space-y-3 pr-1">
+        <button type="button"
+                (click)="selectRelatedGroup(null)"
+                class="w-full text-left rounded-2xl border-2 px-4 py-4 transition-all"
+                [ngClass]="isRelatedGroupSelected(null) ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 bg-white hover:border-blue-300'">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🌍</span>
+            <div>
+              <p class="font-bold text-gray-800">Sin grupo</p>
+              <p class="text-sm text-gray-500">La actividad aparecerá como una propuesta general.</p>
+            </div>
+          </div>
+        </button>
+
+        <button type="button"
+                *ngFor="let group of filteredAvailableGroups"
+                (click)="selectRelatedGroup(group.id)"
+                class="w-full text-left rounded-2xl border-2 px-4 py-4 transition-all"
+                [ngClass]="isRelatedGroupSelected(group.id) ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 bg-white hover:border-blue-300'">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">👥</span>
+            <div class="min-w-0">
+              <p class="font-bold text-gray-800 truncate">{{ group.name }}</p>
+              <p class="text-sm text-gray-500">{{ group.description || 'Actividad vinculada a este grupo.' }}</p>
+            </div>
+          </div>
+        </button>
+
+        <div *ngIf="filteredAvailableGroups.length === 0" class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center text-gray-500">
+          No hemos encontrado grupos con ese nombre.
         </div>
       </div>
     </div>

@@ -27,6 +27,8 @@ export class CreateActivityModalComponent implements OnInit {
   availableGroups: Group[] = [];
   selectedImageFile: File | null = null;
   selectedImagePreviewUrl: string | null = null;
+  showGroupPicker = false;
+  groupSearchTerm = '';
 
   activityTypes = [
     { value: 'sport', label: 'Deporte', icon: '⚽' },
@@ -98,6 +100,7 @@ export class CreateActivityModalComponent implements OnInit {
 
   goToGroupStep() {
     this.currentStep = 3;
+    this.showGroupPicker = false;
     this.errorMessage = '';
   }
 
@@ -110,15 +113,50 @@ export class CreateActivityModalComponent implements OnInit {
     if (this.currentStep === 4) this.currentStep = 3;
     else if (this.currentStep === 3) this.currentStep = 2;
     else this.currentStep = 1;
+    this.showGroupPicker = false;
     this.errorMessage = '';
   }
 
   selectRelatedGroup(groupId: number | null) {
     this.activityForm.patchValue({ group_id: groupId });
+    this.showGroupPicker = false;
   }
 
   isRelatedGroupSelected(groupId: number | null): boolean {
     return this.activityForm.get('group_id')?.value === groupId;
+  }
+
+  get selectedRelatedGroup(): Group | null {
+    const selectedGroupId = this.activityForm.get('group_id')?.value;
+    return this.availableGroups.find(group => group.id === selectedGroupId) || null;
+  }
+
+  get filteredAvailableGroups(): Group[] {
+    const term = this.groupSearchTerm.trim().toLowerCase();
+
+    return this.availableGroups.filter(group => {
+      if (!term) return true;
+
+      return (
+        group.name.toLowerCase().includes(term) ||
+        (group.description || '').toLowerCase().includes(term)
+      );
+    });
+  }
+
+  openGroupPicker() {
+    this.groupSearchTerm = '';
+    this.showGroupPicker = true;
+  }
+
+  closeGroupPicker() {
+    this.groupSearchTerm = '';
+    this.showGroupPicker = false;
+  }
+
+  onGroupSearch(event: Event) {
+    const target = event.target as HTMLInputElement;
+    this.groupSearchTerm = target.value;
   }
 
   onRulesSave(ruleIds: number[]) {
@@ -190,6 +228,8 @@ export class CreateActivityModalComponent implements OnInit {
 
     this.currentStep = 1;
     this.isSubmitting = false;
+    this.showGroupPicker = false;
+    this.groupSearchTerm = '';
     this.errorMessage = '';
     this.successMessage = '';
     this.selectedRuleIds = [];
