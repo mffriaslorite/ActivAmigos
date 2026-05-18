@@ -8,6 +8,18 @@
   width: 6px;
 }
 
+.profile-edit-scroll {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.profile-edit-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -10px 24px -24px rgba(15, 23, 42, 0.25);
+}
+
 .overflow-y-auto::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 3px;

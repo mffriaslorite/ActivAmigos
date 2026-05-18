@@ -7,8 +7,8 @@
             <button class="text-3xl mb-4 p-3 min-w-[48px] min-h-[48px] flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors" (click)="closeModal()">⬅️</button>
         </div>
 
-        <div class="flex-1 overflow-y-auto w-full">
-            <div class="p-6">
+        <div class="flex-1 overflow-y-auto w-full profile-edit-scroll">
+            <div class="p-6 pb-32">
             
             <div class="flex flex-col items-center mb-8">
                 <div class="relative group cursor-pointer" (click)="triggerFileInput()">
@@ -44,7 +44,7 @@
                 </div>
             </div>
 
-            <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="space-y-5">
+            <form id="edit-profile-form" [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="space-y-5">
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -100,21 +100,25 @@
                     <span>✅</span> {{ successMessage }}
                 </div>
 
-                <div class="flex gap-3 pt-4">
-                    <button type="button" 
-                            class="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors flex justify-center items-center gap-2"
-                            (click)="closeModal()" 
-                            [disabled]="isLoading || isUploading">
-                        <span>❌</span> Cancelar
-                    </button>
-                    <button type="submit" 
-                            class="flex-[2] py-3 px-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex justify-center items-center gap-2"
-                            [disabled]="isLoading || isUploading || profileForm.invalid">
-                        <span *ngIf="!isLoading">💾 Guardar Cambios</span>
-                        <span *ngIf="isLoading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    </button>
-                </div>
             </form>
+        </div>
+      </div>
+
+      <div class="profile-edit-actions px-6 py-4 border-t border-gray-100 bg-white">
+        <div class="flex gap-3">
+          <button type="button" 
+                  class="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors flex justify-center items-center gap-2"
+                  (click)="closeModal()" 
+                  [disabled]="isLoading || isUploading">
+              <span>❌</span> Cancelar
+          </button>
+          <button type="submit"
+                  form="edit-profile-form"
+                  class="flex-[2] py-3 px-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex justify-center items-center gap-2"
+                  [disabled]="isLoading || isUploading || profileForm.invalid">
+              <span *ngIf="!isLoading">💾 Guardar Cambios</span>
+              <span *ngIf="isLoading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          </button>
         </div>
       </div>
     </div>
